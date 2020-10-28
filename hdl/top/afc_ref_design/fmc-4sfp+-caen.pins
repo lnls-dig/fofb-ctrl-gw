@@ -1,0 +1,72 @@
+
+#
+# Mezzanine top level pin assignment file:
+# syntax: pin FMC_pin_name Core_Pin_name IO_Standard
+# % is replaced with FMC number if the carrier supports more than 1 mezzanine
+#
+
+mezzanine fmc-4sfp+-caen-v1
+
+pin dp3_m2c_p fmc%_sfp_rx_p_i[0]
+pin dp3_m2c_n fmc%_sfp_rx_n_i[0]
+pin dp1_m2c_p fmc%_sfp_rx_p_i[1]
+pin dp1_m2c_n fmc%_sfp_rx_n_i[1]
+pin dp0_m2c_p fmc%_sfp_rx_p_i[2]
+pin dp0_m2c_n fmc%_sfp_rx_n_i[2]
+pin dp2_m2c_p fmc%_sfp_rx_p_i[3]
+pin dp2_m2c_n fmc%_sfp_rx_n_i[3]
+
+pin dp3_c2m_p fmc%_sfp_tx_p_o[0]
+pin dp3_c2m_n fmc%_sfp_tx_n_o[0]
+pin dp1_c2m_p fmc%_sfp_tx_p_o[1]
+pin dp1_c2m_n fmc%_sfp_tx_n_o[1]
+pin dp0_c2m_p fmc%_sfp_tx_p_o[2]
+pin dp0_c2m_n fmc%_sfp_tx_n_o[2]
+pin dp2_c2m_p fmc%_sfp_tx_p_o[3]
+pin dp2_c2m_n fmc%_sfp_tx_n_o[3]
+
+pin la_p21 fmc%_sfp_scl_b[0] lvcmos25
+pin la_n21 fmc%_sfp_sda_b[0] lvcmos25
+pin la_p22 fmc%_sfp_scl_b[1] lvcmos25
+pin la_n22 fmc%_sfp_sda_b[1] lvcmos25
+pin la_p24 fmc%_sfp_scl_b[2] lvcmos25
+pin la_n24 fmc%_sfp_sda_b[2] lvcmos25
+pin la_p23 fmc%_sfp_scl_b[3] lvcmos25
+pin la_n23 fmc%_sfp_sda_b[3] lvcmos25
+
+pin la_n07 fmc%_sfp_mod_abs_i[0] lvcmos25
+pin la_p07 fmc%_sfp_mod_abs_i[1] lvcmos25
+pin la_n06 fmc%_sfp_mod_abs_i[2] lvcmos25
+pin la_p06 fmc%_sfp_mod_abs_i[3] lvcmos25
+
+pin la_n05 fmc%_sfp_rx_los_i[0] lvcmos25
+pin la_p05 fmc%_sfp_rx_los_i[1] lvcmos25
+pin la_n04 fmc%_sfp_rx_los_i[2] lvcmos25
+pin la_p04 fmc%_sfp_rx_los_i[3] lvcmos25
+
+pin la_n09 fmc%_sfp_tx_disable_o[0] lvcmos25
+pin la_p09 fmc%_sfp_tx_disable_o[1] lvcmos25
+pin la_n08 fmc%_sfp_tx_disable_o[2] lvcmos25
+pin la_p08 fmc%_sfp_tx_disable_o[3] lvcmos25
+
+pin la_n03 fmc%_sfp_tx_fault_i[0] lvcmos25
+pin la_p03 fmc%_sfp_tx_fault_i[1] lvcmos25
+pin la_n02 fmc%_sfp_tx_fault_i[2] lvcmos25
+pin la_p02 fmc%_sfp_tx_fault_i[3] lvcmos25
+
+pin la_n11 fmc%_sfp_rs0_o[0] lvcmos25
+pin la_p11 fmc%_sfp_rs0_o[1] lvcmos25
+pin la_n10 fmc%_sfp_rs0_o[2] lvcmos25
+pin la_p10 fmc%_sfp_rs0_o[3] lvcmos25
+
+pin la_n13 fmc%_sfp_rs1_o[0] lvcmos25
+pin la_p13 fmc%_sfp_rs1_o[1] lvcmos25
+pin la_n12 fmc%_sfp_rs1_o[2] lvcmos25
+pin la_p12 fmc%_sfp_rs1_o[3] lvcmos25
+
+pin clk0m2c_p fmc%_si570_clk_p_i lvds25
+pin clk0m2c_n fmc%_si570_clk_n_i lvds25
+pin la_p25 fmc%_si570_scl_b lvcmos25
+pin la_n25 fmc%_si570_sda_b lvcmos25
+
+#eof
