@@ -260,7 +260,7 @@ architecture top of afc_ref_fofb_ctrl is
                                                     (others => (others => '0'));
 
   signal fai_sim_data_sel                    : t_fofb_cc_std4_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
-                                                    (others => '0');
+                                                    (others => (others => '0'));
   signal fai_sim_enable                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '1');
   signal fai_sim_trigger                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
