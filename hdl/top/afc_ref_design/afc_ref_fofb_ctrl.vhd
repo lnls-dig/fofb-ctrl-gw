@@ -231,6 +231,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
+  constant c_LANE_COUNT                      : integer := 4;
 
   -----------------------------------------------------------------------------
   -- FMC signals
@@ -252,6 +253,7 @@ architecture top of afc_ref_fofb_ctrl is
   type t_fofb_cc_std32_array is array (natural range <>) of std_logic_vector(31 downto 0);
   type t_fofb_cc_std4_array is array (natural range <>) of std_logic_vector(3 downto 0);
   type t_fofb_cc_fod_data_array is array (natural range <>) of std_logic_vector((32*PacketSize-1) downto 0);
+  type t_fofb_cc_fod_val_array is array (natural range <>) of std_logic_vector(c_LANE_COUNT-1 downto 0);
 
   signal fai_fa_block_start                  : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
@@ -295,7 +297,7 @@ architecture top of afc_ref_fofb_ctrl is
                                                     (others => (others => '0'));
 
   signal fofb_fod_dat                        : t_fofb_cc_fod_data_array(c_NUM_FOFC_CC_CORES-1 downto 0);
-  signal fofb_fod_dat_val                    : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_fod_dat_val                    : t_fofb_cc_fod_val_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- Acquisition signals
@@ -834,10 +836,10 @@ begin
   -- DCC data
 
   acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
-  acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID);
+  acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID)(0);
 
   acq_data(c_ACQ_CORE_1_ID) <= fofb_fod_dat(c_FOFB_CC_1_ID);
-  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_1_ID);
+  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_1_ID)(0);
 
   --------------------
   -- ACQ Channel 1
