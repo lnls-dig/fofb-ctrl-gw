@@ -348,7 +348,7 @@ architecture top of afc_ref_fofb_ctrl is
   -----------------------------------------------------------------------------
 
   type t_acq_logic_array is array (natural range <>) of std_logic;
-  type t_acq_data_array is array (natural range <>) of std_logic_vector(c_FACQ_PARAMS_DCC.width-1 downto 0);
+  type t_acq_data_array is array (natural range <>) of std_logic_vector(to_integer(c_FACQ_PARAMS_DCC.width)-1 downto 0);
 
   signal acq_data                            : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
   signal acq_data_valid                      : t_acq_logic_array(c_ACQ_NUM_CORES-1 downto 0);
