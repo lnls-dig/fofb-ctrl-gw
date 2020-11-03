@@ -254,7 +254,7 @@ begin
       fofb_dma_ok_i                          => fofb_dma_ok_i,
       fofb_node_mask_o                       => fofb_node_mask_o,
       fofb_timestamp_val_o                   => fofb_timestamp_val_o,
-      fofb_link_status_o                     => fofb_link_status_o
+      fofb_link_status_o                     => fofb_link_status_o,
       fofb_fod_dat_o                         => fofb_fod_dat_o,
       fofb_fod_dat_val_o                     => fofb_fod_dat_val_o
     );
