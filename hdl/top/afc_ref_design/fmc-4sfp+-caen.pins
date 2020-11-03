@@ -64,8 +64,8 @@ pin la_p13 fmc%_sfp_rs1_o[1] lvcmos25
 pin la_n12 fmc%_sfp_rs1_o[2] lvcmos25
 pin la_p12 fmc%_sfp_rs1_o[3] lvcmos25
 
-pin clk0m2c_p fmc%_si570_clk_p_i lvds25
-pin clk0m2c_n fmc%_si570_clk_n_i lvds25
+pin clk0m2c_p fmc%_si570_clk_p_i lvds_25
+pin clk0m2c_n fmc%_si570_clk_n_i lvds_25
 pin la_p25 fmc%_si570_scl_b lvcmos25
 pin la_n25 fmc%_si570_sda_b lvcmos25
 
