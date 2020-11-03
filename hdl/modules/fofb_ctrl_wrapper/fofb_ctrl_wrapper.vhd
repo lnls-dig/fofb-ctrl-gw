@@ -142,7 +142,7 @@ port
   fofb_timestamp_val_o                       : out std_logic_vector(31 downto 0);
   fofb_link_status_o                         : out std_logic_vector(31 downto 0);
   fofb_fod_dat_o                             : out std_logic_vector((32*PacketSize-1) downto 0);
-  fofb_fod_dat_val_o                         : out std_logic
+  fofb_fod_dat_val_o                         : out std_logic_vector(g_LANE_COUNT-1 downto 0)
 );
 end fofb_ctrl_wrapper;
 
