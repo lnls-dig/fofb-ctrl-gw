@@ -57,10 +57,21 @@ package fofb_ctrl_pkg is
 
     ---------------------------------------------------------------------------
     -- fast acquisition data interface
+    -- Only used when g_SIM_BPM_DATA = false
     ---------------------------------------------------------------------------
     fai_fa_block_start_i                       : in std_logic := '0';
     fai_fa_data_valid_i                        : in std_logic := '0';
     fai_fa_d_i                                 : in std_logic_vector(g_FAI_DW-1 downto 0) := (others => '0');
+
+    ---------------------------------------------------------------------------
+    -- Synthetic data fast acquisition data interface.
+    -- Only used when g_SIM_BPM_DATA = true
+    ---------------------------------------------------------------------------
+
+    fai_sim_data_sel_i                         : in  std_logic_vector(3 downto 0) := (others => '0');
+    fai_sim_enable_i                           : in  std_logic := '0';
+    fai_sim_trigger_i                          : in  std_logic := '0';
+    fai_sim_armed_o                            : out std_logic;
 
     ---------------------------------------------------------------------------
     -- FOFB communication controller configuration interface
