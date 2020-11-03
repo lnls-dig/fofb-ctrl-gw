@@ -140,7 +140,9 @@ port
   fofb_dma_ok_i                              : in  std_logic := '1';
   fofb_node_mask_o                           : out std_logic_vector(NodeNum-1 downto 0);
   fofb_timestamp_val_o                       : out std_logic_vector(31 downto 0);
-  fofb_link_status_o                         : out std_logic_vector(31 downto 0)
+  fofb_link_status_o                         : out std_logic_vector(31 downto 0);
+  fofb_fod_dat_o                             : out std_logic_vector((32*PacketSize-1) downto 0);
+  fofb_fod_dat_val_o                         : out std_logic
 );
 end fofb_ctrl_wrapper;
 
@@ -253,6 +255,8 @@ begin
       fofb_node_mask_o                       => fofb_node_mask_o,
       fofb_timestamp_val_o                   => fofb_timestamp_val_o,
       fofb_link_status_o                     => fofb_link_status_o
+      fofb_fod_dat_o                         => fofb_fod_dat_o,
+      fofb_fod_dat_val_o                     => fofb_fod_dat_val_o
     );
 
 end rtl;
