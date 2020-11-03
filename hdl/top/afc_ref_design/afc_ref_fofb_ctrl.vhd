@@ -250,6 +250,7 @@ architecture top of afc_ref_fofb_ctrl is
   type t_fofb_cc_buf_data_array is array (natural range <>) of std_logic_vector(63 downto 0);
   type t_fofb_cc_node_mask_array is array (natural range <>) of std_logic_vector(NodeNum-1 downto 0);
   type t_fofb_cc_std32_array is array (natural range <>) of std_logic_vector(31 downto 0);
+  type t_fofb_cc_std4_array is array (natural range <>) of std_logic_vector(3 downto 0);
 
   signal fai_fa_block_start                  : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
@@ -257,6 +258,16 @@ architecture top of afc_ref_fofb_ctrl is
                                                     (others => '0');
   signal fai_fa_d                            : t_fofb_cc_data_fai_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => (others => '0'));
+
+  signal fai_sim_data_sel                    : t_fofb_cc_std4_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fai_sim_enable                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '1');
+  signal fai_sim_trigger                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fai_sim_trigger_internal            : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '1');
+  signal fai_sim_armed                       : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
    signal fai_cfg_clk                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
@@ -681,10 +692,21 @@ begin
 
     ---------------------------------------------------------------------------
     -- fast acquisition data interface
+    -- Only used when g_SIM_BPM_DATA = false
     ---------------------------------------------------------------------------
     fai_fa_block_start_i                       => fai_fa_block_start(c_FOFB_CC_0_ID),
     fai_fa_data_valid_i                        => fai_fa_data_valid(c_FOFB_CC_0_ID),
     fai_fa_d_i                                 => fai_fa_d(c_FOFB_CC_0_ID),
+
+    ---------------------------------------------------------------------------
+    -- Synthetic data fast acquisition data interface.
+    -- Only used when g_SIM_BPM_DATA = true
+    ---------------------------------------------------------------------------
+    fai_sim_data_sel_i                         => fai_sim_data_sel(c_FOFB_CC_0_ID),
+    fai_sim_enable_i                           => fai_sim_enable(c_FOFB_CC_0_ID),
+    fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_0_ID),
+    fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_0_ID),
+    fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_0_ID),
 
     ---------------------------------------------------------------------------
     -- FOFB communication controller configuration interface
@@ -747,10 +769,21 @@ begin
 
     ---------------------------------------------------------------------------
     -- fast acquisition data interface
+    -- Only used when g_SIM_BPM_DATA = false
     ---------------------------------------------------------------------------
     fai_fa_block_start_i                       => fai_fa_block_start(c_FOFB_CC_1_ID),
     fai_fa_data_valid_i                        => fai_fa_data_valid(c_FOFB_CC_1_ID),
     fai_fa_d_i                                 => fai_fa_d(c_FOFB_CC_1_ID),
+
+    ---------------------------------------------------------------------------
+    -- Synthetic data fast acquisition data interface.
+    -- Only used when g_SIM_BPM_DATA = true
+    ---------------------------------------------------------------------------
+    fai_sim_data_sel_i                         => fai_sim_data_sel(c_FOFB_CC_1_ID),
+    fai_sim_enable_i                           => fai_sim_enable(c_FOFB_CC_1_ID),
+    fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_1_ID),
+    fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_1_ID),
+    fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_1_ID),
 
     ---------------------------------------------------------------------------
     -- FOFB communication controller configuration interface
@@ -847,11 +880,11 @@ begin
   trig_ref_rst_n <= clk_trig_ref_rstn;
 
   -- Assign trigger pulses to trigger channel interfaces
-  trig_acq1_channel_1 <= c_trig_channel_dummy;
-  trig_acq1_channel_2 <= c_trig_channel_dummy;
+  trig_acq1_channel_1.pulse <= timeframe_start(c_FOFB_CC_0_ID);
+  trig_acq1_channel_2.pulse <= timeframe_end(c_FOFB_CC_0_ID);
 
-  trig_acq2_channel_1 <= c_trig_channel_dummy;
-  trig_acq2_channel_2 <= c_trig_channel_dummy;
+  trig_acq2_channel_1.pulse <= timeframe_start(c_FOFB_CC_1_ID);
+  trig_acq2_channel_2.pulse <= timeframe_end(c_FOFB_CC_1_ID);
 
   -- Assign intern triggers to trigger module
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq1_channel_1;
