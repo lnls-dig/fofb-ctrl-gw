@@ -74,10 +74,21 @@ port
 
   ---------------------------------------------------------------------------
   -- fast acquisition data interface
+  -- Only used when g_SIM_BPM_DATA = false
   ---------------------------------------------------------------------------
   fai_fa_block_start_i                       : in std_logic := '0';
   fai_fa_data_valid_i                        : in std_logic := '0';
   fai_fa_d_i                                 : in std_logic_vector(g_FAI_DW-1 downto 0) := (others => '0');
+
+  ---------------------------------------------------------------------------
+  -- Synthetic data fast acquisition data interface.
+  -- Only used when g_SIM_BPM_DATA = true
+  ---------------------------------------------------------------------------
+
+  fai_sim_data_sel_i                         : in  std_logic_vector(3 downto 0) := (others => '0');
+  fai_sim_enable_i                           : in  std_logic := '0';
+  fai_sim_trigger_i                          : in  std_logic := '0';
+  fai_sim_armed_o                            : out std_logic;
 
   ---------------------------------------------------------------------------
   -- FOFB communication controller configuration interface
@@ -135,7 +146,41 @@ end fofb_ctrl_wrapper;
 
 architecture rtl of fofb_ctrl_wrapper is
 
+  signal fai_fa_block_start                  : std_logic;
+  signal fai_fa_data_valid                   : std_logic;
+  signal fai_fa_d                            : std_logic_vector(g_FAI_DW-1 downto 0);
+
 begin
+
+  gen_with_sim_data : if g_SIM_BPM_DATA generate
+
+    cmp_fofb_cc_fai_fa_gen : entity work.fofb_cc_fai_fa_gen
+    generic map (
+      FAI_DW                                 => g_FAI_DW
+    )
+    port map (
+      adcclk_i                               => adcclk_i,
+      adcreset_i                             => adcreset_i,
+      data_sel_i                             => fai_sim_data_sel_i,
+      fai_fa_block_start_o                   => fai_fa_block_start,
+      fai_fa_data_valid_o                    => fai_fa_data_valid,
+      fai_fa_d_o                             => fai_fa_d,
+      fai_enable_i                           => fai_sim_enable_i,
+      fai_trigger_i                          => fai_sim_trigger_i,
+      fai_armed_o                            => fai_sim_armed_o
+    );
+
+  end generate;
+
+  gen_without_sim_data : if not g_SIM_BPM_DATA generate
+
+    fai_fa_block_start <= fai_fa_block_start_i;
+    fai_fa_data_valid  <= fai_fa_data_valid_i;
+    fai_fa_d           <= fai_fa_d_i;
+
+    fai_sim_armed_o <= '0';
+
+  end generate;
 
   cmp_fofb_cc_top : entity work.fofb_cc_top
     generic map (
@@ -164,9 +209,9 @@ begin
       sysclk_i                               => sysclk_i,
       sysreset_n_i                           => sysreset_n_i,
       -- fast acquisition data interface
-      fai_fa_block_start_i                   => fai_fa_block_start_i,
-      fai_fa_data_valid_i                    => fai_fa_data_valid_i,
-      fai_fa_d_i                             => fai_fa_d_i,
+      fai_fa_block_start_i                   => fai_fa_block_start,
+      fai_fa_data_valid_i                    => fai_fa_data_valid,
+      fai_fa_d_i                             => fai_fa_d,
       -- FOFB communication controller configuration interface
       fai_cfg_a_o                            => fai_cfg_a_o,
       fai_cfg_d_o                            => fai_cfg_d_o,
