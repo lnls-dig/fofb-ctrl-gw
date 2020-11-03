@@ -84,10 +84,10 @@ port
   -- Synthetic data fast acquisition data interface.
   -- Only used when g_SIM_BPM_DATA = true
   ---------------------------------------------------------------------------
-
   fai_sim_data_sel_i                         : in  std_logic_vector(3 downto 0) := (others => '0');
   fai_sim_enable_i                           : in  std_logic := '0';
   fai_sim_trigger_i                          : in  std_logic := '0';
+  fai_sim_trigger_internal_i                 : in  std_logic := '0';
   fai_sim_armed_o                            : out std_logic;
 
   ---------------------------------------------------------------------------
@@ -167,6 +167,7 @@ begin
       fai_fa_d_o                             => fai_fa_d,
       fai_enable_i                           => fai_sim_enable_i,
       fai_trigger_i                          => fai_sim_trigger_i,
+      fai_trigger_internal_i                 => fai_sim_trigger_internal_i,
       fai_armed_o                            => fai_sim_armed_o
     );
 

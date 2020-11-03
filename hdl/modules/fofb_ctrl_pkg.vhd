@@ -71,6 +71,7 @@ package fofb_ctrl_pkg is
     fai_sim_data_sel_i                         : in  std_logic_vector(3 downto 0) := (others => '0');
     fai_sim_enable_i                           : in  std_logic := '0';
     fai_sim_trigger_i                          : in  std_logic := '0';
+    fai_sim_trigger_internal_i                 : in  std_logic := '0';
     fai_sim_armed_o                            : out std_logic;
 
     ---------------------------------------------------------------------------
