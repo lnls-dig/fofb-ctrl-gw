@@ -251,6 +251,7 @@ architecture top of afc_ref_fofb_ctrl is
   type t_fofb_cc_node_mask_array is array (natural range <>) of std_logic_vector(NodeNum-1 downto 0);
   type t_fofb_cc_std32_array is array (natural range <>) of std_logic_vector(31 downto 0);
   type t_fofb_cc_std4_array is array (natural range <>) of std_logic_vector(3 downto 0);
+  type t_fofb_cc_fod_data_array is array (natural range <>) of std_logic_vector((32*PacketSize-1) downto 0);
 
   signal fai_fa_block_start                  : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
@@ -293,6 +294,9 @@ architecture top of afc_ref_fofb_ctrl is
   signal fofb_link_status                    : t_fofb_cc_std32_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => (others => '0'));
 
+  signal fofb_fod_dat                        : t_fofb_cc_fod_data_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_fod_dat_val                    : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+
   -----------------------------------------------------------------------------
   -- Acquisition signals
   -----------------------------------------------------------------------------
@@ -315,19 +319,19 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_ACQ_DDR_ADDR_DIFF               : natural := c_ACQ_DDR_ADDR_RES_WIDTH-c_ddr_addr_width;
 
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 1; -- ADC for each FMC
+  constant c_ACQ_NUM_CHANNELS                : natural := 1; -- DCC for each FMC
   -- Acquisition channels IDs
-  constant c_ACQ_ADC_ID                      : natural := 0;
+  constant c_ACQ_DCC_ID                      : natural := 0;
 
-  constant c_FACQ_PARAMS_ADC                 : t_facq_chan_param := (
-    width                                    => to_unsigned(64, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
+  constant c_FACQ_PARAMS_DCC                 : t_facq_chan_param := (
+    width                                    => to_unsigned(128, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
     num_atoms                                => to_unsigned(4, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
-    atom_width                               => to_unsigned(16, c_ACQ_ATOM_WIDTH_LOG2) -- 2^4 = 16-bit
+    atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2) -- 2^5 = 16-bit
   );
 
   constant c_FACQ_CHANNELS                   : t_facq_chan_param_array(c_ACQ_NUM_CHANNELS-1 downto 0) :=
   (
-     c_ACQ_ADC_ID            => c_FACQ_PARAMS_ADC
+     c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC
   );
 
   signal acq_chan_array                      : t_facq_chan_array2d(c_ACQ_NUM_CORES-1 downto 0, c_ACQ_NUM_CHANNELS-1 downto 0);
@@ -342,12 +346,9 @@ architecture top of afc_ref_fofb_ctrl is
   -----------------------------------------------------------------------------
 
   type t_acq_logic_array is array (natural range <>) of std_logic;
-  type t_acq_data_array is array (natural range <>) of std_logic_vector(15 downto 0);
+  type t_acq_data_array is array (natural range <>) of std_logic_vector(c_FACQ_PARAMS_DCC.width-1 downto 0);
 
-  signal acq_data_ch3                        : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
-  signal acq_data_ch2                        : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
-  signal acq_data_ch1                        : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
-  signal acq_data_ch0                        : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
+  signal acq_data                            : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
   signal acq_data_valid                      : t_acq_logic_array(c_ACQ_NUM_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
@@ -734,7 +735,9 @@ begin
     fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_0_ID),
     fofb_node_mask_o                           => fofb_node_mask(c_FOFB_CC_0_ID),
     fofb_timestamp_val_o                       => fofb_timestamp_val(c_FOFB_CC_0_ID),
-    fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_0_ID)
+    fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_0_ID),
+    fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_0_ID),
+    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_0_ID)
   );
 
   ----------------------------------------------------------------------
@@ -811,7 +814,9 @@ begin
     fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_1_ID),
     fofb_node_mask_o                           => fofb_node_mask(c_FOFB_CC_1_ID),
     fofb_timestamp_val_o                       => fofb_timestamp_val(c_FOFB_CC_1_ID),
-    fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_1_ID)
+    fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_1_ID),
+    fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_1_ID),
+    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_1_ID)
   );
 
   ----------------------------------------------------------------------
@@ -826,51 +831,31 @@ begin
 
   end generate;
 
-  -- Example data
+  -- DCC data
 
-  acq_data_ch3(c_ACQ_CORE_0_ID) <= std_logic_vector(to_unsigned(1000,
-      acq_data_ch3(c_ACQ_CORE_0_ID)'length));
-  acq_data_ch2(c_ACQ_CORE_0_ID) <= std_logic_vector(to_unsigned(750,
-      acq_data_ch2(c_ACQ_CORE_0_ID)'length));
-  acq_data_ch1(c_ACQ_CORE_0_ID) <= std_logic_vector(to_unsigned(500,
-      acq_data_ch1(c_ACQ_CORE_0_ID)'length));
-  acq_data_ch0(c_ACQ_CORE_0_ID) <= std_logic_vector(to_unsigned(250,
-      acq_data_ch0(c_ACQ_CORE_0_ID)'length));
-  acq_data_valid(c_ACQ_CORE_0_ID) <= '1';
+  acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
+  acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID);
 
-  acq_data_ch3(c_ACQ_CORE_1_ID) <= std_logic_vector(to_unsigned(100,
-      acq_data_ch3(c_ACQ_CORE_1_ID)'length));
-  acq_data_ch2(c_ACQ_CORE_1_ID) <= std_logic_vector(to_unsigned(75,
-      acq_data_ch2(c_ACQ_CORE_1_ID)'length));
-  acq_data_ch1(c_ACQ_CORE_1_ID) <= std_logic_vector(to_unsigned(50,
-      acq_data_ch1(c_ACQ_CORE_1_ID)'length));
-  acq_data_ch0(c_ACQ_CORE_1_ID) <= std_logic_vector(to_unsigned(25,
-      acq_data_ch0(c_ACQ_CORE_1_ID)'length));
-  acq_data_valid(c_ACQ_CORE_1_ID) <= '1';
+  acq_data(c_ACQ_CORE_1_ID) <= fofb_fod_dat(c_FOFB_CC_1_ID);
+  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_1_ID);
 
   --------------------
   -- ACQ Channel 1
   --------------------
 
-  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_ADC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_ADC_ID).width)-1 downto 0) <=
-                                                                 acq_data_ch3(c_ACQ_CORE_0_ID) &
-                                                                 acq_data_ch2(c_ACQ_CORE_0_ID) &
-                                                                 acq_data_ch1(c_ACQ_CORE_0_ID) &
-                                                                 acq_data_ch0(c_ACQ_CORE_0_ID);
-  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_ADC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_0_ID);
-  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_ADC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_ACQ_ADC_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
+                                                                 acq_data(c_ACQ_CORE_0_ID);
+  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_0_ID);
+  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_ACQ_DCC_ID).pulse;
 
   --------------------
   -- ACQ Channel 2
   --------------------
 
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_ADC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_ADC_ID).width)-1 downto 0) <=
-                                                                 acq_data_ch3(c_ACQ_CORE_1_ID) &
-                                                                 acq_data_ch2(c_ACQ_CORE_1_ID) &
-                                                                 acq_data_ch1(c_ACQ_CORE_1_ID) &
-                                                                 acq_data_ch0(c_ACQ_CORE_1_ID);
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_ADC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_1_ID);
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_ADC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_1_ID, c_ACQ_ADC_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
+                                                                 acq_data(c_ACQ_CORE_1_ID);
+  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_1_ID);
+  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_1_ID, c_ACQ_DCC_ID).pulse;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
