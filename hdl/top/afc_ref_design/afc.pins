@@ -24,8 +24,8 @@ pin 0 la_n14 H8
 pin 0 la_p15 K11
 pin 0 la_n15 J11
 pin 0 la_p09 J4
-pin 0 clk0m2c_p H7
-pin 0 clk0m2c_n H6
+pin 0 clk0m2c_p H16
+pin 0 clk0m2c_n G16
 pin 0 la_p30 N1
 pin 0 la_n30 M1
 pin 0 la_p31 U7
@@ -244,8 +244,8 @@ pin 1 la_n14 AF33
 pin 1 la_p15 AD28
 pin 1 la_n15 AD29
 pin 1 la_p09 AF25
-pin 1 clk0m2c_p AA30
-pin 1 clk0m2c_n AB30
+pin 1 clk0m2c_p AG20
+pin 1 clk0m2c_n AH20
 pin 1 la_p31 V31
 pin 1 la_n31 V32
 pin 1 la_p27 AA27
