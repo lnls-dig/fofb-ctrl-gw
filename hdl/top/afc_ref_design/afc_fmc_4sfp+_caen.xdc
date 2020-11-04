@@ -4,6 +4,7 @@
 
 
 
+
 # <xdcgen_start>
 
 # This section has been generated automatically by xdcgen.py. Do not hand-modify if not really necessary.
@@ -90,9 +91,7 @@ set_property IOSTANDARD LVCMOS25 [get_ports fmc0_sfp_rs1_o[2]]
 set_property PACKAGE_PIN L8 [get_ports fmc0_sfp_rs1_o[3]]
 set_property IOSTANDARD LVCMOS25 [get_ports fmc0_sfp_rs1_o[3]]
 set_property PACKAGE_PIN H16 [get_ports fmc0_si570_clk_p_i]
-set_property IOSTANDARD LVDS_25 [get_ports fmc0_si570_clk_p_i]
 set_property PACKAGE_PIN G16 [get_ports fmc0_si570_clk_n_i]
-set_property IOSTANDARD LVDS_25 [get_ports fmc0_si570_clk_n_i]
 set_property PACKAGE_PIN N8 [get_ports fmc0_si570_scl_b]
 set_property IOSTANDARD LVCMOS25 [get_ports fmc0_si570_scl_b]
 set_property PACKAGE_PIN N7 [get_ports fmc0_si570_sda_b]
@@ -179,9 +178,7 @@ set_property IOSTANDARD LVCMOS25 [get_ports fmc1_sfp_rs1_o[2]]
 set_property PACKAGE_PIN AE27 [get_ports fmc1_sfp_rs1_o[3]]
 set_property IOSTANDARD LVCMOS25 [get_ports fmc1_sfp_rs1_o[3]]
 set_property PACKAGE_PIN AG20 [get_ports fmc1_si570_clk_p_i]
-set_property IOSTANDARD LVDS_25 [get_ports fmc1_si570_clk_p_i]
 set_property PACKAGE_PIN AH20 [get_ports fmc1_si570_clk_n_i]
-set_property IOSTANDARD LVDS_25 [get_ports fmc1_si570_clk_n_i]
 set_property PACKAGE_PIN AA29 [get_ports fmc1_si570_scl_b]
 set_property IOSTANDARD LVCMOS25 [get_ports fmc1_si570_scl_b]
 set_property PACKAGE_PIN AB29 [get_ports fmc1_si570_sda_b]
