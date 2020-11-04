@@ -303,6 +303,7 @@ architecture top of afc_ref_fofb_ctrl is
   signal fofb_rio_rx_n                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
   signal fofb_rio_tx_p                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
   signal fofb_rio_tx_n                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_rio_tx_disable                 : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- Acquisition signals
@@ -679,8 +680,11 @@ begin
 
   fmc0_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
   fmc0_sfp_tx_n_o(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
+  fmc0_sfp_tx_disable_o(0) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(0);
+
   fmc0_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
   fmc0_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
+  fmc0_sfp_tx_disable_o(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
 
   cmp_fofb_ctrl_wrapper_0 : fofb_ctrl_wrapper
   generic map
@@ -740,7 +744,7 @@ begin
     fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_0_ID),
     fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_0_ID),
     fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_0_ID),
-    fai_rio_tdis_o                             => fmc0_sfp_tx_disable_o,
+    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_0_ID),
 
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
@@ -769,8 +773,11 @@ begin
 
   fmc0_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(0);
   fmc0_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(0);
+  fmc0_sfp_tx_disable_o(1) <= fofb_rio_tx_disable(c_FOFB_CC_1_ID)(0);
+
   fmc0_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(1);
   fmc0_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(1);
+  fmc0_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_1_ID)(1);
 
   cmp_fofb_ctrl_wrapper_1 : fofb_ctrl_wrapper
   generic map
@@ -830,7 +837,7 @@ begin
     fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_1_ID),
     fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_1_ID),
     fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_1_ID),
-    fai_rio_tdis_o                             => fmc1_sfp_tx_disable_o,
+    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_1_ID),
 
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
