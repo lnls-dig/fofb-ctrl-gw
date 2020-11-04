@@ -231,7 +231,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
-  constant c_LANE_COUNT                      : integer := 4;
+  constant c_LANE_COUNT                      : integer := 2;
 
   -----------------------------------------------------------------------------
   -- FMC signals
@@ -254,6 +254,7 @@ architecture top of afc_ref_fofb_ctrl is
   type t_fofb_cc_std4_array is array (natural range <>) of std_logic_vector(3 downto 0);
   type t_fofb_cc_fod_data_array is array (natural range <>) of std_logic_vector((32*PacketSize-1) downto 0);
   type t_fofb_cc_fod_val_array is array (natural range <>) of std_logic_vector(c_LANE_COUNT-1 downto 0);
+  type t_fofb_cc_rio_array is array (natural range <>) of std_logic_vector(c_LANE_COUNT-1 downto 0);
 
   signal fai_fa_block_start                  : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
@@ -298,6 +299,10 @@ architecture top of afc_ref_fofb_ctrl is
 
   signal fofb_fod_dat                        : t_fofb_cc_fod_data_array(c_NUM_FOFC_CC_CORES-1 downto 0);
   signal fofb_fod_dat_val                    : t_fofb_cc_fod_val_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_rio_rx_p                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_rio_rx_n                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_rio_tx_p                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_rio_tx_n                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- Acquisition signals
@@ -667,11 +672,22 @@ begin
   --                          FOFB DCC 0                              --
   ----------------------------------------------------------------------
 
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_p_i(0);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_n_i(0);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_p_i(2);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_n_i(2);
+
+  fmc0_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
+  fmc0_sfp_tx_n_o(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
+  fmc0_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
+  fmc0_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
+
   cmp_fofb_ctrl_wrapper_0 : fofb_ctrl_wrapper
   generic map
   (
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
+    g_LANE_COUNT                              => c_LANE_COUNT,
     -- BPM synthetic data
     g_SIM_BPM_DATA                            => true,
     g_SIM_BLOCK_START_PERIOD                  => 10000,
@@ -720,10 +736,10 @@ begin
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
     ---------------------------------------------------------------------------
-    fai_rio_rdp_i                              => fmc0_sfp_rx_p_i,
-    fai_rio_rdn_i                              => fmc0_sfp_rx_n_i,
-    fai_rio_tdp_o                              => fmc0_sfp_tx_p_o,
-    fai_rio_tdn_o                              => fmc0_sfp_tx_n_o,
+    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_0_ID),
+    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_0_ID),
+    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_0_ID),
+    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_0_ID),
     fai_rio_tdis_o                             => fmc0_sfp_tx_disable_o,
 
     ---------------------------------------------------------------------------
@@ -746,11 +762,22 @@ begin
   --                          FOFB DCC 1                              --
   ----------------------------------------------------------------------
 
+  fofb_rio_rx_p(c_FOFB_CC_1_ID)(0) <= fmc0_sfp_rx_p_i(1);
+  fofb_rio_rx_n(c_FOFB_CC_1_ID)(0) <= fmc0_sfp_rx_n_i(1);
+  fofb_rio_rx_p(c_FOFB_CC_1_ID)(1) <= fmc0_sfp_rx_p_i(3);
+  fofb_rio_rx_n(c_FOFB_CC_1_ID)(1) <= fmc0_sfp_rx_n_i(3);
+
+  fmc0_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(0);
+  fmc0_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(0);
+  fmc0_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(1);
+  fmc0_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(1);
+
   cmp_fofb_ctrl_wrapper_1 : fofb_ctrl_wrapper
   generic map
   (
     g_ID                                      => 1,
     g_DEVICE                                  => BPM,
+    g_LANE_COUNT                              => c_LANE_COUNT,
     -- BPM synthetic data
     g_SIM_BPM_DATA                            => true,
     g_SIM_BLOCK_START_PERIOD                  => 10000,
@@ -799,10 +826,10 @@ begin
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
     ---------------------------------------------------------------------------
-    fai_rio_rdp_i                              => fmc1_sfp_rx_p_i,
-    fai_rio_rdn_i                              => fmc1_sfp_rx_n_i,
-    fai_rio_tdp_o                              => fmc1_sfp_tx_p_o,
-    fai_rio_tdn_o                              => fmc1_sfp_tx_n_o,
+    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_1_ID),
+    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_1_ID),
+    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_1_ID),
+    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_1_ID),
     fai_rio_tdis_o                             => fmc1_sfp_tx_disable_o,
 
     ---------------------------------------------------------------------------
