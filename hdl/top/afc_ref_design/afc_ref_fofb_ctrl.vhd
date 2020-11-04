@@ -305,6 +305,9 @@ architecture top of afc_ref_fofb_ctrl is
   signal fofb_rio_tx_n                       : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
   signal fofb_rio_tx_disable                 : t_fofb_cc_rio_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
+  signal fofb_ref_clk_p                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_ref_clk_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+
   -----------------------------------------------------------------------------
   -- Acquisition signals
   -----------------------------------------------------------------------------
@@ -673,11 +676,13 @@ begin
   --                          FOFB DCC 0                              --
   ----------------------------------------------------------------------
 
+  -- RX lines
   fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_p_i(0);
   fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_n_i(0);
   fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_p_i(2);
   fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_n_i(2);
 
+  -- TX lines
   fmc0_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
   fmc0_sfp_tx_n_o(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
   fmc0_sfp_tx_disable_o(0) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(0);
@@ -685,6 +690,10 @@ begin
   fmc0_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
   fmc0_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
   fmc0_sfp_tx_disable_o(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
+
+  -- Clocks
+  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= fmc0_si570_clk_p_i;
+  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= fmc0_si570_clk_n_i;
 
   cmp_fofb_ctrl_wrapper_0 : fofb_ctrl_wrapper
   generic map
@@ -702,8 +711,8 @@ begin
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
-    refclk_p_i                                 => fmc0_si570_clk_p_i,
-    refclk_n_i                                 => fmc0_si570_clk_n_i,
+    refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_0_ID),
+    refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_0_ID),
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
@@ -766,11 +775,13 @@ begin
   --                          FOFB DCC 1                              --
   ----------------------------------------------------------------------
 
+  -- RX lines
   fofb_rio_rx_p(c_FOFB_CC_1_ID)(0) <= fmc0_sfp_rx_p_i(1);
   fofb_rio_rx_n(c_FOFB_CC_1_ID)(0) <= fmc0_sfp_rx_n_i(1);
   fofb_rio_rx_p(c_FOFB_CC_1_ID)(1) <= fmc0_sfp_rx_p_i(3);
   fofb_rio_rx_n(c_FOFB_CC_1_ID)(1) <= fmc0_sfp_rx_n_i(3);
 
+  -- TX lines
   fmc0_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(0);
   fmc0_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(0);
   fmc0_sfp_tx_disable_o(1) <= fofb_rio_tx_disable(c_FOFB_CC_1_ID)(0);
@@ -778,6 +789,11 @@ begin
   fmc0_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(1);
   fmc0_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(1);
   fmc0_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_1_ID)(1);
+
+  -- Clocks
+  -- Same as DCC 0, as we are using a single FMC for both DCCs
+  fofb_ref_clk_p(c_FOFB_CC_1_ID) <= fmc0_si570_clk_p_i;
+  fofb_ref_clk_n(c_FOFB_CC_1_ID) <= fmc0_si570_clk_n_i;
 
   cmp_fofb_ctrl_wrapper_1 : fofb_ctrl_wrapper
   generic map
@@ -795,8 +811,8 @@ begin
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
-    refclk_p_i                                 => fmc1_si570_clk_p_i,
-    refclk_n_i                                 => fmc1_si570_clk_n_i,
+    refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_1_ID),
+    refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_1_ID),
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
