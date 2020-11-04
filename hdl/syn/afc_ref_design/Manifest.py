@@ -43,6 +43,18 @@ if os.path.isfile("synthesis_descriptor_pkg.vhd"):
 else:
     sys.exit("Generate the SDB descriptor before using HDLMake (./build_synthesis_sdb.sh)")
 
+# Pass more XDC to afc-gw so it will merge it last with
+# other .xdc. We need this as we depend on variables defined
+# on afc_base xdc files.
+xdc_files =[
+    "afc_fmc_4sfp+_caen.xdc",
+    "afc_ref_fofb_ctrl.xdc",
+]
+
+additional_xdc = []
+for f in xdc_files:
+    additional_xdc.append(os.path.abspath(f))
+
 modules = {
   "local" : [
       "../../top/afc_ref_design",
