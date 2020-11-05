@@ -177,23 +177,23 @@ port (
   -- FMC slot 2 - CAEN 4 SFP+
   ---------------------------------------------------------------------------
 
-  fmc1_sfp_rx_p_i                            : in    std_logic_vector(3 downto 0);
-  fmc1_sfp_rx_n_i                            : in    std_logic_vector(3 downto 0);
-  fmc1_sfp_tx_p_o                            : out   std_logic_vector(3 downto 0);
-  fmc1_sfp_tx_n_o                            : out   std_logic_vector(3 downto 0);
-  fmc1_sfp_scl_b                             : inout std_logic_vector(3 downto 0);
-  fmc1_sfp_sda_b                             : inout std_logic_vector(3 downto 0);
-  fmc1_sfp_mod_abs_i                         : in    std_logic_vector(3 downto 0);
-  fmc1_sfp_rx_los_i                          : in    std_logic_vector(3 downto 0);
-  fmc1_sfp_tx_disable_o                      : out   std_logic_vector(3 downto 0);
-  fmc1_sfp_tx_fault_i                        : in    std_logic_vector(3 downto 0);
-  fmc1_sfp_rs0_o                             : out   std_logic_vector(3 downto 0);
-  fmc1_sfp_rs1_o                             : out   std_logic_vector(3 downto 0);
+  -- fmc1_sfp_rx_p_i                            : in    std_logic_vector(3 downto 0);
+  -- fmc1_sfp_rx_n_i                            : in    std_logic_vector(3 downto 0);
+  -- fmc1_sfp_tx_p_o                            : out   std_logic_vector(3 downto 0);
+  -- fmc1_sfp_tx_n_o                            : out   std_logic_vector(3 downto 0);
+  -- fmc1_sfp_scl_b                             : inout std_logic_vector(3 downto 0);
+  -- fmc1_sfp_sda_b                             : inout std_logic_vector(3 downto 0);
+  -- fmc1_sfp_mod_abs_i                         : in    std_logic_vector(3 downto 0);
+  -- fmc1_sfp_rx_los_i                          : in    std_logic_vector(3 downto 0);
+  -- fmc1_sfp_tx_disable_o                      : out   std_logic_vector(3 downto 0);
+  -- fmc1_sfp_tx_fault_i                        : in    std_logic_vector(3 downto 0);
+  -- fmc1_sfp_rs0_o                             : out   std_logic_vector(3 downto 0);
+  -- fmc1_sfp_rs1_o                             : out   std_logic_vector(3 downto 0);
 
-  fmc1_si570_clk_p_i                         : in    std_logic;
-  fmc1_si570_clk_n_i                         : in    std_logic;
-  fmc1_si570_scl_b                           : inout std_logic;
-  fmc1_si570_sda_b                           : inout std_logic
+  -- fmc1_si570_clk_p_i                         : in    std_logic;
+  -- fmc1_si570_clk_n_i                         : in    std_logic;
+  -- fmc1_si570_scl_b                           : inout std_logic;
+  -- fmc1_si570_sda_b                           : inout std_logic
 
   ---------------------------------------------------------------------------
   -- FMC slot 0 management
@@ -663,13 +663,13 @@ begin
   --                          FMC 1 4SFP                              --
   ----------------------------------------------------------------------
 
-  gen_fmc1_sfp_channels : for i in 0 to 3 generate
+  -- gen_fmc1_sfp_channels : for i in 0 to 3 generate
 
-    -- SFP dependant. Using lowest TX/RX signalling rate
-    fmc1_sfp_rs0_o(i) <= '0';
-    fmc1_sfp_rs1_o(i) <= '0';
+  --   -- SFP dependant. Using lowest TX/RX signalling rate
+  --   fmc1_sfp_rs0_o(i) <= '0';
+  --   fmc1_sfp_rs1_o(i) <= '0';
 
-  end generate;
+  -- end generate;
 
   ----------------------------------------------------------------------
   --                          FOFB DCC 0                              --
