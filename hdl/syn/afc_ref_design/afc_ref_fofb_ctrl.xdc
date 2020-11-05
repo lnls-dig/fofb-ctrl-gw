@@ -56,6 +56,6 @@ set_max_delay -datapath_only -from               [get_clocks fmc1_fs_clk] -to [g
 #######################################################################
 # Constrain the PCIe core elements placement, so that it won't fail
 # timing analysis.
-create_pblock GRP_pcie_core
-add_cells_to_pblock [get_pblocks GRP_pcie_core] [get_cells -hier -filter {NAME =~ *pcie_core_i/*}]
-resize_pblock [get_pblocks GRP_pcie_core] -add {CLOCKREGION_X0Y4:CLOCKREGION_X0Y4}
+#create_pblock GRP_pcie_core
+#add_cells_to_pblock [get_pblocks GRP_pcie_core] [get_cells -hier -filter {NAME =~ *pcie_core_i/*}]
+#resize_pblock [get_pblocks GRP_pcie_core] -add {CLOCKREGION_X0Y4:CLOCKREGION_X0Y4}
