@@ -163,7 +163,7 @@ port (
   fmc0_si570_clk_p_i                         : in    std_logic;
   fmc0_si570_clk_n_i                         : in    std_logic;
   fmc0_si570_scl_b                           : inout std_logic;
-  fmc0_si570_sda_b                           : inout std_logic;
+  fmc0_si570_sda_b                           : inout std_logic
 
   ---------------------------------------------------------------------------
   -- FMC slot 0 management
