@@ -223,15 +223,14 @@ architecture top of afc_ref_fofb_ctrl is
     f_gen_ramp(0, c_FMC_4SFP_NUM_CORES);
 
   -- FOFB CC
-  constant c_NUM_FOFC_CC_CORES               : natural := 2;
+  constant c_NUM_FOFC_CC_CORES               : natural := 1;
 
   constant c_FOFB_CC_0_ID                    : natural := 0;
-  constant c_FOFB_CC_1_ID                    : natural := 1;
 
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
-  constant c_LANE_COUNT                      : integer := 2;
+  constant c_LANE_COUNT                      : integer := 4;
 
   -----------------------------------------------------------------------------
   -- FMC signals
@@ -679,17 +678,29 @@ begin
   -- RX lines
   fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_p_i(0);
   fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_n_i(0);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_p_i(2);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_n_i(2);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_p_i(1);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_n_i(1);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(2) <= fmc0_sfp_rx_p_i(2);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(2) <= fmc0_sfp_rx_n_i(2);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(3) <= fmc0_sfp_rx_p_i(3);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(3) <= fmc0_sfp_rx_n_i(3);
 
   -- TX lines
   fmc0_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
   fmc0_sfp_tx_n_o(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
   fmc0_sfp_tx_disable_o(0) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(0);
 
-  fmc0_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
-  fmc0_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
-  fmc0_sfp_tx_disable_o(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
+  fmc0_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
+  fmc0_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
+  fmc0_sfp_tx_disable_o(1) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
+
+  fmc0_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(2);
+  fmc0_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(2);
+  fmc0_sfp_tx_disable_o(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(2);
+
+  fmc0_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(3);
+  fmc0_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(3);
+  fmc0_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(3);
 
   -- Clocks
   fofb_ref_clk_p(c_FOFB_CC_0_ID) <= fmc0_si570_clk_p_i;
@@ -772,106 +783,6 @@ begin
   );
 
   ----------------------------------------------------------------------
-  --                          FOFB DCC 1                              --
-  ----------------------------------------------------------------------
-
-  -- RX lines
-  fofb_rio_rx_p(c_FOFB_CC_1_ID)(0) <= fmc0_sfp_rx_p_i(1);
-  fofb_rio_rx_n(c_FOFB_CC_1_ID)(0) <= fmc0_sfp_rx_n_i(1);
-  fofb_rio_rx_p(c_FOFB_CC_1_ID)(1) <= fmc0_sfp_rx_p_i(3);
-  fofb_rio_rx_n(c_FOFB_CC_1_ID)(1) <= fmc0_sfp_rx_n_i(3);
-
-  -- TX lines
-  fmc0_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(0);
-  fmc0_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(0);
-  fmc0_sfp_tx_disable_o(1) <= fofb_rio_tx_disable(c_FOFB_CC_1_ID)(0);
-
-  fmc0_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_1_ID)(1);
-  fmc0_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_1_ID)(1);
-  fmc0_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_1_ID)(1);
-
-  -- Clocks
-  -- Same as DCC 0, as we are using a single FMC for both DCCs
-  fofb_ref_clk_p(c_FOFB_CC_1_ID) <= fmc0_si570_clk_p_i;
-  fofb_ref_clk_n(c_FOFB_CC_1_ID) <= fmc0_si570_clk_n_i;
-
-  cmp_fofb_ctrl_wrapper_1 : fofb_ctrl_wrapper
-  generic map
-  (
-    g_ID                                      => 1,
-    g_DEVICE                                  => BPM,
-    g_LANE_COUNT                              => c_LANE_COUNT,
-    -- BPM synthetic data
-    g_SIM_BPM_DATA                            => true,
-    g_SIM_BLOCK_START_PERIOD                  => 10000,
-    g_SIM_BLOCK_VALID_LENGTH                  => 32
-  )
-  port map
-  (
-    ---------------------------------------------------------------------------
-    -- differential MGT/GTP clock inputs
-    ---------------------------------------------------------------------------
-    refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_1_ID),
-    refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_1_ID),
-
-    ---------------------------------------------------------------------------
-    -- clock and reset interface
-    ---------------------------------------------------------------------------
-    adcclk_i                                   => clk_sys,
-    adcreset_i                                 => clk_sys_rst,
-    sysclk_i                                   => clk_sys,
-    sysreset_n_i                               => clk_sys_rstn,
-
-    ---------------------------------------------------------------------------
-    -- fast acquisition data interface
-    -- Only used when g_SIM_BPM_DATA = false
-    ---------------------------------------------------------------------------
-    fai_fa_block_start_i                       => fai_fa_block_start(c_FOFB_CC_1_ID),
-    fai_fa_data_valid_i                        => fai_fa_data_valid(c_FOFB_CC_1_ID),
-    fai_fa_d_i                                 => fai_fa_d(c_FOFB_CC_1_ID),
-
-    ---------------------------------------------------------------------------
-    -- Synthetic data fast acquisition data interface.
-    -- Only used when g_SIM_BPM_DATA = true
-    ---------------------------------------------------------------------------
-    fai_sim_data_sel_i                         => fai_sim_data_sel(c_FOFB_CC_1_ID),
-    fai_sim_enable_i                           => fai_sim_enable(c_FOFB_CC_1_ID),
-    fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_1_ID),
-    fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_1_ID),
-    fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_1_ID),
-
-    ---------------------------------------------------------------------------
-    -- FOFB communication controller configuration interface
-    ---------------------------------------------------------------------------
-    fai_cfg_clk_o                              => fai_cfg_clk(c_FOFB_CC_1_ID),
-    fai_cfg_val_i                              => fai_cfg_val(c_FOFB_CC_1_ID),
-
-    ---------------------------------------------------------------------------
-    -- serial I/Os for eight RocketIOs on the Libera
-    ---------------------------------------------------------------------------
-    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_1_ID),
-    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_1_ID),
-    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_1_ID),
-    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_1_ID),
-    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_1_ID),
-
-    ---------------------------------------------------------------------------
-    -- Higher-level integration interface (PMC, SNIFFER_V5)
-    ---------------------------------------------------------------------------
-    xy_buf_addr_i                              => xy_buf_addr(c_FOFB_CC_1_ID),
-    xy_buf_dat_o                               => xy_buf_dat(c_FOFB_CC_1_ID),
-    xy_buf_rstb_i                              => xy_buf_rstb(c_FOFB_CC_1_ID),
-    timeframe_start_o                          => timeframe_start(c_FOFB_CC_1_ID),
-    timeframe_end_o                            => timeframe_end(c_FOFB_CC_1_ID),
-    fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_1_ID),
-    fofb_node_mask_o                           => fofb_node_mask(c_FOFB_CC_1_ID),
-    fofb_timestamp_val_o                       => fofb_timestamp_val(c_FOFB_CC_1_ID),
-    fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_1_ID),
-    fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_1_ID),
-    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_1_ID)
-  );
-
-  ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
@@ -888,8 +799,9 @@ begin
   acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
   acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID)(0);
 
-  acq_data(c_ACQ_CORE_1_ID) <= fofb_fod_dat(c_FOFB_CC_1_ID);
-  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_1_ID)(0);
+  -- Same data for ACQ core 1, as we only habe a single DCC
+  acq_data(c_ACQ_CORE_1_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
+  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID)(0);
 
   --------------------
   -- ACQ Channel 1
@@ -920,8 +832,8 @@ begin
   trig_acq1_channel_1.pulse <= timeframe_start(c_FOFB_CC_0_ID);
   trig_acq1_channel_2.pulse <= timeframe_end(c_FOFB_CC_0_ID);
 
-  trig_acq2_channel_1.pulse <= timeframe_start(c_FOFB_CC_1_ID);
-  trig_acq2_channel_2.pulse <= timeframe_end(c_FOFB_CC_1_ID);
+  trig_acq2_channel_1.pulse <= timeframe_start(c_FOFB_CC_0_ID);
+  trig_acq2_channel_2.pulse <= timeframe_end(c_FOFB_CC_0_ID);
 
   -- Assign intern triggers to trigger module
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq1_channel_1;
