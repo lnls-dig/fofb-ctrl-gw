@@ -26,10 +26,14 @@ memory-map:
               width: 32
               access: rw
     - reg:
-        name: dummy
+        name: cfg_val
         address: 0x00002000
         width: 32
         access: rw
-        description: Dummy register
+        description: FOFB CC configuration register
         comment: |
-          Dummy register
+          FOFB CC configuration register
+        x-wbgen:
+          access_dev: READ_ONLY
+          access_bus: READ_WRITE
+          clock: fofb_cc_clk_ram_reg_i

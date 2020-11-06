@@ -9,8 +9,8 @@
 /* None */
 #define FOFB_CC_CSR_RAM_REG_DATA 0x0UL
 
-/* Dummy register */
-#define FOFB_CC_CSR_DUMMY 0x2000UL
+/* FOFB CC configuration register */
+#define FOFB_CC_CSR_CFG_VAL 0x2000UL
 
 struct fofb_cc_csr {
   /* [0x0]: MEMORY FOFB CC RAM for register map */
@@ -19,8 +19,8 @@ struct fofb_cc_csr {
     uint32_t data;
   } ram_reg[2048];
 
-  /* [0x2000]: REG (rw) Dummy register */
-  uint32_t dummy;
+  /* [0x2000]: REG (rw) FOFB CC configuration register */
+  uint32_t cfg_val;
 };
 
 #endif /* __CHEBY__FOFB_CC_CSR__H__ */
