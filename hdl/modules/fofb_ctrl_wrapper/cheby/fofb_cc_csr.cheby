@@ -1,0 +1,35 @@
+memory-map:
+  bus: wb-32-be
+  name: fofb_cc_csr
+  description: FOFB CC registers
+  comment: |
+    Wishbone slave for FOFB CC core
+  x-hdl:
+    busgroup: True
+    iogroup: fofb_cc_csr
+  children:
+    - memory:
+        name: ram_reg
+        memsize: 8k
+        description: FOFB CC RAM for register map
+        comment: |
+          Register map is hanlded inside the FOFC CC module, but the RAM to read/write
+          to/from the signals are instantiated outside.
+        align: True
+        x-wbgen:
+          kind: ram
+          access_dev: READ_WRITE
+          clock: fofb_cc_clk_ram_reg_i
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - reg:
+        name: dummy
+        address: 0x00002000
+        width: 32
+        access: rw
+        description: Dummy register
+        comment: |
+          Dummy register
