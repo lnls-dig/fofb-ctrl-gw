@@ -227,6 +227,9 @@ architecture top of afc_ref_fofb_ctrl is
 
   constant c_FOFB_CC_0_ID                    : natural := 0;
 
+  constant c_SLV_FOFB_CC_CORE_IDS           : t_natural_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+    f_gen_ramp(0, c_NUM_FOFC_CC_CORES);
+
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
@@ -314,17 +317,16 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_ACQ_FIFO_SIZE                   : natural := 256;
 
   -- Number of acquisition cores. Same as the number of FMCs
-  constant c_ACQ_NUM_CORES                   : natural := c_FMC_4SFP_NUM_CORES;
+  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES;
   -- Acquisition core IDs
   constant c_ACQ_CORE_0_ID                   : natural := 0;
-  constant c_ACQ_CORE_1_ID                   : natural := 1;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
 
   constant c_ACQ_ADDR_WIDTH                  : natural := c_DDR_ADDR_WIDTH;
   -- Post-Mortem Acq Cores dont need Multishot. So, set them to 0
-  constant c_ACQ_MULTISHOT_RAM_SIZE          : t_property_value_array(c_ACQ_NUM_CORES-1 downto 0) := (2048, 2048);
+  constant c_ACQ_MULTISHOT_RAM_SIZE          : t_property_value_array(c_ACQ_NUM_CORES-1 downto 0) := (others => 2048);
   constant c_ACQ_DDR_ADDR_RES_WIDTH          : natural := 32;
   constant c_ACQ_DDR_ADDR_DIFF               : natural := c_ACQ_DDR_ADDR_RES_WIDTH-c_ddr_addr_width;
 
@@ -365,7 +367,7 @@ architecture top of afc_ref_fofb_ctrl is
   -- Trigger signals
   -----------------------------------------------------------------------------
 
-  constant c_TRIG_MUX_NUM_CORES              : natural  := 2;
+  constant c_TRIG_MUX_NUM_CORES              : natural  := 1;
   constant c_TRIG_MUX_SYNC_EDGE              : string   := "positive";
   constant c_TRIG_MUX_NUM_CHANNELS           : natural  := 10; -- Arbitrary for now
   constant c_TRIG_MUX_INTERN_NUM             : positive := c_TRIG_MUX_NUM_CHANNELS + c_ACQ_NUM_CHANNELS;
@@ -382,7 +384,6 @@ architecture top of afc_ref_fofb_ctrl is
 
   -- Trigger core IDs
   constant c_TRIG_MUX_0_ID                   : natural := 0;
-  constant c_TRIG_MUX_1_ID                   : natural := 1;
 
   signal trig_ref_clk                        : std_logic;
   signal trig_ref_rst_n                      : std_logic;
@@ -393,19 +394,16 @@ architecture top of afc_ref_fofb_ctrl is
 
   signal trig_acq1_channel_1                 : t_trig_channel;
   signal trig_acq1_channel_2                 : t_trig_channel;
-  signal trig_acq2_channel_1                 : t_trig_channel;
-  signal trig_acq2_channel_2                 : t_trig_channel;
 
   -----------------------------------------------------------------------------
   -- User Signals
   -----------------------------------------------------------------------------
 
-  constant c_USER_NUM_CORES                  : natural := c_FMC_4SFP_NUM_CORES;
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES;
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
   (
-    c_FMC_4SFP_0_ID           => f_sdb_auto_device(c_DUMMY_SDB_DEVICE,        true),               -- FMC 4SFP core 0
-    c_FMC_4SFP_1_ID           => f_sdb_auto_device(c_DUMMY_SDB_DEVICE,        true)                -- FMC 4SFP core 1
+    c_FOFB_CC_0_ID           => f_sdb_auto_device(c_DUMMY_SDB_DEVICE,        true)
   );
 
   -----------------------------------------------------------------------------
@@ -629,8 +627,6 @@ begin
 
   gen_wishbone_fmc_4sfp_idx : for i in 0 to c_FMC_4SFP_NUM_CORES-1 generate
 
-    wb_fmc_master_out(i) <= user_wb_out(c_SLV_FMC_4SFP_CORE_IDS(i));
-    user_wb_in(c_SLV_FMC_4SFP_CORE_IDS(i)) <= wb_fmc_master_in(i);
 
   end generate;
 
@@ -706,9 +702,11 @@ begin
   fofb_ref_clk_p(c_FOFB_CC_0_ID) <= fmc0_si570_clk_p_i;
   fofb_ref_clk_n(c_FOFB_CC_0_ID) <= fmc0_si570_clk_n_i;
 
-  cmp_fofb_ctrl_wrapper_0 : fofb_ctrl_wrapper
+  cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
   (
+    g_INTERFACE_MODE                          => PIPELINED,
+    g_ADDRESS_GRANULARITY                     => BYTE,
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
     g_LANE_COUNT                              => c_LANE_COUNT,
@@ -734,6 +732,12 @@ begin
     sysreset_n_i                               => clk_sys_rstn,
 
     ---------------------------------------------------------------------------
+    -- Wishbone Control Interface signals
+    ---------------------------------------------------------------------------
+    wb_slv_i                                  => user_wb_out(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_0_ID)),
+    wb_slv_o                                  => user_wb_in(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_0_ID)),
+
+    ---------------------------------------------------------------------------
     -- fast acquisition data interface
     -- Only used when g_SIM_BPM_DATA = false
     ---------------------------------------------------------------------------
@@ -750,12 +754,6 @@ begin
     fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_0_ID),
     fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_0_ID),
     fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_0_ID),
-
-    ---------------------------------------------------------------------------
-    -- FOFB communication controller configuration interface
-    ---------------------------------------------------------------------------
-    fai_cfg_clk_o                              => fai_cfg_clk(c_FOFB_CC_0_ID),
-    fai_cfg_val_i                              => fai_cfg_val(c_FOFB_CC_0_ID),
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
@@ -799,10 +797,6 @@ begin
   acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
   acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID)(0);
 
-  -- Same data for ACQ core 1, as we only habe a single DCC
-  acq_data(c_ACQ_CORE_1_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
-  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID)(0);
-
   --------------------
   -- ACQ Channel 1
   --------------------
@@ -811,15 +805,6 @@ begin
                                                                  acq_data(c_ACQ_CORE_0_ID);
   acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_0_ID);
   acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_ACQ_DCC_ID).pulse;
-
-  --------------------
-  -- ACQ Channel 2
-  --------------------
-
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-                                                                 acq_data(c_ACQ_CORE_1_ID);
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_1_ID);
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_1_ID, c_ACQ_DCC_ID).pulse;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
@@ -832,13 +817,8 @@ begin
   trig_acq1_channel_1.pulse <= timeframe_start(c_FOFB_CC_0_ID);
   trig_acq1_channel_2.pulse <= timeframe_end(c_FOFB_CC_0_ID);
 
-  trig_acq2_channel_1.pulse <= timeframe_start(c_FOFB_CC_0_ID);
-  trig_acq2_channel_2.pulse <= timeframe_end(c_FOFB_CC_0_ID);
-
   -- Assign intern triggers to trigger module
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq1_channel_1;
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_2_ID) <= trig_acq1_channel_2;
-  trig_rcv_intern(c_TRIG_MUX_1_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq2_channel_1;
-  trig_rcv_intern(c_TRIG_MUX_1_ID, c_TRIG_RCV_INTERN_CHAN_2_ID) <= trig_acq2_channel_2;
 
 end architecture top;
