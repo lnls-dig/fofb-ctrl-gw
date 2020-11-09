@@ -403,7 +403,7 @@ architecture top of afc_ref_fofb_ctrl is
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
   (
-    c_FOFB_CC_0_ID           => f_sdb_auto_device(c_DUMMY_SDB_DEVICE,        true)
+    c_FOFB_CC_0_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,        true)
   );
 
   -----------------------------------------------------------------------------
