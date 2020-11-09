@@ -382,4 +382,25 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  --------------------------------------------------------------------
+  -- SDB Devices Structures
+  --------------------------------------------------------------------
+
+  -- FOFB CC
+  constant c_xwb_fofb_cc_regs_sdb : t_sdb_device := (
+    abi_class     => x"0000",                   -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"00",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"4",                      -- 32-bit port granularity (0100)
+    sdb_component => (
+    addr_first    => x"0000000000000000",
+    addr_last     => x"0000000000000FFF",
+    product => (
+    vendor_id     => x"1000000000001215",       -- LNLS
+    device_id     => x"4a1df147",
+    version       => x"00000001",
+    date          => x"20201109",
+    name          => "DLS_DCC_REGS       ")));
+
 end fofb_ctrl_pkg;
