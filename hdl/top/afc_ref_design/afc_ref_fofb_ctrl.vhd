@@ -234,6 +234,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
   constant c_LANE_COUNT                      : integer := 4;
+  constant c_USE_CHIPSCOPE                   : boolean := false;
 
   -----------------------------------------------------------------------------
   -- FMC signals
@@ -710,6 +711,7 @@ begin
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
     g_LANE_COUNT                              => c_LANE_COUNT,
+    g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
     g_SIM_BPM_DATA                            => true,
     g_SIM_BLOCK_START_PERIOD                  => 10000,
