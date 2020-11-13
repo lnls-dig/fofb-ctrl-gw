@@ -56,6 +56,8 @@ generic
   g_BPMS                                    : integer := 1;
   g_FAI_DW                                  : integer := 16;
   g_DMUX                                    : integer := 2;
+  -- Set to true to instantiate a chipscope with transceiver signals
+  g_USE_CHIPSCOPE                           : boolean := false;
   -- BPM synthetic data
   g_SIM_BPM_DATA                            : boolean := false;
   g_SIM_BLOCK_START_PERIOD                  : integer := 10000; -- in ADC clock cycles
@@ -180,7 +182,7 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   signal fai_cfg_d_in                        : std_logic_vector(31 downto 0);
   signal fai_cfg_we_out                      : std_logic;
   signal fai_cfg_clk_out                     : std_logic;
-  signal fai_cfg_val_in                      : std_logic_vector(31 downto 0);
+  signal fai_cfg_val_in                      : std_logic_vector(31 downto 0) := (others => '0');
 
   signal fai_cfg_to_wbram_we                 : std_logic;
   signal fai_cfg_to_wbram_re                 : std_logic;
@@ -289,6 +291,8 @@ begin
   resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
                                              <= (others => '0');
 
+  -- Force DCC enable
+  fai_cfg_val_in(3) <= '1';
   -----------------------------
   -- FOFB CC register map
   -----------------------------
@@ -311,7 +315,7 @@ begin
       fofb_cc_csr_ram_reg_rd_i               => fai_cfg_to_wbram_re,
       fofb_cc_csr_ram_reg_data_i             => fai_cfg_d_out,
       fofb_cc_csr_ram_reg_wr_i               => fai_cfg_to_wbram_we,
-      fofb_cc_csr_cfg_val_o                  => fai_cfg_val_in
+      fofb_cc_csr_cfg_val_o                  => open
     );
 
   fai_cfg_to_wbram_we <= fai_cfg_we_out;
@@ -339,6 +343,8 @@ begin
       g_BPMS                                    => g_BPMS,
       g_FAI_DW                                  => g_FAI_DW,
       g_DMUX                                    => g_DMUX,
+      -- Set to true to instantiate a chipscope with transceiver signals
+      g_USE_CHIPSCOPE                           => g_USE_CHIPSCOPE,
       -- BPM synthetic data
       g_SIM_BPM_DATA                            => g_SIM_BPM_DATA,
       g_SIM_BLOCK_START_PERIOD                  => g_SIM_BLOCK_START_PERIOD,

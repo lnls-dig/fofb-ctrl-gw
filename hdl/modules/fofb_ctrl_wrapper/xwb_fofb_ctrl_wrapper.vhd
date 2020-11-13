@@ -56,6 +56,8 @@ generic
   g_BPMS                                    : integer := 1;
   g_FAI_DW                                  : integer := 16;
   g_DMUX                                    : integer := 2;
+  -- Set to true to instantiate a chipscope with transceiver signals
+  g_USE_CHIPSCOPE                           : boolean := false;
   -- BPM synthetic data
   g_SIM_BPM_DATA                            : boolean := false;
   g_SIM_BLOCK_START_PERIOD                  : integer := 10000; -- in ADC clock cycles
@@ -181,6 +183,8 @@ begin
     g_BPMS                                    => g_BPMS,
     g_FAI_DW                                  => g_FAI_DW,
     g_DMUX                                    => g_DMUX,
+    -- Set to true to instantiate a chipscope with transceiver signals
+    g_USE_CHIPSCOPE                           => g_USE_CHIPSCOPE,
     -- BPM synthetic data
     g_SIM_BPM_DATA                            => g_SIM_BPM_DATA,
     g_SIM_BLOCK_START_PERIOD                  => g_SIM_BLOCK_START_PERIOD,
