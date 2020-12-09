@@ -174,7 +174,7 @@ port (
   -- fmc0_sda_b         : inout std_logic        -- Mezzanine system I2C data (EEPROM)
 
   ---------------------------------------------------------------------------
-  -- FMC slot 2 - CAEN 4 SFP+
+  -- FMC slot 1 - CAEN 4 SFP+
   ---------------------------------------------------------------------------
 
   -- fmc1_sfp_rx_p_i                            : in    std_logic_vector(3 downto 0);
@@ -234,7 +234,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
   constant c_LANE_COUNT                      : integer := 4;
-  constant c_USE_CHIPSCOPE                   : boolean := false;
+  constant c_USE_CHIPSCOPE                   : boolean := true;
 
   -----------------------------------------------------------------------------
   -- FMC signals
@@ -310,6 +310,42 @@ architecture top of afc_ref_fofb_ctrl is
 
   signal fofb_ref_clk_p                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
   signal fofb_ref_clk_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
+
+  -----------------------------------------------------------------------------
+  -- FMC 0 4SFP CAEN signals
+  -----------------------------------------------------------------------------
+
+  signal fmc0_fpga_sfp_rx_p                  :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_rx_n                  :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_tx_p                  :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_tx_n                  :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_mod_abs               :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_rx_los                :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_tx_disable            :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_tx_fault              :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_rs0                   :  std_logic_vector(3 downto 0);
+  signal fmc0_fpga_sfp_rs1                   :  std_logic_vector(3 downto 0);
+
+  signal fmc0_fpga_si570_clk_p               :  std_logic;
+  signal fmc0_fpga_si570_clk_n               :  std_logic;
+
+  -------------------------------------------------------------------------------
+  ---- FMC 1 4SFP CAEN signals
+  -------------------------------------------------------------------------------
+
+  --signal fmc1_fpga_sfp_rx_p                   :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_rx_n                   :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_tx_p                   :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_tx_n                   :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_mod_abs                :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_rx_los                 :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_tx_disabl              :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_tx_fault               :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_rs0                    :  std_logic_vector(3 downto 0);
+  --signal fmc1_fpga_sfp_rs1                    :  std_logic_vector(3 downto 0);
+  --signal
+  --signal fmc1_fpga_si570_clk_p                :  std_logic;
+  --signal fmc1_fpga_si570_clk_n                :  std_logic;
 
   -----------------------------------------------------------------------------
   -- Acquisition signals
@@ -647,12 +683,49 @@ begin
   ----------------------------------------------------------------------
   --                          FMC 0 4SFP                              --
   ----------------------------------------------------------------------
+  cmp_fmc4sfp_caen_0 : fmc4sfp_caen
+  port map (
+    ---------------------------------------------------------------------------
+    -- FMC board pins
+    ---------------------------------------------------------------------------
+    sfp_rx_p_i                                 => fmc0_sfp_rx_p_i,
+    sfp_rx_n_i                                 => fmc0_sfp_rx_n_i,
+    sfp_tx_p_o                                 => fmc0_sfp_tx_p_o,
+    sfp_tx_n_o                                 => fmc0_sfp_tx_n_o,
+    sfp_scl_b                                  => fmc0_sfp_scl_b,
+    sfp_sda_b                                  => fmc0_sfp_sda_b,
+    sfp_mod_abs_i                              => fmc0_sfp_mod_abs_i,
+    sfp_rx_los_i                               => fmc0_sfp_rx_los_i,
+    sfp_tx_disable_o                           => fmc0_sfp_tx_disable_o,
+    sfp_tx_fault_i                             => fmc0_sfp_tx_fault_i,
+    sfp_rs0_o                                  => fmc0_sfp_rs0_o,
+    sfp_rs1_o                                  => fmc0_sfp_rs1_o,
+
+    si570_clk_p_i                              => fmc0_si570_clk_p_i,
+    si570_clk_n_i                              => fmc0_si570_clk_n_i,
+    si570_scl_b                                => fmc0_si570_scl_b,
+    si570_sda_b                                => fmc0_si570_sda_b,
+
+    fpga_sfp_rx_p_o                            => fmc0_fpga_sfp_rx_p,
+    fpga_sfp_rx_n_o                            => fmc0_fpga_sfp_rx_n,
+    fpga_sfp_tx_p_i                            => fmc0_fpga_sfp_tx_p,
+    fpga_sfp_tx_n_i                            => fmc0_fpga_sfp_tx_n,
+    fpga_sfp_mod_abs_o                         => fmc0_fpga_sfp_mod_abs,
+    fpga_sfp_rx_los_o                          => fmc0_fpga_sfp_rx_los,
+    fpga_sfp_tx_disable_i                      => fmc0_fpga_sfp_tx_disable,
+    fpga_sfp_tx_fault_o                        => fmc0_fpga_sfp_tx_fault,
+    fpga_sfp_rs0_i                             => fmc0_fpga_sfp_rs0,
+    fpga_sfp_rs1_i                             => fmc0_fpga_sfp_rs1,
+
+    fpga_si570_clk_p_o                         => fmc0_fpga_si570_clk_p,
+    fpga_si570_clk_n_o                         => fmc0_fpga_si570_clk_n
+  );
 
   gen_fmc0_sfp_channels : for i in 0 to 3 generate
 
     -- SFP dependant. Using lowest TX/RX signalling rate
-    fmc0_sfp_rs0_o(i) <= '0';
-    fmc0_sfp_rs1_o(i) <= '0';
+    fmc0_fpga_sfp_rs0(i) <= '0';
+    fmc0_fpga_sfp_rs1(i) <= '0';
 
   end generate;
 
@@ -663,8 +736,8 @@ begin
   -- gen_fmc1_sfp_channels : for i in 0 to 3 generate
 
   --   -- SFP dependant. Using lowest TX/RX signalling rate
-  --   fmc1_sfp_rs0_o(i) <= '0';
-  --   fmc1_sfp_rs1_o(i) <= '0';
+  --   fmc1_fpga_sfp_rs0(i) <= '0';
+  --   fmc1_fpga_sfp_rs1(i) <= '0';
 
   -- end generate;
 
@@ -673,35 +746,35 @@ begin
   ----------------------------------------------------------------------
 
   -- RX lines
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_p_i(0);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= fmc0_sfp_rx_n_i(0);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_p_i(1);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= fmc0_sfp_rx_n_i(1);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(2) <= fmc0_sfp_rx_p_i(2);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(2) <= fmc0_sfp_rx_n_i(2);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(3) <= fmc0_sfp_rx_p_i(3);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(3) <= fmc0_sfp_rx_n_i(3);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= fmc0_fpga_sfp_rx_p(0);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= fmc0_fpga_sfp_rx_n(0);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= fmc0_fpga_sfp_rx_p(1);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= fmc0_fpga_sfp_rx_n(1);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(2) <= fmc0_fpga_sfp_rx_p(2);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(2) <= fmc0_fpga_sfp_rx_n(2);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(3) <= fmc0_fpga_sfp_rx_p(3);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(3) <= fmc0_fpga_sfp_rx_n(3);
 
   -- TX lines
-  fmc0_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
-  fmc0_sfp_tx_n_o(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
-  fmc0_sfp_tx_disable_o(0) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(0);
+  fmc0_fpga_sfp_tx_p(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
+  fmc0_fpga_sfp_tx_n(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
+  fmc0_fpga_sfp_tx_disable(0) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(0);
 
-  fmc0_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
-  fmc0_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
-  fmc0_sfp_tx_disable_o(1) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
+  fmc0_fpga_sfp_tx_p(1) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
+  fmc0_fpga_sfp_tx_n(1) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
+  fmc0_fpga_sfp_tx_disable(1) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
 
-  fmc0_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(2);
-  fmc0_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(2);
-  fmc0_sfp_tx_disable_o(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(2);
+  fmc0_fpga_sfp_tx_p(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(2);
+  fmc0_fpga_sfp_tx_n(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(2);
+  fmc0_fpga_sfp_tx_disable(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(2);
 
-  fmc0_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(3);
-  fmc0_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(3);
-  fmc0_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(3);
+  fmc0_fpga_sfp_tx_p(3) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(3);
+  fmc0_fpga_sfp_tx_n(3) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(3);
+  fmc0_fpga_sfp_tx_disable(3) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(3);
 
   -- Clocks
-  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= fmc0_si570_clk_p_i;
-  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= fmc0_si570_clk_n_i;
+  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= fmc0_fpga_si570_clk_p;
+  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= fmc0_fpga_si570_clk_n;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
