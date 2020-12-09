@@ -388,6 +388,50 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  component si57x_interface
+  generic (
+    g_SYS_CLOCK_FREQ                           : integer := 100000000;
+    g_I2C_FREQ                                 : integer := 400000;
+    -- Whether or not to initialize oscilator with the specified values
+    g_INIT_OSC                                 : boolean := true;
+    -- Init Oscillator values
+    g_INIT_RFREQ_VALUE                         : std_logic_vector(37 downto 0) := "00" & x"3017a66ad";
+    g_INIT_N1_VALUE                            : std_logic_vector(6 downto 0) := "0000011";
+    g_INIT_HS_VALUE                            : std_logic_vector(2 downto 0) := "111"
+  );
+  port (
+    ---------------------------------------------------------------------------
+    -- clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_sys_i                                  : in std_logic;
+    rst_n_i                                    : in std_logic;
+
+    ---------------------------------------------------------------------------
+    -- Optional external RFFREQ interface
+    ---------------------------------------------------------------------------
+    ext_wr_i                                   : in std_logic := '0';
+    ext_rfreq_value_i                          : in std_logic_vector(37 downto 0) := (others => '0');
+    ext_n1_value_i                             : in std_logic_vector(6 downto 0) := (others => '0');
+    ext_hs_value_i                             : in std_logic_vector(2 downto 0) := (others => '0');
+
+    ---------------------------------------------------------------------------
+    -- I2C bus: output enable (active low)
+    ---------------------------------------------------------------------------
+    scl_pad_oen_o                              : out std_logic;
+    sda_pad_oen_o                              : out std_logic;
+
+    ---------------------------------------------------------------------------
+    -- SI57x pins
+    ---------------------------------------------------------------------------
+    -- Optional OE control
+    si57x_oe_i                                 : in std_logic := '1';
+    -- Si57x slave address. Default is (slave address & '0')
+    si57x_addr_i                               : in std_logic_vector(7 downto 0) := "10101010";
+    si57x_oe_o                                 : out std_logic
+
+  );
+  end component;
+
   --------------------------------------------------------------------
   -- SDB Devices Structures
   --------------------------------------------------------------------
