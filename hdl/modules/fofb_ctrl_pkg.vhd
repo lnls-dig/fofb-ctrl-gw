@@ -388,6 +388,48 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  component fmc4sfp_caen
+  port (
+    ---------------------------------------------------------------------------
+    -- FMC board pins
+    ---------------------------------------------------------------------------
+    sfp_rx_p_i                                 : in    std_logic_vector(3 downto 0);
+    sfp_rx_n_i                                 : in    std_logic_vector(3 downto 0);
+    sfp_tx_p_o                                 : out   std_logic_vector(3 downto 0);
+    sfp_tx_n_o                                 : out   std_logic_vector(3 downto 0);
+    sfp_scl_b                                  : inout std_logic_vector(3 downto 0);
+    sfp_sda_b                                  : inout std_logic_vector(3 downto 0);
+    sfp_mod_abs_i                              : in    std_logic_vector(3 downto 0);
+    sfp_rx_los_i                               : in    std_logic_vector(3 downto 0);
+    sfp_tx_disable_o                           : out   std_logic_vector(3 downto 0);
+    sfp_tx_fault_i                             : in    std_logic_vector(3 downto 0);
+    sfp_rs0_o                                  : out   std_logic_vector(3 downto 0);
+    sfp_rs1_o                                  : out   std_logic_vector(3 downto 0);
+
+    si570_clk_p_i                              : in    std_logic;
+    si570_clk_n_i                              : in    std_logic;
+    si570_scl_b                                : inout std_logic;
+    si570_sda_b                                : inout std_logic;
+
+    ---------------------------------------------------------------------------
+    -- FPGA side. Just a bypass for now
+    ---------------------------------------------------------------------------
+    fpga_sfp_rx_p_o                            : out    std_logic_vector(3 downto 0);
+    fpga_sfp_rx_n_o                            : out    std_logic_vector(3 downto 0);
+    fpga_sfp_tx_p_i                            : in     std_logic_vector(3 downto 0);
+    fpga_sfp_tx_n_i                            : in     std_logic_vector(3 downto 0);
+    fpga_sfp_mod_abs_o                         : out    std_logic_vector(3 downto 0);
+    fpga_sfp_rx_los_o                          : out    std_logic_vector(3 downto 0);
+    fpga_sfp_tx_disable_i                      : in     std_logic_vector(3 downto 0);
+    fpga_sfp_tx_fault_o                        : out    std_logic_vector(3 downto 0);
+    fpga_sfp_rs0_i                             : in     std_logic_vector(3 downto 0);
+    fpga_sfp_rs1_i                             : in     std_logic_vector(3 downto 0);
+
+    fpga_si570_clk_p_o                         : out    std_logic;
+    fpga_si570_clk_n_o                         : out    std_logic
+  );
+  end component;
+
   component si57x_interface
   generic (
     g_SYS_CLOCK_FREQ                           : integer := 100000000;
