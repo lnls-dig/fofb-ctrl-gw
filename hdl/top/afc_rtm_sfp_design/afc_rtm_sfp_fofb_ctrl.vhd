@@ -792,9 +792,10 @@ begin
   rtm_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(3);
   -- rtm_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(3);
 
-  -- Clocks
-  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk1_p;
-  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk1_n;
+  -- Clocks. Use rtm_clk2_p as this goes to the same bank as SFP 0, 1, 2, 3
+  -- tranceivers
+  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk2_p;
+  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk2_n;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
