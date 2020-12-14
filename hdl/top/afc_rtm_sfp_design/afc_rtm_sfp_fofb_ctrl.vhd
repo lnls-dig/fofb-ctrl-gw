@@ -766,14 +766,14 @@ begin
   ----------------------------------------------------------------------
 
   -- RX lines
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= rtm_sfp_rx_p_i(0);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= rtm_sfp_rx_n_i(0);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= rtm_sfp_rx_p_i(1);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= rtm_sfp_rx_n_i(1);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(2) <= rtm_sfp_rx_p_i(2);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(2) <= rtm_sfp_rx_n_i(2);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(3) <= rtm_sfp_rx_p_i(3);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(3) <= rtm_sfp_rx_n_i(3);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= rtm_sfp_rx_p(0);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= rtm_sfp_rx_n(0);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= rtm_sfp_rx_p(1);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= rtm_sfp_rx_n(1);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(2) <= rtm_sfp_rx_p(2);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(2) <= rtm_sfp_rx_n(2);
+  fofb_rio_rx_p(c_FOFB_CC_0_ID)(3) <= rtm_sfp_rx_p(3);
+  fofb_rio_rx_n(c_FOFB_CC_0_ID)(3) <= rtm_sfp_rx_n(3);
 
   -- TX lines
   rtm_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
