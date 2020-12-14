@@ -49,6 +49,9 @@ use work.fofb_ctrl_pkg.all;
 use work.fofb_cc_pkg.all;
 
 entity afc_rtm_sfp_fofb_ctrl is
+generic (
+  g_NUM_SFPS                                 : integer := 4
+);
 port (
   ---------------------------------------------------------------------------
   -- Clocking pins
@@ -147,10 +150,10 @@ port (
   -- RTM board pins
   ---------------------------------------------------------------------------
   -- SFP
-  rtm_sfp_rx_p_i                             : in    std_logic_vector(7 downto 0);
-  rtm_sfp_rx_n_i                             : in    std_logic_vector(7 downto 0);
-  rtm_sfp_tx_p_o                             : out   std_logic_vector(7 downto 0);
-  rtm_sfp_tx_n_o                             : out   std_logic_vector(7 downto 0);
+  rtm_sfp_rx_p_i                             : in    std_logic_vector(g_NUM_SFPS-1 downto 0);
+  rtm_sfp_rx_n_i                             : in    std_logic_vector(g_NUM_SFPS-1 downto 0);
+  rtm_sfp_tx_p_o                             : out   std_logic_vector(g_NUM_SFPS-1 downto 0);
+  rtm_sfp_tx_n_o                             : out   std_logic_vector(g_NUM_SFPS-1 downto 0);
 
   -- RTM I2C.
   -- SFP configuration pins, behind a I2C MAX7356. I2C addr = 1110_100 & '0' = 0xE8
@@ -232,6 +235,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_LANE_COUNT                      : integer := 4;
   constant c_USE_CHIPSCOPE                   : boolean := true;
 
+  constant c_NUM_SFPS                        : integer := g_NUM_SFPS;
   constant c_RTM_SI57x_I2C_FREQ              : integer := 400000;
   constant c_RTM_SI57x_INIT_OSC              : boolean := true;
   constant c_RTM_SI57x_INIT_RFREQ_VALUE      : std_logic_vector(37 downto 0) := "00" & x"313662690";
@@ -246,10 +250,10 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal wb_rtm_master_out                   : t_wishbone_master_out_array(c_RTM_8SFP_NUM_CORES-1 downto 0);
   signal wb_rtm_master_in                    : t_wishbone_master_in_array(c_RTM_8SFP_NUM_CORES-1 downto 0);
 
-  signal rtm_sfp_rx_p                       : std_logic_vector(7 downto 0);
-  signal rtm_sfp_rx_n                       : std_logic_vector(7 downto 0);
-  signal rtm_sfp_tx_p                       : std_logic_vector(7 downto 0);
-  signal rtm_sfp_tx_n                       : std_logic_vector(7 downto 0);
+  signal rtm_sfp_rx_p                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_rx_n                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_tx_p                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_tx_n                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
 
   signal rtm_clk1_p                         : std_logic;
   signal rtm_clk1_n                         : std_logic;
@@ -665,6 +669,7 @@ begin
 
   cmp_rtm8sfp_ohwr : rtm8sfp_ohwr
   generic map (
+    g_NUM_SFPS                                 => c_NUM_SFPS,
     g_SYS_CLOCK_FREQ                           => c_SYS_CLOCK_FREQ,
     g_SI57x_I2C_FREQ                           => c_RTM_SI57x_I2C_FREQ,
     -- Whether or not to initialize oscilator with the specified values
