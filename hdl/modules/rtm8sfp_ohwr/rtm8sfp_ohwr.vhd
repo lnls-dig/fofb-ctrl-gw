@@ -25,6 +25,7 @@ use work.fofb_ctrl_pkg.all;
 
 entity rtm8sfp_ohwr is
 generic (
+  g_NUM_SFPS                                 : integer := 8;
   g_SYS_CLOCK_FREQ                           : integer := 100000000;
   g_SI57x_I2C_FREQ                           : integer := 400000;
   -- Whether or not to initialize oscilator with the specified values
@@ -45,10 +46,10 @@ port (
   -- RTM board pins
   ---------------------------------------------------------------------------
   -- SFP
-  sfp_rx_p_i                                 : in    std_logic_vector(7 downto 0);
-  sfp_rx_n_i                                 : in    std_logic_vector(7 downto 0);
-  sfp_tx_p_o                                 : out   std_logic_vector(7 downto 0);
-  sfp_tx_n_o                                 : out   std_logic_vector(7 downto 0);
+  sfp_rx_p_i                                 : in    std_logic_vector(g_NUM_SFPS-1 downto 0);
+  sfp_rx_n_i                                 : in    std_logic_vector(g_NUM_SFPS-1 downto 0);
+  sfp_tx_p_o                                 : out   std_logic_vector(g_NUM_SFPS-1 downto 0);
+  sfp_tx_n_o                                 : out   std_logic_vector(g_NUM_SFPS-1 downto 0);
 
   -- RTM I2C.
   -- SFP configuration pins, behind a I2C MAX7356. I2C addr = 1110_100 & '0' = 0xE8
@@ -155,10 +156,10 @@ port (
   ---------------------------------------------------------------------------
   -- FPGA side. Just a bypass for now
   ---------------------------------------------------------------------------
-  fpga_sfp_rx_p_o                            : out    std_logic_vector(7 downto 0);
-  fpga_sfp_rx_n_o                            : out    std_logic_vector(7 downto 0);
-  fpga_sfp_tx_p_i                            : in     std_logic_vector(7 downto 0);
-  fpga_sfp_tx_n_i                            : in     std_logic_vector(7 downto 0);
+  fpga_sfp_rx_p_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
+  fpga_sfp_rx_n_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
+  fpga_sfp_tx_p_i                            : in     std_logic_vector(g_NUM_SFPS-1 downto 0);
+  fpga_sfp_tx_n_i                            : in     std_logic_vector(g_NUM_SFPS-1 downto 0);
 
   fpga_rtm_sync_clk_p_i                      : in     std_logic := '0';
   fpga_rtm_sync_clk_n_i                      : in     std_logic := '1';
