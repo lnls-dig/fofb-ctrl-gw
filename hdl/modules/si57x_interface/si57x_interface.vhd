@@ -78,6 +78,10 @@ architecture rtl of si57x_interface is
   signal n1                                  : std_logic_vector(6 downto 0);
   signal hs                                  : std_logic_vector(2 downto 0);
 
+  signal rfreq_fsm                           : std_logic_vector(37 downto 0);
+  signal n1_fsm                              : std_logic_vector(6 downto 0);
+  signal hs_fsm                              : std_logic_vector(2 downto 0);
+
   signal ext_new_p                           : std_logic;
   signal init_new_p                          : std_logic;
 
@@ -238,6 +242,9 @@ begin
         init_new_p  <= f_bool_to_std(g_INIT_OSC);
         state       <= IDLE;
         seq_count   <= (others => '0');
+        rfreq_fsm <= (others => '0');
+        n1_fsm <= (others => '0');
+        hs_fsm <= (others => '0');
         scl_out_fsm <= '1';
         sda_out_fsm <= '1';
       else
@@ -246,6 +253,10 @@ begin
             -- Write new values if on boot or when requested
             if(ext_new_p = '1' or init_new_p = '1') then
               state <= SI_START0;
+              -- Avoid chaning values in the middle of a transaction
+              rfreq_fsm <= rfreq;
+              n1_fsm <= n1;
+              hs_fsm <= hs;
             end if;
 
           -- Freeze registers
@@ -269,22 +280,22 @@ begin
             f_i2c_iterate(i2c_tick, seq_count, x"07", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_HSN1);
 
           when SI_HSN1 =>
-            f_i2c_iterate(i2c_tick, seq_count, hs & n1(6 downto 2), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF0);
+            f_i2c_iterate(i2c_tick, seq_count, hs_fsm & n1_fsm(6 downto 2), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF0);
 
           when SI_RF0 =>
-            f_i2c_iterate(i2c_tick, seq_count, n1(1 downto 0) & rfreq(37 downto 32), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF1);
+            f_i2c_iterate(i2c_tick, seq_count, n1_fsm(1 downto 0) & rfreq_fsm(37 downto 32), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF1);
 
           when SI_RF1 =>
-            f_i2c_iterate(i2c_tick, seq_count, rfreq(31 downto 24), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF2);
+            f_i2c_iterate(i2c_tick, seq_count, rfreq_fsm(31 downto 24), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF2);
 
           when SI_RF2 =>
-            f_i2c_iterate(i2c_tick, seq_count, rfreq(23 downto 16), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF3);
+            f_i2c_iterate(i2c_tick, seq_count, rfreq_fsm(23 downto 16), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF3);
 
           when SI_RF3 =>
-            f_i2c_iterate(i2c_tick, seq_count, rfreq(15 downto 8), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF4);
+            f_i2c_iterate(i2c_tick, seq_count, rfreq_fsm(15 downto 8), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_RF4);
 
           when SI_RF4 =>
-            f_i2c_iterate(i2c_tick, seq_count, rfreq(7 downto 0), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP1);
+            f_i2c_iterate(i2c_tick, seq_count, rfreq_fsm(7 downto 0), SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP1);
 
           when SI_STOP1 =>
             f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, SI_START2);
