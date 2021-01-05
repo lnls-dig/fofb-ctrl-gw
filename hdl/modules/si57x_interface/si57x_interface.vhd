@@ -96,13 +96,13 @@ architecture rtl of si57x_interface is
   -- I2C types
   type t_i2c_transaction is (START, STOP, SEND_BYTE);
 
-  type t_state is (IDLE, SI_START0, SI_START1, SI_START2,
-    SI_ADDR0, SI_ADDR1, SI_ADDR2,
-    SI_REG0, SI_REG1, SI_REG2,
+  type t_state is (IDLE, SI_START0, SI_START1, SI_START2, SI_START3,
+    SI_ADDR0, SI_ADDR1, SI_ADDR2, SI_ADDR3,
+    SI_REG0, SI_REG1, SI_REG2, SI_REG3,
     SI_HSN1,
     SI_RF0, SI_RF1, SI_RF2, SI_RF3, SI_RF4,
-    SI_STOP0, SI_STOP1, SI_STOP2,
-    SI_FREEZE0, SI_FREEZE2);
+    SI_STOP0, SI_STOP1, SI_STOP2, SI_STOP3,
+    SI_FREEZE0, SI_FREEZE2, SI_NEWFREQ);
 
   signal state                               : t_state;
 
@@ -265,9 +265,11 @@ begin
           when SI_ADDR0 =>
             f_i2c_iterate(i2c_tick, seq_count, si57x_addr_i, SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG0);
           when SI_REG0 =>
-            f_i2c_iterate(i2c_tick, seq_count, x"87", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_FREEZE0);
+            -- Register "Freeze DCO"
+            f_i2c_iterate(i2c_tick, seq_count, x"89", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_FREEZE0);
           when SI_FREEZE0 =>
-            f_i2c_iterate(i2c_tick, seq_count, x"20", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP0);
+            -- "Freeze DCO" bit
+            f_i2c_iterate(i2c_tick, seq_count, x"10", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP0);
           when SI_STOP0 =>
             f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, SI_START1);
 
@@ -306,10 +308,26 @@ begin
           when SI_ADDR2 =>
             f_i2c_iterate(i2c_tick, seq_count, si57x_addr_i, SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG2);
           when SI_REG2 =>
-            f_i2c_iterate(i2c_tick, seq_count, x"87", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_FREEZE2);
+            -- Register "Freeze DCO"
+            f_i2c_iterate(i2c_tick, seq_count, x"89", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_FREEZE2);
           when SI_FREEZE2 =>
+            -- "Freeze DCO" bit
             f_i2c_iterate(i2c_tick, seq_count, x"00", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP2);
           when SI_STOP2 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, SI_START3);
+
+          -- New frequency bit
+          when SI_START3 =>
+            f_i2c_iterate(i2c_tick, seq_count, x"00", START, scl_out_fsm, sda_out_fsm, state, SI_ADDR3);
+          when SI_ADDR3 =>
+            f_i2c_iterate(i2c_tick, seq_count, si57x_addr_i, SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_REG3);
+          when SI_REG3 =>
+            -- "Reset/Freeze/Memory Control" register
+            f_i2c_iterate(i2c_tick, seq_count, x"87", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_NEWFREQ);
+          when SI_NEWFREQ =>
+            -- "NewFreq" bit
+            f_i2c_iterate(i2c_tick, seq_count, x"40", SEND_BYTE, scl_out_fsm, sda_out_fsm, state, SI_STOP3);
+          when SI_STOP3 =>
             f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, IDLE);
 
             -- Signal that we have made at least one pass through the FSM
