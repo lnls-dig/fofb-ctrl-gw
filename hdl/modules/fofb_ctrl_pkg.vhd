@@ -433,7 +433,7 @@ package fofb_ctrl_pkg is
   component si57x_interface
   generic (
     g_SYS_CLOCK_FREQ                           : integer := 100000000;
-    g_I2C_FREQ                                 : integer := 400000;
+    g_I2C_FREQ                                 : integer := 100000;
     -- Whether or not to initialize oscilator with the specified values
     g_INIT_OSC                                 : boolean := true;
     -- Init Oscillator values
