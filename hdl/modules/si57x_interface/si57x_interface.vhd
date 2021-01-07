@@ -71,7 +71,10 @@ end si57x_interface;
 architecture rtl of si57x_interface is
 
   -- constants
-  constant c_I2C_DIV                         : natural := g_SYS_CLOCK_FREQ/g_I2C_FREQ-1;
+
+  -- number of ticks per I2C state
+  constant c_NUM_TICKS_PER_CLOCK             : integer := 3;
+  constant c_I2C_DIV                         : natural := g_SYS_CLOCK_FREQ/(c_NUM_TICKS_PER_CLOCK*g_I2C_FREQ)-1;
 
   -- signals
   signal rfreq                               : std_logic_vector(37 downto 0);
