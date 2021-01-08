@@ -35,6 +35,8 @@ use work.trigger_pkg.all;
 use work.afc_base_pkg.all;
 -- AFC Acq definitions
 use work.afc_base_acq_pkg.all;
+-- General-cores Common
+use work.gencores_pkg.all;
 -- IP cores constants
 use work.ipcores_pkg.all;
 -- Meta Package
@@ -262,6 +264,10 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   signal rtm_ext_clk_p                      : std_logic;
   signal rtm_ext_clk_n                      : std_logic;
+  signal rtm_sta_reconfig_done              : std_logic;
+  signal rtm_sta_reconfig_done_pp           : std_logic;
+  signal rtm_reconfig_rst                   : std_logic;
+  signal rtm_reconfig_rst_n                 : std_logic;
 
   -----------------------------------------------------------------------------
   -- FOFB CC signals
@@ -740,6 +746,11 @@ begin
     ext_clk_n_i                                => rtm_ext_clk_n_i,
 
     ---------------------------------------------------------------------------
+    -- Status pins
+    ---------------------------------------------------------------------------
+    sta_reconfig_done_o                        => rtm_sta_reconfig_done,
+
+    ---------------------------------------------------------------------------
     -- FPGA side. Just a bypass for now
     ---------------------------------------------------------------------------
     fpga_sfp_rx_p_o                            => rtm_sfp_rx_p,
@@ -760,6 +771,28 @@ begin
     fpga_ext_clk_p_o                           => rtm_ext_clk_p,
     fpga_ext_clk_n_o                           => rtm_ext_clk_n
   );
+
+  -- Generate large pulse for reset
+  cmp_gc_posedge : gc_posedge
+  port map (
+    clk_i                                      => clk_sys,
+    rst_n_i                                    => clk_sys_rstn,
+    data_i                                     => rtm_sta_reconfig_done,
+    pulse_o                                    => rtm_sta_reconfig_done_pp
+  );
+
+  cmp_gc_extend_pulse : gc_extend_pulse
+  generic map (
+    g_width                                    => 10
+  )
+  port map (
+    clk_i                                      => clk_sys,
+    rst_n_i                                    => clk_sys_rstn,
+    pulse_i                                    => rtm_sta_reconfig_done_pp,
+    extended_o                                 => rtm_reconfig_rst
+  );
+
+ rtm_reconfig_rst_n <= not rtm_reconfig_rst;
 
   ----------------------------------------------------------------------
   --                          FOFB DCC 0                              --
@@ -825,7 +858,7 @@ begin
     adcclk_i                                   => clk_sys,
     adcreset_i                                 => clk_sys_rst,
     sysclk_i                                   => clk_sys,
-    sysreset_n_i                               => clk_sys_rstn,
+    sysreset_n_i                               => fofb_sysreset_n,
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -875,6 +908,8 @@ begin
     fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_0_ID),
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_0_ID)
   );
+
+  fofb_sysreset_n <= clk_sys_rstn and rtm_reconfig_rst_n;
 
   ----------------------------------------------------------------------
   --                          Acquisition                             --
