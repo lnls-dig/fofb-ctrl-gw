@@ -618,6 +618,11 @@ package fofb_ctrl_pkg is
     ext_hs_value_i                             : in     std_logic_vector(2 downto 0) := (others => '0');
 
     ---------------------------------------------------------------------------
+    -- Status pins
+    ---------------------------------------------------------------------------
+    sta_reconfig_done_o                        : out    std_logic;
+
+    ---------------------------------------------------------------------------
     -- FPGA side. Just a bypass for now
     ---------------------------------------------------------------------------
     fpga_sfp_rx_p_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);

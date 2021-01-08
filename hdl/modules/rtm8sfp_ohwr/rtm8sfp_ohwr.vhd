@@ -162,6 +162,11 @@ port (
   ext_hs_value_i                             : in     std_logic_vector(2 downto 0) := (others => '0');
 
   ---------------------------------------------------------------------------
+  -- Status pins
+  ---------------------------------------------------------------------------
+  sta_reconfig_done_o                        : out    std_logic;
+
+  ---------------------------------------------------------------------------
   -- FPGA side. Just a bypass for now
   ---------------------------------------------------------------------------
   fpga_sfp_rx_p_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
@@ -248,6 +253,11 @@ begin
     ext_rfreq_value_i                          => ext_rfreq_value_i,
     ext_n1_value_i                             => ext_n1_value_i,
     ext_hs_value_i                             => ext_hs_value_i,
+
+    ---------------------------------------------------------------------------
+    -- Status pins
+    ---------------------------------------------------------------------------
+    sta_reconfig_done_o                        => sta_reconfig_done_o,
 
     ---------------------------------------------------------------------------
     -- I2C bus: output enable (active low)
