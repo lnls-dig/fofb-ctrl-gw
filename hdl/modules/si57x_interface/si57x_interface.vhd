@@ -51,6 +51,11 @@ port (
   ext_hs_value_i                             : in std_logic_vector(2 downto 0) := (others => '0');
 
   ---------------------------------------------------------------------------
+  -- Status pins
+  ---------------------------------------------------------------------------
+  sta_reconfig_done_o                        : out std_logic;
+
+  ---------------------------------------------------------------------------
   -- I2C bus: output enable (active low)
   ---------------------------------------------------------------------------
   scl_pad_oen_o                              : out std_logic;
@@ -245,6 +250,7 @@ begin
         init_new_p  <= f_bool_to_std(g_INIT_OSC);
         state       <= IDLE;
         seq_count   <= (others => '0');
+        sta_reconfig_done_o <= '0';
         rfreq_fsm <= (others => '0');
         n1_fsm <= (others => '0');
         hs_fsm <= (others => '0');
@@ -256,6 +262,7 @@ begin
             -- Write new values if on boot or when requested
             if(ext_new_p = '1' or init_new_p = '1') then
               state <= SI_START0;
+              sta_reconfig_done_o <= '0';
               -- Avoid chaning values in the middle of a transaction
               rfreq_fsm <= rfreq;
               n1_fsm <= n1;
@@ -333,6 +340,7 @@ begin
           when SI_STOP3 =>
             f_i2c_iterate(i2c_tick, seq_count, x"00", STOP, scl_out_fsm, sda_out_fsm, state, IDLE);
 
+            sta_reconfig_done_o <= '1';
             -- Signal that we have made at least one pass through the FSM
             init_new_p <= '0';
 
