@@ -154,6 +154,14 @@ port (
   ext_clk_n_i                                : in    std_logic;
 
   ---------------------------------------------------------------------------
+  -- Optional external RFFREQ interface
+  ---------------------------------------------------------------------------
+  ext_wr_i                                   : in     std_logic := '0';
+  ext_rfreq_value_i                          : in     std_logic_vector(37 downto 0) := (others => '0');
+  ext_n1_value_i                             : in     std_logic_vector(6 downto 0) := (others => '0');
+  ext_hs_value_i                             : in     std_logic_vector(2 downto 0) := (others => '0');
+
+  ---------------------------------------------------------------------------
   -- FPGA side. Just a bypass for now
   ---------------------------------------------------------------------------
   fpga_sfp_rx_p_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
@@ -232,6 +240,14 @@ begin
     ---------------------------------------------------------------------------
     clk_sys_i                                  => clk_sys_i,
     rst_n_i                                    => rst_n_i,
+
+    ---------------------------------------------------------------------------
+    -- Optional external RFFREQ interface
+    ---------------------------------------------------------------------------
+    ext_wr_i                                   => ext_wr_i,
+    ext_rfreq_value_i                          => ext_rfreq_value_i,
+    ext_n1_value_i                             => ext_n1_value_i,
+    ext_hs_value_i                             => ext_hs_value_i,
 
     ---------------------------------------------------------------------------
     -- I2C bus: output enable (active low)
