@@ -11,8 +11,8 @@ hs_div_opt = {
     9: "0b101",
     11: "0b111"
 }
-hs_div = 6
-N1 = 6  # even number
+hs_div = 4
+N1 = 8  # even number or 1
 # 4.85 <= fdco <= 5.67 GHz
 fdco = fout*hs_div*N1
 fxtal = 114300370
