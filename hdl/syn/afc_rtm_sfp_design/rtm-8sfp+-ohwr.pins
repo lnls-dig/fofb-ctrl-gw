@@ -27,10 +27,10 @@ pin j6_c6   rtm_sfp_status_reg_out_i      lvcmos25
 # pin j6_d3   rtm_sync_clk_n_o              lvds_25
 # pin j6_c3   rtm_sync_clk_p_o              lvds_25
 
-pin j2_b9   rtm_fpga_clk2_n_i             lvds_25
-pin j2_a9   rtm_fpga_clk2_p_i             lvds_25
-pin j2_b5   rtm_fpga_clk1_n_i             lvds_25
-pin j2_a5   rtm_fpga_clk1_p_i             lvds_25
+pin j2_b9   rtm_fpga_clk2_n_i
+pin j2_a9   rtm_fpga_clk2_p_i
+pin j2_b5   rtm_fpga_clk1_n_i
+pin j2_a5   rtm_fpga_clk1_p_i
 
 # Connected through a level translator
 # pin j2_a1   rtm_sfp_status_reg_pl_o       lvcmos33

@@ -9,6 +9,7 @@
 
 
 
+
 # <xdcgen_start>
 
 # This section has been generated automatically by xdcgen.py. Do not hand-modify if not really necessary.
@@ -25,13 +26,9 @@ set_property IOSTANDARD LVCMOS25 [get_ports rtm_sfp_ctl_oe_n_o]
 set_property PACKAGE_PIN L23 [get_ports rtm_sfp_status_reg_out_i]
 set_property IOSTANDARD LVCMOS25 [get_ports rtm_sfp_status_reg_out_i]
 set_property PACKAGE_PIN AH20 [get_ports rtm_fpga_clk2_n_i]
-set_property IOSTANDARD LVDS_25 [get_ports rtm_fpga_clk2_n_i]
 set_property PACKAGE_PIN AG20 [get_ports rtm_fpga_clk2_p_i]
-set_property IOSTANDARD LVDS_25 [get_ports rtm_fpga_clk2_p_i]
 set_property PACKAGE_PIN G16 [get_ports rtm_fpga_clk1_n_i]
-set_property IOSTANDARD LVDS_25 [get_ports rtm_fpga_clk1_n_i]
 set_property PACKAGE_PIN H16 [get_ports rtm_fpga_clk1_p_i]
-set_property IOSTANDARD LVDS_25 [get_ports rtm_fpga_clk1_p_i]
 set_property PACKAGE_PIN L4 [get_ports rtm_sfp_status_reg_pl_o]
 set_property IOSTANDARD LVCMOS25 [get_ports rtm_sfp_status_reg_pl_o]
 set_property PACKAGE_PIN AM18 [get_ports rtm_sfp_rx_n_i[0]]
