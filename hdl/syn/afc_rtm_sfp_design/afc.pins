@@ -330,8 +330,8 @@ pin 0 j2_d7  AK21
 pin 0 j2_c7  AJ21
 pin 0 j2_d6  E17
 pin 0 j2_c6  F17
-pin 0 j2_d5  E3
-pin 0 j2_c5  F3
+pin 0 j2_d5  E13
+pin 0 j2_c5  F13
 pin 0 j2_d4  E15
 pin 0 j2_c4  F15
 pin 0 j2_d3  C16
