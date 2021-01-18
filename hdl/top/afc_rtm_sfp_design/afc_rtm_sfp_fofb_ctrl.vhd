@@ -52,7 +52,7 @@ use work.fofb_cc_pkg.all;
 
 entity afc_rtm_sfp_fofb_ctrl is
 generic (
-  g_NUM_SFPS                                 : integer := 4
+  g_NUM_SFPS                                 : integer := 8
 );
 port (
   ---------------------------------------------------------------------------
@@ -216,6 +216,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_NUM_USER_IRQ                    : natural := 1;
 
   -- RTM 8SFP IDs
+  constant c_NUM_SFPS_FOFB                   : integer := 4; -- maximum of 4 supported
   constant c_RTM_8SFP_NUM_CORES              : natural := 1;
 
   constant c_RTM_8SFP_0_ID                   : natural := 0;
@@ -234,10 +235,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
-  constant c_LANE_COUNT                      : integer := 4;
+  constant c_LANE_COUNT                      : integer := c_NUM_SFPS_FOFB;
   constant c_USE_CHIPSCOPE                   : boolean := true;
 
-  constant c_NUM_SFPS                        : integer := g_NUM_SFPS;
   constant c_RTM_SI57x_I2C_FREQ              : integer := 400000;
   constant c_RTM_SI57x_INIT_OSC              : boolean := true;
   constant c_RTM_SI57x_INIT_RFREQ_VALUE      : std_logic_vector(37 downto 0) := "00" & x"2bc0af3b8";
@@ -252,10 +252,17 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal wb_rtm_master_out                   : t_wishbone_master_out_array(c_RTM_8SFP_NUM_CORES-1 downto 0);
   signal wb_rtm_master_in                    : t_wishbone_master_in_array(c_RTM_8SFP_NUM_CORES-1 downto 0);
 
-  signal rtm_sfp_rx_p                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
-  signal rtm_sfp_rx_n                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
-  signal rtm_sfp_tx_p                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
-  signal rtm_sfp_tx_n                       : std_logic_vector(c_NUM_SFPS-1 downto 0);
+  -- Fix SFP inversion from 1 to 8 to 8 to 1
+  signal rtm_sfp_fix_rx_p                   : std_logic_vector(g_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_fix_rx_n                   : std_logic_vector(g_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_fix_tx_p                   : std_logic_vector(g_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_fix_tx_n                   : std_logic_vector(g_NUM_SFPS-1 downto 0);
+
+  -- SFPs to FOFB controller
+  signal rtm_sfp_rx_p                       : std_logic_vector(g_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_rx_n                       : std_logic_vector(g_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_tx_p                       : std_logic_vector(g_NUM_SFPS-1 downto 0);
+  signal rtm_sfp_tx_n                       : std_logic_vector(g_NUM_SFPS-1 downto 0);
 
   signal rtm_clk1_p                         : std_logic;
   signal rtm_clk1_n                         : std_logic;
@@ -673,15 +680,24 @@ begin
   --                          RTM 8SFP OHWR                           --
   ----------------------------------------------------------------------
 
+  gen_fix_inv_sfps: for i in 0 to g_NUM_SFPS-1 generate
+
+    rtm_sfp_fix_rx_p(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_p_i(i);
+    rtm_sfp_fix_rx_n(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_n_i(i);
+    rtm_sfp_tx_p_o(i) <= rtm_sfp_fix_tx_p(g_NUM_SFPS-1-i);
+    rtm_sfp_tx_n_o(i) <= rtm_sfp_fix_tx_n(g_NUM_SFPS-1-i);
+
+  end generate;
+
   cmp_rtm8sfp_ohwr : rtm8sfp_ohwr
   generic map (
-    g_NUM_SFPS                                 => c_NUM_SFPS,
+    g_NUM_SFPS                                 => g_NUM_SFPS,
     g_SYS_CLOCK_FREQ                           => c_SYS_CLOCK_FREQ,
     g_SI57x_I2C_FREQ                           => c_RTM_SI57x_I2C_FREQ,
     -- Whether or not to initialize oscilator with the specified values
     g_SI57x_INIT_OSC                           => c_RTM_SI57x_INIT_OSC,
     -- Init Oscillator values
-    g_SI57x_INIT_RFREQ_VALUE                   => c_RTM_SI57x_INIT_RFREQ_VALUE ,
+    g_SI57x_INIT_RFREQ_VALUE                   => c_RTM_SI57x_INIT_RFREQ_VALUE,
     g_SI57x_INIT_N1_VALUE                      => c_RTM_SI57x_INIT_N1_VALUE,
     g_SI57x_INIT_HS_VALUE                      => c_RTM_SI57x_INIT_HS_VALUE
   )
@@ -696,10 +712,10 @@ begin
     -- RTM board pins
     ---------------------------------------------------------------------------
     -- SFP
-    sfp_rx_p_i                                 => rtm_sfp_rx_p_i,
-    sfp_rx_n_i                                 => rtm_sfp_rx_n_i,
-    sfp_tx_p_o                                 => rtm_sfp_tx_p_o,
-    sfp_tx_n_o                                 => rtm_sfp_tx_n_o,
+    sfp_rx_p_i                                 => rtm_sfp_fix_rx_p,
+    sfp_rx_n_i                                 => rtm_sfp_fix_rx_n,
+    sfp_tx_p_o                                 => rtm_sfp_fix_tx_p,
+    sfp_tx_n_o                                 => rtm_sfp_fix_tx_n,
 
     -- RTM I2C.
     -- SFP configuration pins, behind a I2C MAX7356. I2C addr = 1110_100 & '0' = 0xE8
@@ -798,37 +814,30 @@ begin
   --                          FOFB DCC 0                              --
   ----------------------------------------------------------------------
 
-  -- RX lines
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(0) <= rtm_sfp_rx_p(0);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(0) <= rtm_sfp_rx_n(0);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(1) <= rtm_sfp_rx_p(1);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(1) <= rtm_sfp_rx_n(1);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(2) <= rtm_sfp_rx_p(2);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(2) <= rtm_sfp_rx_n(2);
-  fofb_rio_rx_p(c_FOFB_CC_0_ID)(3) <= rtm_sfp_rx_p(3);
-  fofb_rio_rx_n(c_FOFB_CC_0_ID)(3) <= rtm_sfp_rx_n(3);
+  gen_fofb_sfps: for i in 0 to c_NUM_SFPS_FOFB-1 generate
 
-  -- TX lines
-  rtm_sfp_tx_p_o(0) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(0);
-  rtm_sfp_tx_n_o(0) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(0);
-  -- rtm_sfp_tx_disable_o(0) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(0);
+    -- RX lines
+    fofb_rio_rx_p(c_FOFB_CC_0_ID)(i) <= rtm_sfp_rx_p(i);
+    fofb_rio_rx_n(c_FOFB_CC_0_ID)(i) <= rtm_sfp_rx_n(i);
 
-  rtm_sfp_tx_p_o(1) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(1);
-  rtm_sfp_tx_n_o(1) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(1);
-  -- rtm_sfp_tx_disable_o(1) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(1);
+    -- TX lines
+    rtm_sfp_tx_p(i) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(i);
+    rtm_sfp_tx_n(i) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(i);
 
-  rtm_sfp_tx_p_o(2) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(2);
-  rtm_sfp_tx_n_o(2) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(2);
-  -- rtm_sfp_tx_disable_o(2) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(2);
+  end generate;
 
-  rtm_sfp_tx_p_o(3) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(3);
-  rtm_sfp_tx_n_o(3) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(3);
-  -- rtm_sfp_tx_disable_o(3) <= fofb_rio_tx_disable(c_FOFB_CC_0_ID)(3);
+  gen_unused_fofb_sfps: for i in c_NUM_SFPS_FOFB to g_NUM_SFPS-1 generate
 
-  -- Clocks. Use rtm_clk2_p as this goes to the same bank as SFP 0, 1, 2, 3
-  -- tranceivers
-  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk2_p;
-  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk2_n;
+    -- TX lines
+    rtm_sfp_tx_p(i) <= '1';
+    rtm_sfp_tx_n(i) <= '0';
+
+  end generate;
+
+  -- Clocks. Use rtm_clk1_p as this goes to the same bank as SFP 0, 1, 2, 3
+  -- transceivers
+  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk1_p;
+  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk1_n;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
