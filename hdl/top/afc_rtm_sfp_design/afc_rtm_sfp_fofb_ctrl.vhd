@@ -469,6 +469,39 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal user_wb_out                         : t_wishbone_master_out_array(c_USER_NUM_CORES-1 downto 0);
   signal user_wb_in                          : t_wishbone_master_in_array(c_USER_NUM_CORES-1 downto 0) := (others => c_DUMMY_WB_MASTER_IN);
 
+  signal probe_in0                           : std_logic_vector(63 downto 0);
+  signal probe_in1                           : std_logic_vector(63 downto 0);
+
+  signal probe_out0                          : std_logic_vector(63 downto 0);
+  signal probe_out1                          : std_logic_vector(63 downto 0);
+
+  signal rtm_ext_wr                          : std_logic;
+  signal rtm_ext_rfreq_value                 : std_logic_vector(37 downto 0);
+  signal rtm_ext_n1_value                    : std_logic_vector(6 downto 0);
+  signal rtm_ext_hs_value                    : std_logic_vector(2 downto 0);
+
+  signal fpga_si570_oe                       : std_logic;
+  signal fofb_sysreset_n                     : std_logic;
+  signal fofb_reset_n                        : std_logic;
+  signal fofb_reset                          : std_logic;
+
+  signal rtm_sfp_status_reg_pl               : std_logic;
+  signal rtm_sfp_status_reg_clk_n            : std_logic;
+  signal rtm_sfp_status_reg_out              : std_logic;
+
+  signal rtm_sfp_ctl_str_n                   : std_logic;
+  signal rtm_sfp_ctl_din_n                   : std_logic;
+  signal rtm_sfp_ctl_oe_n                    : std_logic;
+
+  signal sfp_txdisable                       : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_rs0                             : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_rs1                             : std_logic_vector(7 downto 0) := (others => '0');
+
+  signal sfp_led1                            : std_logic_vector(7 downto 0);
+  signal sfp_los                             : std_logic_vector(7 downto 0);
+  signal sfp_txfault                         : std_logic_vector(7 downto 0);
+  signal sfp_detect_n                        : std_logic_vector(7 downto 0);
+
 begin
 
   cmp_afc_base_acq : afc_base_acq
@@ -742,24 +775,32 @@ begin
     -- SFP status bits. Behind 4 74HC165, 8-parallel-in/serial-out. 4 x 8 bits.
     --
     -- Parallel load
-    sfp_status_reg_pl_o                        => rtm_sfp_status_reg_pl_o,
+    sfp_status_reg_pl_o                        => rtm_sfp_status_reg_pl,
     -- Clock N
-    sfp_status_reg_clk_n_o                     => rtm_sfp_status_reg_clk_n_o,
+    sfp_status_reg_clk_n_o                     => rtm_sfp_status_reg_clk_n,
     -- Serial output
-    sfp_status_reg_out_i                       => rtm_sfp_status_reg_out_i,
+    sfp_status_reg_out_i                       => rtm_sfp_status_reg_out,
 
     -- SFP control bits. Behind 4 74HC4094D, serial-in/8-parallel-out. 5 x 8 bits.
     --
     -- Strobe
-    sfp_ctl_str_n_o                            => rtm_sfp_ctl_str_n_o,
+    sfp_ctl_reg_str_n_o                        => rtm_sfp_ctl_str_n,
     -- Data input
-    sfp_ctl_din_n_o                            => rtm_sfp_ctl_din_n_o,
+    sfp_ctl_reg_din_n_o                        => rtm_sfp_ctl_din_n,
     -- Parallel output enable
-    sfp_ctl_oe_n_o                             => rtm_sfp_ctl_oe_n_o,
+    sfp_ctl_reg_oe_n_o                         => rtm_sfp_ctl_oe_n,
 
     -- External clock from RTM to FPGA
     ext_clk_p_i                                => rtm_ext_clk_p_i,
     ext_clk_n_i                                => rtm_ext_clk_n_i,
+
+    ---------------------------------------------------------------------------
+    -- Optional external RFFREQ interface
+    ---------------------------------------------------------------------------
+    ext_wr_i                                   => rtm_ext_wr,
+    ext_rfreq_value_i                          => rtm_ext_rfreq_value,
+    ext_n1_value_i                             => rtm_ext_n1_value,
+    ext_hs_value_i                             => rtm_ext_hs_value,
 
     ---------------------------------------------------------------------------
     -- Status pins
@@ -769,6 +810,15 @@ begin
     ---------------------------------------------------------------------------
     -- FPGA side. Just a bypass for now
     ---------------------------------------------------------------------------
+    sfp_txdisable_i                            => sfp_txdisable,
+    sfp_rs0_i                                  => sfp_rs0,
+    sfp_rs1_i                                  => sfp_rs1,
+
+    sfp_led1_o                                 => sfp_led1,
+    sfp_los_o                                  => sfp_los,
+    sfp_txfault_o                              => sfp_txfault,
+    sfp_detect_n_o                             => sfp_detect_n,
+
     fpga_sfp_rx_p_o                            => rtm_sfp_rx_p,
     fpga_sfp_rx_n_o                            => rtm_sfp_rx_n,
     fpga_sfp_tx_p_i                            => rtm_sfp_tx_p,
@@ -787,6 +837,14 @@ begin
     fpga_ext_clk_p_o                           => rtm_ext_clk_p,
     fpga_ext_clk_n_o                           => rtm_ext_clk_n
   );
+
+  rtm_sfp_status_reg_pl_o    <= rtm_sfp_status_reg_pl;
+  rtm_sfp_status_reg_clk_n_o <= rtm_sfp_status_reg_clk_n;
+  rtm_sfp_status_reg_out     <= rtm_sfp_status_reg_out_i;
+
+  rtm_sfp_ctl_str_n_o        <= rtm_sfp_ctl_str_n;
+  rtm_sfp_ctl_din_n_o        <= rtm_sfp_ctl_din_n;
+  rtm_sfp_ctl_oe_n_o         <= rtm_sfp_ctl_oe_n;
 
   -- Generate large pulse for reset
   cmp_gc_posedge : gc_posedge
@@ -918,7 +976,7 @@ begin
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_0_ID)
   );
 
-  fofb_sysreset_n <= clk_sys_rstn and rtm_reconfig_rst_n;
+  fofb_sysreset_n <= clk_sys_rstn and rtm_reconfig_rst_n and fofb_reset_n;
 
   ----------------------------------------------------------------------
   --                          Acquisition                             --
@@ -960,5 +1018,32 @@ begin
   -- Assign intern triggers to trigger module
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq1_channel_1;
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_2_ID) <= trig_acq1_channel_2;
+
+  ----------------------------------------------------------------------
+  --                          VIO                                     --
+  ----------------------------------------------------------------------
+  cmp_vio_din2_w64_dout2_w64 : entity work.vio_din2_w64_dout2_w64
+  port map (
+    clk                                      => clk_sys,
+    probe_in0                                => probe_in0,
+    probe_in1                                => probe_in1,
+    probe_out0                               => probe_out0,
+    probe_out1                               => probe_out1
+  );
+
+  probe_in0(7 downto 0)  <= sfp_led1;
+  probe_in0(15 downto 8)  <= sfp_los;
+  probe_in0(23 downto 16)  <= sfp_txfault;
+  probe_in0(31 downto 24)  <= not sfp_detect_n;
+  probe_in0(63 downto 32)  <= (others => '0');
+
+  probe_in1(63 downto 0) <= (others => '0');
+
+  rtm_ext_rfreq_value <= probe_out0(37 downto 0);
+  rtm_ext_wr          <= probe_out1(0);
+  rtm_ext_n1_value    <= probe_out1(7 downto 1);
+  rtm_ext_hs_value    <= probe_out1(10 downto 8);
+  fofb_reset          <= probe_out1(11);
+  fofb_reset_n        <= not fofb_reset;
 
 end architecture top;
