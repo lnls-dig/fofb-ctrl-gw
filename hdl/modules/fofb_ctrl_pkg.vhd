@@ -648,6 +648,48 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  component rtm8sfp_ohwr_serial_regs
+  generic (
+    g_SYS_CLOCK_FREQ                           : integer := 100000000;
+    g_SERIAL_FREQ                              : integer := 100000
+  );
+  port (
+    ---------------------------------------------------------------------------
+    -- clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_sys_i                                  : in std_logic;
+    rst_n_i                                    : in std_logic;
+
+    ---------------------------------------------------------------------------
+    -- RTM serial interface
+    ---------------------------------------------------------------------------
+    -- Set to 1 to read and write all SFP parameters listed at the SFP
+    -- parallel interface
+    sfp_sta_ctl_rw_i                           : in std_logic := '1';
+
+    sfp_status_reg_clk_n_o                     : out std_logic;
+    sfp_status_reg_out_i                       : in std_logic;
+    sfp_status_reg_pl_o                        : out std_logic;
+
+    sfp_ctl_reg_oe_n_o                         : out std_logic;
+    sfp_ctl_reg_din_n_o                        : out std_logic;
+    sfp_ctl_reg_str_n_o                        : out std_logic;
+
+    ---------------------------------------------------------------------------
+    -- SFP parallel interface
+    ---------------------------------------------------------------------------
+    sfp_led1_o                                 : out std_logic_vector(7 downto 0);
+    sfp_los_o                                  : out std_logic_vector(7 downto 0);
+    sfp_txfault_o                              : out std_logic_vector(7 downto 0);
+    sfp_detect_n_o                             : out std_logic_vector(7 downto 0);
+    sfp_txdisable_i                            : in std_logic_vector(7 downto 0);
+    sfp_rs0_i                                  : in std_logic_vector(7 downto 0);
+    sfp_rs1_i                                  : in std_logic_vector(7 downto 0);
+    sfp_led1_i                                 : in std_logic_vector(7 downto 0);
+    sfp_led2_i                                 : in std_logic_vector(7 downto 0)
+  );
+  end component;
+
   --------------------------------------------------------------------
   -- SDB Devices Structures
   --------------------------------------------------------------------
