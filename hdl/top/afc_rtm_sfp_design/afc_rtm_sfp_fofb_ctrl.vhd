@@ -240,9 +240,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_NUM_SFPS                        : integer := g_NUM_SFPS;
   constant c_RTM_SI57x_I2C_FREQ              : integer := 400000;
   constant c_RTM_SI57x_INIT_OSC              : boolean := true;
-  constant c_RTM_SI57x_INIT_RFREQ_VALUE      : std_logic_vector(37 downto 0) := "00" & x"313662690";
-  constant c_RTM_SI57x_INIT_N1_VALUE         : std_logic_vector(6 downto 0) := "0000101";
-  constant c_RTM_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0) := "010";
+  constant c_RTM_SI57x_INIT_RFREQ_VALUE      : std_logic_vector(37 downto 0) := "00" & x"2bc0af3b8";
+  constant c_RTM_SI57x_INIT_N1_VALUE         : std_logic_vector(6 downto 0) := "0000111";
+  constant c_RTM_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0) := "000";
 
   -----------------------------------------------------------------------------
   -- RTM signals
