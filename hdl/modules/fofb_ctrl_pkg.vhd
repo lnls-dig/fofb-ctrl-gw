@@ -599,11 +599,11 @@ package fofb_ctrl_pkg is
     -- SFP8_LED1, SFP8_RS1LOS, SFP8_TXFAULT, SFP7_DETECT, ...
     --
     -- Strobe
-    sfp_ctl_str_n_o                            : out   std_logic;
+    sfp_ctl_reg_str_n_o                        : out   std_logic;
     -- Data input
-    sfp_ctl_din_n_o                            : out   std_logic;
+    sfp_ctl_reg_din_n_o                        : out   std_logic;
     -- Parallel output enable
-    sfp_ctl_oe_n_o                             : out   std_logic;
+    sfp_ctl_reg_oe_n_o                         : out   std_logic;
 
     -- External clock from RTM to FPGA
     ext_clk_p_i                                : in    std_logic;
@@ -623,8 +623,17 @@ package fofb_ctrl_pkg is
     sta_reconfig_done_o                        : out    std_logic;
 
     ---------------------------------------------------------------------------
-    -- FPGA side. Just a bypass for now
+    -- FPGA side.
     ---------------------------------------------------------------------------
+    sfp_txdisable_i                            : in     std_logic_vector(7 downto 0) := (others => '0');
+    sfp_rs0_i                                  : in     std_logic_vector(7 downto 0) := (others => '0');
+    sfp_rs1_i                                  : in     std_logic_vector(7 downto 0) := (others => '0');
+
+    sfp_led1_o                                 : out    std_logic_vector(7 downto 0);
+    sfp_los_o                                  : out    std_logic_vector(7 downto 0);
+    sfp_txfault_o                              : out    std_logic_vector(7 downto 0);
+    sfp_detect_n_o                             : out    std_logic_vector(7 downto 0);
+
     fpga_sfp_rx_p_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
     fpga_sfp_rx_n_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
     fpga_sfp_tx_p_i                            : in     std_logic_vector(g_NUM_SFPS-1 downto 0);

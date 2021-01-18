@@ -143,11 +143,11 @@ port (
   -- SFP8_LED1, SFP8_RS1LOS, SFP8_TXFAULT, SFP7_DETECT, ...
   --
   -- Strobe
-  sfp_ctl_str_n_o                            : out   std_logic;
+  sfp_ctl_reg_str_n_o                        : out   std_logic;
   -- Data input
-  sfp_ctl_din_n_o                            : out   std_logic;
+  sfp_ctl_reg_din_n_o                        : out   std_logic;
   -- Parallel output enable
-  sfp_ctl_oe_n_o                             : out   std_logic;
+  sfp_ctl_reg_oe_n_o                         : out   std_logic;
 
   -- External clock from RTM to FPGA
   ext_clk_p_i                                : in    std_logic;
@@ -167,8 +167,17 @@ port (
   sta_reconfig_done_o                        : out    std_logic;
 
   ---------------------------------------------------------------------------
-  -- FPGA side. Just a bypass for now
+  -- FPGA side.
   ---------------------------------------------------------------------------
+  sfp_txdisable_i                            : in     std_logic_vector(7 downto 0) := (others => '0');
+  sfp_rs0_i                                  : in     std_logic_vector(7 downto 0) := (others => '0');
+  sfp_rs1_i                                  : in     std_logic_vector(7 downto 0) := (others => '0');
+
+  sfp_led1_o                                 : out    std_logic_vector(7 downto 0);
+  sfp_los_o                                  : out    std_logic_vector(7 downto 0);
+  sfp_txfault_o                              : out    std_logic_vector(7 downto 0);
+  sfp_detect_n_o                             : out    std_logic_vector(7 downto 0);
+
   fpga_sfp_rx_p_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
   fpga_sfp_rx_n_o                            : out    std_logic_vector(g_NUM_SFPS-1 downto 0);
   fpga_sfp_tx_p_i                            : in     std_logic_vector(g_NUM_SFPS-1 downto 0);
@@ -197,6 +206,11 @@ architecture rtl of rtm8sfp_ohwr is
   signal scl_pad_oen                         : std_logic;
   signal sda_pad_oen                         : std_logic;
 
+  signal sfp_led1_in                        : std_logic_vector(7 downto 0);
+  signal sfp_led2_in                        : std_logic_vector(7 downto 0);
+  signal sfp_los                             : std_logic_vector(7 downto 0);
+  signal sfp_detect_n                        : std_logic_vector(7 downto 0);
+
 begin
 
   -- Simple bypass for now
@@ -214,13 +228,6 @@ begin
   fpga_clk1_n_o        <= fpga_clk1_n_i;
   fpga_clk2_p_o        <= fpga_clk2_p_i;
   fpga_clk2_n_o        <= fpga_clk2_n_i;
-
-  sfp_status_reg_pl_o     <= '0';
-  sfp_status_reg_clk_n_o  <= '1';
-
-  sfp_ctl_str_n_o      <= '1';
-  sfp_ctl_din_n_o      <= '1';
-  sfp_ctl_oe_n_o       <= '1';
 
   fpga_ext_clk_p_o     <=  ext_clk_p_i;
   fpga_ext_clk_n_o     <=  ext_clk_n_i;
@@ -277,5 +284,46 @@ begin
   -- No input reading
   rtm_scl_b <= '0' when scl_pad_oen = '0' else 'Z';
   rtm_sda_b <= '0' when sda_pad_oen = '0' else 'Z';
+
+  cmp_rtm_status_and_ctrl : rtm8sfp_ohwr_serial_regs
+  port map(
+    ---------------------------------------------------------------------------
+    -- clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_sys_i                                => clk_sys_i,
+    rst_n_i                                  => rst_n_i,
+
+   ---------------------------------------------------------------------------
+   -- RTM serial interface
+   ---------------------------------------------------------------------------
+    sfp_sta_ctl_rw_i                        => '1',
+
+    sfp_status_reg_clk_n_o                  => sfp_status_reg_clk_n_o,
+    sfp_status_reg_out_i                    => sfp_status_reg_out_i,
+    sfp_status_reg_pl_o                     => sfp_status_reg_pl_o,
+
+    sfp_ctl_reg_oe_n_o                      => sfp_ctl_reg_oe_n_o,
+    sfp_ctl_reg_din_n_o                     => sfp_ctl_reg_din_n_o,
+    sfp_ctl_reg_str_n_o                     => sfp_ctl_reg_str_n_o,
+
+    ---------------------------------------------------------------------------
+    -- SFP parallel interface
+    ---------------------------------------------------------------------------
+    sfp_led1_o                              => sfp_led1_o,
+    sfp_los_o                               => sfp_los,
+    sfp_txfault_o                           => sfp_txfault_o,
+    sfp_detect_n_o                          => sfp_detect_n,
+    sfp_txdisable_i                         => sfp_txdisable_i,
+    sfp_rs0_i                               => sfp_rs0_i,
+    sfp_rs1_i                               => sfp_rs1_i,
+    sfp_led1_i                              => sfp_led1_in,
+    sfp_led2_i                              => sfp_led2_in
+  );
+
+  sfp_led1_in <= not sfp_los;
+  sfp_led2_in <= sfp_detect_n;
+
+  sfp_detect_n_o <= sfp_detect_n;
+  sfp_los_o <= sfp_los;
 
 end rtl;
