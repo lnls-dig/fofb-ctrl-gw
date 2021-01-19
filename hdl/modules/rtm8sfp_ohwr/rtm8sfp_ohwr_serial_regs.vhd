@@ -130,6 +130,9 @@ architecture rtl of rtm8sfp_ohwr_serial_regs is
             -- Send MSB first. Careful to not wrap "counter".
             reg_din_n <= not val_to_device(val_to_device'left-
                                 to_integer(counter(counter'left downto 2)));
+            -- First otput bit is ready to read after PARALLEL_LOAD
+            val_from_device(val_from_device'left -
+                to_integer(counter(counter'left downto 2))) <= reg_dout;
             reg_pl <= '0';
             reg_str_n <= '1';
             reg_oe_n <= '0';
@@ -143,8 +146,6 @@ architecture rtl of rtm8sfp_ohwr_serial_regs is
             reg_clk_n <= '0';
           when "10" =>
             reg_clk_n <= '1';
-            val_from_device(val_from_device'left -
-                to_integer(counter(counter'left downto 2))) <= reg_dout;
             reg_str_n <= '1';
 
             if counter(counter'left downto 2) = to_unsigned(val_num_bits, counter'length)-1 then
