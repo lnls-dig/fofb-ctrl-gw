@@ -12,6 +12,7 @@
 
 
 
+
 # <xdcgen_start>
 
 # This section has been generated automatically by xdcgen.py. Do not hand-modify if not really necessary.
@@ -33,14 +34,6 @@ set_property PACKAGE_PIN G16 [get_ports rtm_fpga_clk1_n_i]
 set_property PACKAGE_PIN H16 [get_ports rtm_fpga_clk1_p_i]
 set_property PACKAGE_PIN L4 [get_ports rtm_sfp_status_reg_pl_o]
 set_property IOSTANDARD LVCMOS25 [get_ports rtm_sfp_status_reg_pl_o]
-set_property PACKAGE_PIN AM18 [get_ports rtm_sfp_rx_n_i[0]]
-set_property PACKAGE_PIN AL18 [get_ports rtm_sfp_rx_p_i[0]]
-set_property PACKAGE_PIN AK19 [get_ports rtm_sfp_rx_n_i[1]]
-set_property PACKAGE_PIN AJ19 [get_ports rtm_sfp_rx_p_i[1]]
-set_property PACKAGE_PIN AM20 [get_ports rtm_sfp_rx_n_i[2]]
-set_property PACKAGE_PIN AL20 [get_ports rtm_sfp_rx_p_i[2]]
-set_property PACKAGE_PIN AK21 [get_ports rtm_sfp_rx_n_i[3]]
-set_property PACKAGE_PIN AJ21 [get_ports rtm_sfp_rx_p_i[3]]
 set_property PACKAGE_PIN E17 [get_ports rtm_sfp_rx_n_i[4]]
 set_property PACKAGE_PIN F17 [get_ports rtm_sfp_rx_p_i[4]]
 set_property PACKAGE_PIN E13 [get_ports rtm_sfp_rx_n_i[5]]
@@ -49,14 +42,6 @@ set_property PACKAGE_PIN E15 [get_ports rtm_sfp_rx_n_i[6]]
 set_property PACKAGE_PIN F15 [get_ports rtm_sfp_rx_p_i[6]]
 set_property PACKAGE_PIN C16 [get_ports rtm_sfp_rx_n_i[7]]
 set_property PACKAGE_PIN D16 [get_ports rtm_sfp_rx_p_i[7]]
-set_property PACKAGE_PIN AP19 [get_ports rtm_sfp_tx_n_o[0]]
-set_property PACKAGE_PIN AN19 [get_ports rtm_sfp_tx_p_o[0]]
-set_property PACKAGE_PIN AP21 [get_ports rtm_sfp_tx_n_o[1]]
-set_property PACKAGE_PIN AN21 [get_ports rtm_sfp_tx_p_o[1]]
-set_property PACKAGE_PIN AM22 [get_ports rtm_sfp_tx_n_o[2]]
-set_property PACKAGE_PIN AL22 [get_ports rtm_sfp_tx_p_o[2]]
-set_property PACKAGE_PIN AP23 [get_ports rtm_sfp_tx_n_o[3]]
-set_property PACKAGE_PIN AN23 [get_ports rtm_sfp_tx_p_o[3]]
 set_property PACKAGE_PIN A17 [get_ports rtm_sfp_tx_n_o[4]]
 set_property PACKAGE_PIN B17 [get_ports rtm_sfp_tx_p_o[4]]
 set_property PACKAGE_PIN A13 [get_ports rtm_sfp_tx_n_o[5]]

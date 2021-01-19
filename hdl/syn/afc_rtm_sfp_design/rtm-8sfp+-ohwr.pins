@@ -36,14 +36,14 @@ pin j2_a5   rtm_fpga_clk1_p_i
 # pin j2_a1   rtm_sfp_status_reg_pl_o       lvcmos33
 pin j2_a1   rtm_sfp_status_reg_pl_o       lvcmos25
 
-pin j2_d10  rtm_sfp_rx_n_i[0]
-pin j2_c10  rtm_sfp_rx_p_i[0]
-pin j2_d9   rtm_sfp_rx_n_i[1]
-pin j2_c9   rtm_sfp_rx_p_i[1]
-pin j2_d8   rtm_sfp_rx_n_i[2]
-pin j2_c8   rtm_sfp_rx_p_i[2]
-pin j2_d7   rtm_sfp_rx_n_i[3]
-pin j2_c7   rtm_sfp_rx_p_i[3]
+#pin j2_d10  rtm_sfp_rx_n_i[0]
+#pin j2_c10  rtm_sfp_rx_p_i[0]
+#pin j2_d9   rtm_sfp_rx_n_i[1]
+#pin j2_c9   rtm_sfp_rx_p_i[1]
+#pin j2_d8   rtm_sfp_rx_n_i[2]
+#pin j2_c8   rtm_sfp_rx_p_i[2]
+#pin j2_d7   rtm_sfp_rx_n_i[3]
+#pin j2_c7   rtm_sfp_rx_p_i[3]
 # Incompatible electrical standard with AFC when using
 # the Flash SPI
 pin j2_d6   rtm_sfp_rx_n_i[4]
@@ -55,14 +55,14 @@ pin j2_c4   rtm_sfp_rx_p_i[6]
 pin j2_d3   rtm_sfp_rx_n_i[7]
 pin j2_c3   rtm_sfp_rx_p_i[7]
 
-pin j2_f10  rtm_sfp_tx_n_o[0]
-pin j2_e10  rtm_sfp_tx_p_o[0]
-pin j2_f9   rtm_sfp_tx_n_o[1]
-pin j2_e9   rtm_sfp_tx_p_o[1]
-pin j2_f8   rtm_sfp_tx_n_o[2]
-pin j2_e8   rtm_sfp_tx_p_o[2]
-pin j2_f7   rtm_sfp_tx_n_o[3]
-pin j2_e7   rtm_sfp_tx_p_o[3]
+#pin j2_f10  rtm_sfp_tx_n_o[0]
+#pin j2_e10  rtm_sfp_tx_p_o[0]
+#pin j2_f9   rtm_sfp_tx_n_o[1]
+#pin j2_e9   rtm_sfp_tx_p_o[1]
+#pin j2_f8   rtm_sfp_tx_n_o[2]
+#pin j2_e8   rtm_sfp_tx_p_o[2]
+#pin j2_f7   rtm_sfp_tx_n_o[3]
+#pin j2_e7   rtm_sfp_tx_p_o[3]
 # Incompatible electrical standard with AFC when using
 # the Flash SPI
 pin j2_f6   rtm_sfp_tx_n_o[4]
