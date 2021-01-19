@@ -503,6 +503,15 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal sfp_txfault                         : std_logic_vector(7 downto 0);
   signal sfp_detect_n                        : std_logic_vector(7 downto 0);
 
+  signal sfp_fix_txdisable                   : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_fix_rs0                         : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_fix_rs1                         : std_logic_vector(7 downto 0) := (others => '0');
+
+  signal sfp_fix_led1                        : std_logic_vector(7 downto 0);
+  signal sfp_fix_los                         : std_logic_vector(7 downto 0);
+  signal sfp_fix_txfault                     : std_logic_vector(7 downto 0);
+  signal sfp_fix_detect_n                    : std_logic_vector(7 downto 0);
+
 begin
 
   cmp_afc_base_acq : afc_base_acq
@@ -839,6 +848,19 @@ begin
     fpga_ext_clk_n_o                           => rtm_ext_clk_n
   );
 
+  gen_fix_sfp_ctl_status: for i in 0 to 7 generate
+
+    sfp_txdisable(i)      <=  sfp_fix_txdisable(7-i);
+    sfp_rs0(i)            <=  sfp_fix_rs0(7-i);
+    sfp_rs1(i)            <=  sfp_fix_rs1(7-i);
+
+    sfp_fix_led1(7-i)         <=  sfp_led1(i);
+    sfp_fix_los(7-i)          <=  sfp_los(i);
+    sfp_fix_txfault(7-i)      <=  sfp_txfault(i);
+    sfp_fix_detect_n(7-i)     <=  sfp_detect_n(i);
+
+  end generate;
+
   rtm_sfp_status_reg_pl_o    <= rtm_sfp_status_reg_pl;
   rtm_sfp_status_reg_clk_n_o <= rtm_sfp_status_reg_clk_n;
   rtm_sfp_status_reg_out     <= rtm_sfp_status_reg_out_i;
@@ -1032,10 +1054,10 @@ begin
     probe_out1                               => probe_out1
   );
 
-  probe_in0(7 downto 0)  <= sfp_led1;
-  probe_in0(15 downto 8)  <= sfp_los;
-  probe_in0(23 downto 16)  <= sfp_txfault;
-  probe_in0(31 downto 24)  <= not sfp_detect_n;
+  probe_in0(7 downto 0)  <= sfp_fix_led1;
+  probe_in0(15 downto 8)  <= sfp_fix_los;
+  probe_in0(23 downto 16)  <= sfp_fix_txfault;
+  probe_in0(31 downto 24)  <= sfp_fix_detect_n;
   probe_in0(63 downto 32)  <= (others => '0');
 
   probe_in1(63 downto 0) <= (others => '0');
@@ -1045,6 +1067,10 @@ begin
   rtm_ext_n1_value    <= probe_out1(7 downto 1);
   rtm_ext_hs_value    <= probe_out1(10 downto 8);
   fofb_reset          <= probe_out1(11);
+  sfp_fix_txdisable   <= probe_out1(19 downto 12);
+  sfp_fix_rs0         <= probe_out1(27 downto 20);
+  sfp_fix_rs1         <= probe_out1(35 downto 28);
+
   fofb_reset_n        <= not fofb_reset;
 
 end architecture top;
