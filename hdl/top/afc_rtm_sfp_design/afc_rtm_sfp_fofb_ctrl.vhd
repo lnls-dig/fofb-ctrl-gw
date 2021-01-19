@@ -52,7 +52,8 @@ use work.fofb_cc_pkg.all;
 
 entity afc_rtm_sfp_fofb_ctrl is
 generic (
-  g_NUM_SFPS                                 : integer := 8
+  g_NUM_SFPS                                 : integer := 4;
+  g_SFP_START_ID                             : integer := 4
 );
 port (
   ---------------------------------------------------------------------------
@@ -152,10 +153,10 @@ port (
   -- RTM board pins
   ---------------------------------------------------------------------------
   -- SFP
-  rtm_sfp_rx_p_i                             : in    std_logic_vector(g_NUM_SFPS-1 downto 0);
-  rtm_sfp_rx_n_i                             : in    std_logic_vector(g_NUM_SFPS-1 downto 0);
-  rtm_sfp_tx_p_o                             : out   std_logic_vector(g_NUM_SFPS-1 downto 0);
-  rtm_sfp_tx_n_o                             : out   std_logic_vector(g_NUM_SFPS-1 downto 0);
+  rtm_sfp_rx_p_i                             : in    std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
+  rtm_sfp_rx_n_i                             : in    std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
+  rtm_sfp_tx_p_o                             : out   std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
+  rtm_sfp_tx_n_o                             : out   std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
 
   -- RTM I2C.
   -- SFP configuration pins, behind a I2C MAX7356. I2C addr = 1110_100 & '0' = 0xE8
@@ -715,10 +716,10 @@ begin
 
   gen_fix_inv_sfps: for i in 0 to g_NUM_SFPS-1 generate
 
-    rtm_sfp_fix_rx_p(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_p_i(i);
-    rtm_sfp_fix_rx_n(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_n_i(i);
-    rtm_sfp_tx_p_o(i) <= rtm_sfp_fix_tx_p(g_NUM_SFPS-1-i);
-    rtm_sfp_tx_n_o(i) <= rtm_sfp_fix_tx_n(g_NUM_SFPS-1-i);
+    rtm_sfp_fix_rx_p(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_p_i(g_SFP_START_ID+i);
+    rtm_sfp_fix_rx_n(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_n_i(g_SFP_START_ID+i);
+    rtm_sfp_tx_p_o(g_SFP_START_ID+i) <= rtm_sfp_fix_tx_p(g_NUM_SFPS-1-i);
+    rtm_sfp_tx_n_o(g_SFP_START_ID+i) <= rtm_sfp_fix_tx_n(g_NUM_SFPS-1-i);
 
   end generate;
 
@@ -808,7 +809,7 @@ begin
     sta_reconfig_done_o                        => rtm_sta_reconfig_done,
 
     ---------------------------------------------------------------------------
-    -- FPGA side. Just a bypass for now
+    -- FPGA side
     ---------------------------------------------------------------------------
     sfp_txdisable_i                            => sfp_txdisable,
     sfp_rs0_i                                  => sfp_rs0,
