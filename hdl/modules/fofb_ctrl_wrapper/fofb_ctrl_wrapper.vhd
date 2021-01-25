@@ -151,6 +151,8 @@ end fofb_ctrl_wrapper;
 
 architecture rtl of fofb_ctrl_wrapper is
 
+  constant c_FA_IF_WR_SIZE                   : integer := g_BLK_SIZE * g_DMUX * g_BPMS;
+
   signal fai_fa_block_start                  : std_logic;
   signal fai_fa_data_valid                   : std_logic;
   signal fai_fa_d                            : std_logic_vector(g_FAI_DW-1 downto 0);
@@ -161,7 +163,8 @@ begin
 
     cmp_fofb_cc_fai_fa_gen : entity work.fofb_cc_fai_fa_gen
     generic map (
-      FAI_DW                                 => g_FAI_DW
+      FAI_DW                                 => g_FAI_DW,
+      FAI_VALID_CYCLES                       => c_FA_IF_WR_SIZE
     )
     port map (
       adcclk_i                               => adcclk_i,
