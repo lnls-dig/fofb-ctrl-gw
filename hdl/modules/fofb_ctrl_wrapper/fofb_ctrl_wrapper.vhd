@@ -50,6 +50,7 @@ generic
   -- BPM Data Interface Parameters
   g_BPMS                                    : integer := 1;
   g_FAI_DW                                  : integer := 16;
+  g_BLK_SIZE                                : integer := 16;
   g_DMUX                                    : integer := 2;
   -- Set to true to instantiate a chipscope with transceiver signals
   g_USE_CHIPSCOPE                           : boolean := false;
@@ -202,6 +203,7 @@ begin
       SEND_ID_NUM                            => g_SEND_ID_NUM,
       BPMS                                   => g_BPMS,
       FAI_DW                                 => g_FAI_DW,
+      BLK_SIZE                               => g_BLK_SIZE,
       DMUX                                   => g_DMUX,
       USE_CHIPSCOPE                          => g_USE_CHIPSCOPE
     )
