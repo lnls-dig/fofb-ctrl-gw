@@ -145,6 +145,8 @@ port
   ---------------------------------------------------------------------------
   -- Higher-level integration interface (PMC, SNIFFER_V5)
   ---------------------------------------------------------------------------
+  fofb_userclk_o                             : out std_logic;
+  fofb_userrst_o                             : out std_logic;
   xy_buf_addr_i                              : in  std_logic_vector(NodeW downto 0);
   xy_buf_dat_o                               : out std_logic_vector(63 downto 0);
   xy_buf_rstb_i                              : in  std_logic;
@@ -423,6 +425,8 @@ begin
       ---------------------------------------------------------------------------
       -- Higher-level integration interface (PMC, SNIFFER_V5)
       ---------------------------------------------------------------------------
+      fofb_userclk_o                             => fofb_userclk_o,
+      fofb_userrst_o                             => fofb_userrst_o,
       xy_buf_addr_i                              => xy_buf_addr_i,
       xy_buf_dat_o                               => xy_buf_dat_o,
       xy_buf_rstb_i                              => xy_buf_rstb_i,
