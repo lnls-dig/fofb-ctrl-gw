@@ -1,14 +1,14 @@
 memory-map:
   bus: wb-32-be
-  name: fofb_cc_csr
+  name: fofb_cc_regs
   description: FOFB CC registers
   comment: |
     Wishbone slave for FOFB CC core
   x-hdl:
     busgroup: True
-    iogroup: fofb_cc_csr
+    iogroup: fofb_cc_regs
   x-wbgen:
-    hdl_entity: wb_fofb_cc_csr
+    hdl_entity: wb_fofb_cc_regs
   children:
     - reg:
         name: cfg_val
