@@ -723,7 +723,7 @@ package fofb_ctrl_pkg is
     addr_first    => x"0000000000000000",
     addr_last     => x"000000000000FFFF",
     product => (
-    vendor_id     => x"1000000000001215",       -- LNLS
+    vendor_id     => x"1000000000000d15",       -- DLS
     device_id     => x"4a1df147",
     version       => x"00000001",
     date          => x"20201109",
