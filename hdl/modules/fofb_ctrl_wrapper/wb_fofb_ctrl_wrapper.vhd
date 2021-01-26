@@ -300,7 +300,7 @@ begin
   -----------------------------
   -- FOFB CC register map
   -----------------------------
-  cmp_fofb_cc_csr : entity work.wb_fofb_cc_csr
+  cmp_fofb_cc_regs : entity work.wb_fofb_cc_regs
     port map (
       rst_n_i                                => sysreset_n_i,
       clk_sys_i                              => sysclk_i,
@@ -314,15 +314,15 @@ begin
       wb_ack_o                               => wb_slv_adp_in.ack,
       wb_stall_o                             => wb_slv_adp_in.stall,
       fofb_cc_clk_ram_reg_i                  => fai_cfg_clk_out,
-      fofb_cc_csr_cfg_val_act_part_o         => fai_cfg_val_act_part,
-      fofb_cc_csr_cfg_val_err_clr_o          => fai_cfg_val_err_clr,
-      fofb_cc_csr_cfg_val_cc_enable_o        => fai_cfg_val_cc_enable,
-      fofb_cc_csr_cfg_val_tfs_override_o     => fai_cfg_val_tfs_override,
-      fofb_cc_csr_ram_reg_addr_i             => fai_cfg_a_out,
-      fofb_cc_csr_ram_reg_data_o             => fai_cfg_d_in,
-      fofb_cc_csr_ram_reg_rd_i               => fai_cfg_to_wbram_re,
-      fofb_cc_csr_ram_reg_data_i             => fai_cfg_d_out,
-      fofb_cc_csr_ram_reg_wr_i               => fai_cfg_to_wbram_we
+      fofb_cc_regs_cfg_val_act_part_o        => fai_cfg_val_act_part,
+      fofb_cc_regs_cfg_val_err_clr_o         => fai_cfg_val_err_clr,
+      fofb_cc_regs_cfg_val_cc_enable_o       => fai_cfg_val_cc_enable,
+      fofb_cc_regs_cfg_val_tfs_override_o    => fai_cfg_val_tfs_override,
+      fofb_cc_regs_ram_reg_addr_i            => fai_cfg_a_out,
+      fofb_cc_regs_ram_reg_data_o            => fai_cfg_d_in,
+      fofb_cc_regs_ram_reg_rd_i              => fai_cfg_to_wbram_re,
+      fofb_cc_regs_ram_reg_data_i            => fai_cfg_d_out,
+      fofb_cc_regs_ram_reg_wr_i              => fai_cfg_to_wbram_we
     );
 
   fai_cfg_to_wbram_we <= fai_cfg_we_out;
