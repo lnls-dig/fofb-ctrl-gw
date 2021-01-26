@@ -314,6 +314,13 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
    signal fai_cfg_val                        : t_fofb_cc_std32_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => (others => '0'));
 
+
+  signal fofb_userclk                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_userrst                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_userrst_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
   signal xy_buf_addr                         : t_fofb_cc_buf_addr_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => (others => '0'));
   signal xy_buf_dat                          : t_fofb_cc_buf_data_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
@@ -986,6 +993,8 @@ begin
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
+    fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_0_ID),
+    fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_0_ID),
     xy_buf_addr_i                              => xy_buf_addr(c_FOFB_CC_0_ID),
     xy_buf_dat_o                               => xy_buf_dat(c_FOFB_CC_0_ID),
     xy_buf_rstb_i                              => xy_buf_rstb(c_FOFB_CC_0_ID),
@@ -1001,15 +1010,17 @@ begin
 
   fofb_sysreset_n <= clk_sys_rstn and rtm_reconfig_rst_n and fofb_reset_n;
 
+  fofb_userrst_n(c_FOFB_CC_0_ID) <= not fofb_userrst(c_FOFB_CC_0_ID);
+
   ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
-    fs_clk_array(i)   <= clk_sys;
+    fs_clk_array(i)   <= fofb_userclk(c_FOFB_CC_0_ID);
     fs_ce_array(i)    <= '1';
-    fs_rst_n_array(i) <= clk_sys_rstn;
+    fs_rst_n_array(i) <= fofb_userrst_n(c_FOFB_CC_0_ID);
 
   end generate;
 
