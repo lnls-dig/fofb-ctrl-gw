@@ -10,9 +10,40 @@ memory-map:
   x-wbgen:
     hdl_entity: wb_fofb_cc_csr
   children:
+    - reg:
+        name: cfg_val
+        address: 0x00000000
+        width: 32
+        access: rw
+        description: FOFB CC configuration register
+        comment: |
+          FOFB CC configuration register
+        x-wbgen:
+          access_dev: READ_ONLY
+          access_bus: READ_WRITE
+          clock: fofb_cc_clk_ram_reg_i
+    - reg:
+        name: cfg_ctl
+        address: 0x00000004
+        width: 32
+        access: rw
+        description: FOFB CC control register
+        comment: |
+          FOFB CC control register
+        children:
+          - field:
+              name: read_ram
+              range: 0
+              description: signals FOFB CC module to read configuration RAM
+              comment: |
+                write 1: trigger a new read to configuration RAM
+              x-wbgen:
+                type: MONOSTABLE
+                clock: fofb_cc_clk_ram_reg_i
     - memory:
         name: ram_reg
         memsize: 8k
+        address: 0x00002000
         description: FOFB CC RAM for register map
         comment: |
           Register map is hanlded inside the FOFC CC module, but the RAM to read/write
@@ -27,15 +58,3 @@ memory-map:
               name: data
               width: 32
               access: rw
-    - reg:
-        name: cfg_val
-        address: 0x00002000
-        width: 32
-        access: rw
-        description: FOFB CC configuration register
-        comment: |
-          FOFB CC configuration register
-        x-wbgen:
-          access_dev: READ_ONLY
-          access_bus: READ_WRITE
-          clock: fofb_cc_clk_ram_reg_i
