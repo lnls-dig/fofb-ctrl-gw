@@ -186,9 +186,10 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   signal fai_cfg_we_out                      : std_logic;
   signal fai_cfg_clk_out                     : std_logic;
   signal fai_cfg_val_in                      : std_logic_vector(31 downto 0);
-  signal fai_cfg_val_wb_out                  : std_logic_vector(31 downto 0);
-  signal fai_cfg_read_ram_trig               : std_logic;
-
+  signal fai_cfg_val_act_part                : std_logic;
+  signal fai_cfg_val_err_clr                 : std_logic;
+  signal fai_cfg_val_cc_enable               : std_logic;
+  signal fai_cfg_val_tfs_override            : std_logic;
   signal fai_cfg_to_wbram_we                 : std_logic;
   signal fai_cfg_to_wbram_re                 : std_logic;
 
@@ -313,8 +314,10 @@ begin
       wb_ack_o                               => wb_slv_adp_in.ack,
       wb_stall_o                             => wb_slv_adp_in.stall,
       fofb_cc_clk_ram_reg_i                  => fai_cfg_clk_out,
-      fofb_cc_csr_cfg_val_o                  => fai_cfg_val_wb_out,
-      fofb_cc_csr_cfg_ctl_read_ram_o         => fai_cfg_read_ram_trig,
+      fofb_cc_csr_cfg_val_act_part_o         => fai_cfg_val_act_part,
+      fofb_cc_csr_cfg_val_err_clr_o          => fai_cfg_val_err_clr,
+      fofb_cc_csr_cfg_val_cc_enable_o        => fai_cfg_val_cc_enable,
+      fofb_cc_csr_cfg_val_tfs_override_o     => fai_cfg_val_tfs_override,
       fofb_cc_csr_ram_reg_addr_i             => fai_cfg_a_out,
       fofb_cc_csr_ram_reg_data_o             => fai_cfg_d_in,
       fofb_cc_csr_ram_reg_rd_i               => fai_cfg_to_wbram_re,
@@ -325,9 +328,17 @@ begin
   fai_cfg_to_wbram_we <= fai_cfg_we_out;
   fai_cfg_to_wbram_re <= not fai_cfg_we_out;
 
-  fai_cfg_val_in(31 downto 1) <= fai_cfg_val_wb_out(31 downto 1);
+  fai_cfg_val_in(31 downto 5) <= (others => '0');
+  -- TFS BPM override
+  fai_cfg_val_in(4) <= fai_cfg_val_tfs_override;
+  -- CC enable
+  fai_cfg_val_in(3) <= fai_cfg_val_cc_enable;
+  -- Error clear
+  fai_cfg_val_in(2) <= fai_cfg_val_err_clr;
+  -- Unused
+  fai_cfg_val_in(1) <= '0';
   -- 1-CC pulse indicating a new write operation was issued.
-  fai_cfg_val_in(0) <= fai_cfg_read_ram_trig;
+  fai_cfg_val_in(0) <= fai_cfg_val_act_part;
 
   cmp_fofb_ctrl_wrapper : fofb_ctrl_wrapper
     generic map (
