@@ -49,6 +49,10 @@ use work.fofb_ctrl_pkg.all;
 use work.fofb_cc_pkg.all;
 
 entity afc_ref_fofb_ctrl is
+generic (
+  g_NUM_SFPS                                 : integer := 4;
+  g_SFP_START_ID                             : integer := 4
+);
 port (
   ---------------------------------------------------------------------------
   -- Clocking pins
@@ -210,7 +214,6 @@ architecture top of afc_ref_fofb_ctrl is
   -----------------------------------------------------------------------------
   -- General constants
   -----------------------------------------------------------------------------
-
   constant c_NUM_USER_IRQ                    : natural := 1;
 
   -- FMC 4SFP IDs
@@ -281,6 +284,13 @@ architecture top of afc_ref_fofb_ctrl is
    signal fai_cfg_val                        : t_fofb_cc_std32_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => (others => '0'));
 
+
+  signal fofb_userclk                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_userrst                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_userrst_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
   signal xy_buf_addr                         : t_fofb_cc_buf_addr_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => (others => '0'));
   signal xy_buf_dat                          : t_fofb_cc_buf_data_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
@@ -353,7 +363,7 @@ architecture top of afc_ref_fofb_ctrl is
 
   constant c_ACQ_FIFO_SIZE                   : natural := 256;
 
-  -- Number of acquisition cores. Same as the number of FMCs
+  -- Number of acquisition cores. Same as the number of DCC
   constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES;
   -- Acquisition core IDs
   constant c_ACQ_CORE_0_ID                   : natural := 0;
@@ -368,7 +378,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_ACQ_DDR_ADDR_DIFF               : natural := c_ACQ_DDR_ADDR_RES_WIDTH-c_ddr_addr_width;
 
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 1; -- DCC for each FMC
+  constant c_ACQ_NUM_CHANNELS                : natural := 1; -- DCC for each DCC
   -- Acquisition channels IDs
   constant c_ACQ_DCC_ID                      : natural := 0;
 
@@ -408,7 +418,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_TRIG_MUX_SYNC_EDGE              : string   := "positive";
   constant c_TRIG_MUX_NUM_CHANNELS           : natural  := 10; -- Arbitrary for now
   constant c_TRIG_MUX_INTERN_NUM             : positive := c_TRIG_MUX_NUM_CHANNELS + c_ACQ_NUM_CHANNELS;
-  constant c_TRIG_MUX_RCV_INTERN_NUM         : positive := 2; -- 2 FMCs
+  constant c_TRIG_MUX_RCV_INTERN_NUM         : positive := 2; -- Arbitrary
   constant c_TRIG_MUX_MUX_NUM_CORES          : natural  := c_ACQ_NUM_CORES;
   constant c_TRIG_MUX_OUT_RESOLVER           : string   := "fanout";
   constant c_TRIG_MUX_IN_RESOLVER            : string   := "or";
@@ -479,7 +489,7 @@ begin
     generic map (
       g_DIVCLK_DIVIDE                          => 1,
       g_CLKBOUT_MULT_F                         => 8,
-      g_CLK0_DIVIDE_F                          => 8, -- Can be anything > 100MHz in th ecase of the FMC-ADC-100M
+      g_CLK0_DIVIDE_F                          => 8, -- 100 MHz
       g_CLK1_DIVIDE                            => 5, -- Must be 200 MHz
       --  If true, instantiate a VIC/UART/DIAG/SPI.
       g_WITH_VIC                               => true,
@@ -842,6 +852,8 @@ begin
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
+    fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_0_ID),
+    fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_0_ID),
     xy_buf_addr_i                              => xy_buf_addr(c_FOFB_CC_0_ID),
     xy_buf_dat_o                               => xy_buf_dat(c_FOFB_CC_0_ID),
     xy_buf_rstb_i                              => xy_buf_rstb(c_FOFB_CC_0_ID),
@@ -855,15 +867,17 @@ begin
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_0_ID)
   );
 
+  fofb_userrst_n(c_FOFB_CC_0_ID) <= not fofb_userrst(c_FOFB_CC_0_ID);
+
   ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
-    fs_clk_array(i)   <= clk_sys;
+    fs_clk_array(i)   <= fofb_userclk(c_FOFB_CC_0_ID);
     fs_ce_array(i)    <= '1';
-    fs_rst_n_array(i) <= clk_sys_rstn;
+    fs_rst_n_array(i) <= fofb_userrst_n(c_FOFB_CC_0_ID);
 
   end generate;
 
