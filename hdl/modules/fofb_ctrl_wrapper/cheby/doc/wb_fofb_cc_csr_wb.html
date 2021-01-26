@@ -61,20 +61,13 @@
 <td class="td_code">cfg_val</td>
 </tr>
 <tr class="tr_even">
-<td class="td_code">0x0004</td>
-<td>REG</td>
-<td><A href="#cfg_ctl">cfg_ctl</a></td>
-<td class="td_code">cfg_ctl</td>
-<td class="td_code">cfg_ctl</td>
-</tr>
-<tr class="tr_odd">
 <td class="td_code">0x2000-0x3fff</td>
 <td>MEMORY</td>
 <td><A href="#ram_reg">ram_reg</a></td>
 <td class="td_code">ram_reg</td>
 <td class="td_code">ram_reg</td>
 </tr>
-<tr class="tr_even">
+<tr class="tr_odd">
 <td class="td_code"> +0x2000</td>
 <td>REG</td>
 <td><A href="#ram_reg.data">ram_reg.data</a></td>
@@ -107,77 +100,6 @@ FOFB CC configuration register
  <td class="td_bit" colspan="1">24</td>
 </tr>
 <tr>
- <td class="td_field" colspan="8">cfg_val[31:24]</td>
-</tr>
-<tr>
- <td class="td_bit" colspan="1">23</td>
- <td class="td_bit" colspan="1">22</td>
- <td class="td_bit" colspan="1">21</td>
- <td class="td_bit" colspan="1">20</td>
- <td class="td_bit" colspan="1">19</td>
- <td class="td_bit" colspan="1">18</td>
- <td class="td_bit" colspan="1">17</td>
- <td class="td_bit" colspan="1">16</td>
-</tr>
-<tr>
- <td class="td_field" colspan="8">cfg_val[23:16]</td>
-</tr>
-<tr>
- <td class="td_bit" colspan="1">15</td>
- <td class="td_bit" colspan="1">14</td>
- <td class="td_bit" colspan="1">13</td>
- <td class="td_bit" colspan="1">12</td>
- <td class="td_bit" colspan="1">11</td>
- <td class="td_bit" colspan="1">10</td>
- <td class="td_bit" colspan="1">9</td>
- <td class="td_bit" colspan="1">8</td>
-</tr>
-<tr>
- <td class="td_field" colspan="8">cfg_val[15:8]</td>
-</tr>
-<tr>
- <td class="td_bit" colspan="1">7</td>
- <td class="td_bit" colspan="1">6</td>
- <td class="td_bit" colspan="1">5</td>
- <td class="td_bit" colspan="1">4</td>
- <td class="td_bit" colspan="1">3</td>
- <td class="td_bit" colspan="1">2</td>
- <td class="td_bit" colspan="1">1</td>
- <td class="td_bit" colspan="1">0</td>
-</tr>
-<tr>
- <td class="td_field" colspan="8">cfg_val[7:0]</td>
-</tr>
-</table>
-<ul>
-<li><b>
-cfg_val
-</b>[<i>rw</i>]: FOFB CC configuration register
-<br>FOFB CC configuration register
-</ul>
-<a name="cfg_ctl"></a>
-<h3><a name="sect_3_2">2.2. cfg_ctl</a></h3>
-<table cellpadding=0 cellspacing=0 border=0>
-<tr><td><b>HW prefix:</b></td><td class="td_code">cfg_ctl</td></tr>
-<tr><td><b>HW address:</b></td><td class="td_code">0x4</td></tr>
-<tr><td><b>C prefix:</b></td><td class="td_code">cfg_ctl</td></tr>
-<tr><td><b>C block offset:</b></td><td class="td_code">0x4</td></tr>
-</table>
-<p>
-FOFB CC control register
-</p>
-<table cellpadding=0 cellspacing=0 border=0>
-<tr>
- <td class="td_bit" colspan="1">31</td>
- <td class="td_bit" colspan="1">30</td>
- <td class="td_bit" colspan="1">29</td>
- <td class="td_bit" colspan="1">28</td>
- <td class="td_bit" colspan="1">27</td>
- <td class="td_bit" colspan="1">26</td>
- <td class="td_bit" colspan="1">25</td>
- <td class="td_bit" colspan="1">24</td>
-</tr>
-<tr>
  <td class="td_unused" colspan="1">-</td>
  <td class="td_unused" colspan="1">-</td>
  <td class="td_unused" colspan="1">-</td>
@@ -241,21 +163,37 @@ FOFB CC control register
  <td class="td_unused" colspan="1">-</td>
  <td class="td_unused" colspan="1">-</td>
  <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_field" colspan="1">read_ram</td>
+ <td class="td_field" colspan="1">tfs_override</td>
+ <td class="td_field" colspan="1">cc_enable</td>
+ <td class="td_field" colspan="1">err_clr</td>
+ <td class="td_field" colspan="1">unused</td>
+ <td class="td_field" colspan="1">act_part</td>
 </tr>
 </table>
 <ul>
 <li><b>
-read_ram
+act_part
 </b>[<i>rw</i>]: signals FOFB CC module to read configuration RAM
 <br>write 1: trigger a new read to configuration RAM
+<li><b>
+unused
+</b>[<i>rw</i>]: unused
+<br>unused
+<li><b>
+err_clr
+</b>[<i>rw</i>]: clears gigabit transceiver errors
+<br>write 1: clears gigabit transceiver errors
+<li><b>
+cc_enable
+</b>[<i>rw</i>]: enables CC module
+<br>write 1: enables CC module<br>write 0: disables CC module (acts as reset)
+<li><b>
+tfs_override
+</b>[<i>rw</i>]: timeframe start override. BPM can override internal timeframe start signal and use MGT generated one.
+<br>write 1: overrides timeframe start. BPM uses external signal.<br>write 0: normal operation. BPM uses internal generated signal.
 </ul>
 <a name="ram_reg.data"></a>
-<h3><a name="sect_3_3">2.3. ram_reg.data</a></h3>
+<h3><a name="sect_3_2">2.2. ram_reg.data</a></h3>
 <table cellpadding=0 cellspacing=0 border=0>
 <tr><td><b>HW prefix:</b></td><td class="td_code">ram_reg_data</td></tr>
 <tr><td><b>HW address:</b></td><td class="td_code">0x2000</td></tr>

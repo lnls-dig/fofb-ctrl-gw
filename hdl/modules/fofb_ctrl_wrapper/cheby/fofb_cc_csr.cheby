@@ -18,21 +18,9 @@ memory-map:
         description: FOFB CC configuration register
         comment: |
           FOFB CC configuration register
-        x-wbgen:
-          access_dev: READ_ONLY
-          access_bus: READ_WRITE
-          clock: fofb_cc_clk_ram_reg_i
-    - reg:
-        name: cfg_ctl
-        address: 0x00000004
-        width: 32
-        access: rw
-        description: FOFB CC control register
-        comment: |
-          FOFB CC control register
         children:
           - field:
-              name: read_ram
+              name: act_part
               range: 0
               description: signals FOFB CC module to read configuration RAM
               comment: |
@@ -40,6 +28,46 @@ memory-map:
               x-wbgen:
                 type: MONOSTABLE
                 clock: fofb_cc_clk_ram_reg_i
+          - field:
+              name: unused
+              range: 1
+              description: unused
+              comment: |
+                unused
+              x-wbgen:
+                clock: fofb_cc_clk_ram_reg_i
+                type: BIT
+          - field:
+              name: err_clr
+              range: 2
+              description: clears gigabit transceiver errors
+              comment: |
+                write 1: clears gigabit transceiver errors
+              x-wbgen:
+                type: MONOSTABLE
+                clock: fofb_cc_clk_ram_reg_i
+          - field:
+              name: cc_enable
+              range: 3
+              description: enables CC module
+              comment: |
+                write 1: enables CC module
+                write 0: disables CC module (acts as reset)
+              x-wbgen:
+                clock: fofb_cc_clk_ram_reg_i
+                type: BIT
+          - field:
+              name: tfs_override
+              range: 4
+              description: >-
+                timeframe start override.
+                BPM can override internal timeframe start signal and use MGT generated one.
+              comment: |
+                write 1: overrides timeframe start. BPM uses external signal.
+                write 0: normal operation. BPM uses internal generated signal.
+              x-wbgen:
+                clock: fofb_cc_clk_ram_reg_i
+                type: BIT
     - memory:
         name: ram_reg
         memsize: 8k

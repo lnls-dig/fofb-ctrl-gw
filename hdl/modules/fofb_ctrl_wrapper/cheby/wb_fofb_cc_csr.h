@@ -4,10 +4,11 @@
 
 /* FOFB CC configuration register */
 #define FOFB_CC_CSR_CFG_VAL 0x0UL
-
-/* FOFB CC control register */
-#define FOFB_CC_CSR_CFG_CTL 0x4UL
-#define FOFB_CC_CSR_CFG_CTL_READ_RAM 0x1UL
+#define FOFB_CC_CSR_CFG_VAL_ACT_PART 0x1UL
+#define FOFB_CC_CSR_CFG_VAL_UNUSED 0x2UL
+#define FOFB_CC_CSR_CFG_VAL_ERR_CLR 0x4UL
+#define FOFB_CC_CSR_CFG_VAL_CC_ENABLE 0x8UL
+#define FOFB_CC_CSR_CFG_VAL_TFS_OVERRIDE 0x10UL
 
 /* FOFB CC RAM for register map */
 #define FOFB_CC_CSR_RAM_REG 0x2000UL
@@ -20,11 +21,8 @@ struct fofb_cc_csr {
   /* [0x0]: REG (rw) FOFB CC configuration register */
   uint32_t cfg_val;
 
-  /* [0x4]: REG (rw) FOFB CC control register */
-  uint32_t cfg_ctl;
-
   /* padding to: 2048 words */
-  uint32_t __padding_0[2046];
+  uint32_t __padding_0[2047];
 
   /* [0x2000]: MEMORY FOFB CC RAM for register map */
   struct ram_reg {
