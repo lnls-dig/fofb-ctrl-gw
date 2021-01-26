@@ -185,7 +185,9 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   signal fai_cfg_d_in                        : std_logic_vector(31 downto 0);
   signal fai_cfg_we_out                      : std_logic;
   signal fai_cfg_clk_out                     : std_logic;
-  signal fai_cfg_val_in                      : std_logic_vector(31 downto 0) := (others => '0');
+  signal fai_cfg_val_in                      : std_logic_vector(31 downto 0);
+  signal fai_cfg_val_wb_out                  : std_logic_vector(31 downto 0);
+  signal fai_cfg_read_ram_trig               : std_logic;
 
   signal fai_cfg_to_wbram_we                 : std_logic;
   signal fai_cfg_to_wbram_re                 : std_logic;
@@ -294,8 +296,6 @@ begin
   resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
                                              <= (others => '0');
 
-  -- Force DCC enable
-  fai_cfg_val_in(3) <= '1';
   -----------------------------
   -- FOFB CC register map
   -----------------------------
@@ -313,16 +313,21 @@ begin
       wb_ack_o                               => wb_slv_adp_in.ack,
       wb_stall_o                             => wb_slv_adp_in.stall,
       fofb_cc_clk_ram_reg_i                  => fai_cfg_clk_out,
+      fofb_cc_csr_cfg_val_o                  => fai_cfg_val_wb_out,
+      fofb_cc_csr_cfg_ctl_read_ram_o         => fai_cfg_read_ram_trig,
       fofb_cc_csr_ram_reg_addr_i             => fai_cfg_a_out,
       fofb_cc_csr_ram_reg_data_o             => fai_cfg_d_in,
       fofb_cc_csr_ram_reg_rd_i               => fai_cfg_to_wbram_re,
       fofb_cc_csr_ram_reg_data_i             => fai_cfg_d_out,
-      fofb_cc_csr_ram_reg_wr_i               => fai_cfg_to_wbram_we,
-      fofb_cc_csr_cfg_val_o                  => open
+      fofb_cc_csr_ram_reg_wr_i               => fai_cfg_to_wbram_we
     );
 
   fai_cfg_to_wbram_we <= fai_cfg_we_out;
   fai_cfg_to_wbram_re <= not fai_cfg_we_out;
+
+  fai_cfg_val_in(31 downto 1) <= fai_cfg_val_wb_out(31 downto 1);
+  -- 1-CC pulse indicating a new write operation was issued.
+  fai_cfg_val_in(0) <= fai_cfg_read_ram_trig;
 
   cmp_fofb_ctrl_wrapper : fofb_ctrl_wrapper
     generic map (
