@@ -250,7 +250,7 @@ begin
         init_new_p  <= f_bool_to_std(g_INIT_OSC);
         state       <= IDLE;
         seq_count   <= (others => '0');
-        sta_reconfig_done_o <= '0';
+        sta_reconfig_done_o <= '1';
         rfreq_fsm <= (others => '0');
         n1_fsm <= (others => '0');
         hs_fsm <= (others => '0');
