@@ -887,7 +887,7 @@ begin
 
   cmp_gc_extend_pulse : gc_extend_pulse
   generic map (
-    g_width                                    => 5000
+    g_width                                    => 50000
   )
   port map (
     clk_i                                      => clk_sys,
