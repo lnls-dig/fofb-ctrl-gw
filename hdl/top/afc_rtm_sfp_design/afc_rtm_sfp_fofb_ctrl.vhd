@@ -306,7 +306,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal fai_sim_trigger                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
   signal fai_sim_trigger_internal            : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
-                                                    (others => '1');
+                                                    (others => '0');
   signal fai_sim_armed                       : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
    signal fai_cfg_clk                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
@@ -371,10 +371,10 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_ACQ_DDR_ADDR_RES_WIDTH          : natural := 32;
   constant c_ACQ_DDR_ADDR_DIFF               : natural := c_ACQ_DDR_ADDR_RES_WIDTH-c_ddr_addr_width;
 
-  -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 1; -- DCC for each DCC
   -- Acquisition channels IDs
   constant c_ACQ_DCC_ID                      : natural := 0;
+  -- Number of channels per acquisition core
+  constant c_ACQ_NUM_CHANNELS                : natural := 1; -- DCC Acquisition
 
   constant c_FACQ_PARAMS_DCC                 : t_facq_chan_param := (
     width                                    => to_unsigned(128, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
@@ -410,7 +410,12 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_TRIG_MUX_NUM_CORES              : natural  := 1;
   constant c_TRIG_MUX_SYNC_EDGE              : string   := "positive";
+
+  constant c_TRIG_MUX_ID_START               : natural  := c_ACQ_NUM_CHANNELS;
+  constant c_TRIG_MUX_FOFB_SYNC_ID           : natural  := c_TRIG_MUX_ID_START;
+
   constant c_TRIG_MUX_NUM_CHANNELS           : natural  := 10; -- Arbitrary for now
+
   constant c_TRIG_MUX_INTERN_NUM             : positive := c_TRIG_MUX_NUM_CHANNELS + c_ACQ_NUM_CHANNELS;
   constant c_TRIG_MUX_RCV_INTERN_NUM         : positive := 2; -- Arbitrary
   constant c_TRIG_MUX_MUX_NUM_CORES          : natural  := c_ACQ_NUM_CORES;
@@ -456,6 +461,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal clk_sys_rst                         : std_logic;
   signal clk_aux                             : std_logic;
   signal clk_aux_rstn                        : std_logic;
+  signal clk_aux_rst                         : std_logic;
   signal clk_200mhz                          : std_logic;
   signal clk_200mhz_rstn                     : std_logic;
   signal clk_pcie                            : std_logic;
@@ -707,6 +713,7 @@ begin
     );
 
   pcb_rev_id <= (others => '0');
+  clk_aux_rst <= not clk_aux_rstn;
 
   gen_wishbone_rtm_8sfp_idx : for i in 0 to c_RTM_8SFP_NUM_CORES-1 generate
 
@@ -927,6 +934,9 @@ begin
   fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk1_p;
   fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk1_n;
 
+  -- Trigger signal for DCC timeframe_start
+  fai_sim_trigger(c_FOFB_CC_0_ID) <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
+
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
   (
@@ -952,8 +962,8 @@ begin
     ---------------------------------------------------------------------------
     -- clock and reset interface
     ---------------------------------------------------------------------------
-    adcclk_i                                   => clk_sys,
-    adcreset_i                                 => clk_sys_rst,
+    adcclk_i                                   => clk_aux,
+    adcreset_i                                 => clk_aux_rst,
     sysclk_i                                   => clk_sys,
     sysreset_n_i                               => fofb_sysreset_n,
 
