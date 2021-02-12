@@ -398,6 +398,7 @@ architecture top of afc_ref_fofb_ctrl is
   -- Acquisition clocks
   signal fs_clk_array                        : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
   signal fs_rst_n_array                      : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
+  signal fs_rst_array                        : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
   signal fs_ce_array                         : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
@@ -793,7 +794,8 @@ begin
   fofb_ref_clk_p(c_FOFB_CC_0_ID) <= fmc0_fpga_si570_clk_p;
   fofb_ref_clk_n(c_FOFB_CC_0_ID) <= fmc0_fpga_si570_clk_n;
 
-  -- Trigger signal for DCC timeframe_start
+  -- Trigger signal for DCC timeframe_start.
+  -- Trigger pulses are synch'ed with the respective fs_clk
   fai_sim_trigger(c_FOFB_CC_0_ID) <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
@@ -821,8 +823,8 @@ begin
     ---------------------------------------------------------------------------
     -- clock and reset interface
     ---------------------------------------------------------------------------
-    adcclk_i                                   => clk_aux,
-    adcreset_i                                 => clk_aux_rst,
+    adcclk_i                                   => fs_clk_array(c_FOFB_CC_0_ID),
+    adcreset_i                                 => fs_rst_array(c_FOFB_CC_0_ID),
     sysclk_i                                   => clk_sys,
     sysreset_n_i                               => clk_sys_rstn,
 

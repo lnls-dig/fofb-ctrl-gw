@@ -392,6 +392,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   -- Acquisition clocks
   signal fs_clk_array                        : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
   signal fs_rst_n_array                      : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
+  signal fs_rst_array                        : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
   signal fs_ce_array                         : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
@@ -524,6 +525,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal sfp_fix_los                         : std_logic_vector(7 downto 0);
   signal sfp_fix_txfault                     : std_logic_vector(7 downto 0);
   signal sfp_fix_detect_n                    : std_logic_vector(7 downto 0);
+
+  signal data                 : std_logic_vector(255 downto 0);
+  signal trig0                : std_logic_vector(7 downto 0);
 
 begin
 
@@ -934,7 +938,8 @@ begin
   fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk1_p;
   fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk1_n;
 
-  -- Trigger signal for DCC timeframe_start
+  -- Trigger signal for DCC timeframe_start.
+  -- Trigger pulses are synch'ed with the respective fs_clk
   fai_sim_trigger(c_FOFB_CC_0_ID) <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
@@ -962,8 +967,8 @@ begin
     ---------------------------------------------------------------------------
     -- clock and reset interface
     ---------------------------------------------------------------------------
-    adcclk_i                                   => clk_aux,
-    adcreset_i                                 => clk_aux_rst,
+    adcclk_i                                   => fs_clk_array(c_FOFB_CC_0_ID),
+    adcreset_i                                 => fs_rst_array(c_FOFB_CC_0_ID),
     sysclk_i                                   => clk_sys,
     sysreset_n_i                               => fofb_sysreset_n,
 
@@ -1031,6 +1036,7 @@ begin
     fs_clk_array(i)   <= fofb_userclk(c_FOFB_CC_0_ID);
     fs_ce_array(i)    <= '1';
     fs_rst_n_array(i) <= fofb_userrst_n(c_FOFB_CC_0_ID);
+    fs_rst_array(i)   <= not fs_rst_n_array(i);
 
   end generate;
 
@@ -1093,5 +1099,30 @@ begin
   sfp_fix_rs1         <= probe_out1(35 downto 28);
 
   fofb_reset_n        <= not fofb_reset;
+
+--  ila_core_inst : entity work.ila_t8_d256_s16384
+--  port map (
+--    clk             => clk_sys,
+--    probe0          => data,
+--    probe1          => trig0
+--  );
+--
+--  trig0(0)          <= fofb_reset;
+--  trig0(1)          <= fofb_reset_n;
+--  trig0(2)          <= rtm_sta_reconfig_done;
+--  trig0(3)          <= rtm_sta_reconfig_done_pp;
+--  trig0(4)          <= rtm_reconfig_rst;
+--  trig0(5)          <= rtm_reconfig_rst_n;
+--  trig0(6)          <= '0';
+--  trig0(7)          <= '0';
+--
+--  data(0)          <= fofb_reset;
+--  data(1)          <= fofb_reset_n;
+--  data(2)          <= rtm_sta_reconfig_done;
+--  data(3)          <= rtm_sta_reconfig_done_pp;
+--  data(4)          <= rtm_reconfig_rst;
+--  data(5)          <= rtm_reconfig_rst_n;
+--
+--  data(255 downto 6) <= (others => '0');
 
 end architecture top;
