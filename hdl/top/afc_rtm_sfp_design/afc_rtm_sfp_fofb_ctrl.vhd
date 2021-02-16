@@ -277,6 +277,29 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal rtm_reconfig_rst                   : std_logic;
   signal rtm_reconfig_rst_n                 : std_logic;
 
+  signal rtm_ext_wr                          : std_logic;
+  signal rtm_ext_rfreq_value                 : std_logic_vector(37 downto 0);
+  signal rtm_ext_n1_value                    : std_logic_vector(6 downto 0);
+  signal rtm_ext_hs_value                    : std_logic_vector(2 downto 0);
+
+  signal sfp_txdisable                       : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_rs0                             : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_rs1                             : std_logic_vector(7 downto 0) := (others => '0');
+
+  signal sfp_led1                            : std_logic_vector(7 downto 0);
+  signal sfp_los                             : std_logic_vector(7 downto 0);
+  signal sfp_txfault                         : std_logic_vector(7 downto 0);
+  signal sfp_detect_n                        : std_logic_vector(7 downto 0);
+
+  signal sfp_fix_txdisable                   : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_fix_rs0                         : std_logic_vector(7 downto 0) := (others => '0');
+  signal sfp_fix_rs1                         : std_logic_vector(7 downto 0) := (others => '0');
+
+  signal sfp_fix_led1                        : std_logic_vector(7 downto 0);
+  signal sfp_fix_los                         : std_logic_vector(7 downto 0);
+  signal sfp_fix_txfault                     : std_logic_vector(7 downto 0);
+  signal sfp_fix_detect_n                    : std_logic_vector(7 downto 0);
+
   -----------------------------------------------------------------------------
   -- FOFB CC signals
   -----------------------------------------------------------------------------
@@ -484,39 +507,20 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal user_wb_out                         : t_wishbone_master_out_array(c_USER_NUM_CORES-1 downto 0);
   signal user_wb_in                          : t_wishbone_master_in_array(c_USER_NUM_CORES-1 downto 0) := (others => c_DUMMY_WB_MASTER_IN);
 
-  signal probe_in0                           : std_logic_vector(63 downto 0);
-  signal probe_in1                           : std_logic_vector(63 downto 0);
-
-  signal probe_out0                          : std_logic_vector(63 downto 0);
-  signal probe_out1                          : std_logic_vector(63 downto 0);
-
-  signal rtm_ext_wr                          : std_logic;
-  signal rtm_ext_rfreq_value                 : std_logic_vector(37 downto 0);
-  signal rtm_ext_n1_value                    : std_logic_vector(6 downto 0);
-  signal rtm_ext_hs_value                    : std_logic_vector(2 downto 0);
-
   signal fpga_si570_oe                       : std_logic;
   signal fofb_sysreset_n                     : std_logic;
   signal fofb_reset_n                        : std_logic;
   signal fofb_reset                          : std_logic;
 
-  signal sfp_txdisable                       : std_logic_vector(7 downto 0) := (others => '0');
-  signal sfp_rs0                             : std_logic_vector(7 downto 0) := (others => '0');
-  signal sfp_rs1                             : std_logic_vector(7 downto 0) := (others => '0');
+  -----------------------------------------------------------------------------
+  -- VIO/ILA signals
+  -----------------------------------------------------------------------------
 
-  signal sfp_led1                            : std_logic_vector(7 downto 0);
-  signal sfp_los                             : std_logic_vector(7 downto 0);
-  signal sfp_txfault                         : std_logic_vector(7 downto 0);
-  signal sfp_detect_n                        : std_logic_vector(7 downto 0);
+  signal probe_in0                           : std_logic_vector(63 downto 0);
+  signal probe_in1                           : std_logic_vector(63 downto 0);
 
-  signal sfp_fix_txdisable                   : std_logic_vector(7 downto 0) := (others => '0');
-  signal sfp_fix_rs0                         : std_logic_vector(7 downto 0) := (others => '0');
-  signal sfp_fix_rs1                         : std_logic_vector(7 downto 0) := (others => '0');
-
-  signal sfp_fix_led1                        : std_logic_vector(7 downto 0);
-  signal sfp_fix_los                         : std_logic_vector(7 downto 0);
-  signal sfp_fix_txfault                     : std_logic_vector(7 downto 0);
-  signal sfp_fix_detect_n                    : std_logic_vector(7 downto 0);
+  signal probe_out0                          : std_logic_vector(63 downto 0);
+  signal probe_out1                          : std_logic_vector(63 downto 0);
 
   signal data                 : std_logic_vector(255 downto 0);
   signal trig0                : std_logic_vector(7 downto 0);
