@@ -500,14 +500,6 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal fofb_reset_n                        : std_logic;
   signal fofb_reset                          : std_logic;
 
-  signal rtm_sfp_status_reg_pl               : std_logic;
-  signal rtm_sfp_status_reg_clk_n            : std_logic;
-  signal rtm_sfp_status_reg_out              : std_logic;
-
-  signal rtm_sfp_ctl_str_n                   : std_logic;
-  signal rtm_sfp_ctl_din_n                   : std_logic;
-  signal rtm_sfp_ctl_oe_n                    : std_logic;
-
   signal sfp_txdisable                       : std_logic_vector(7 downto 0) := (others => '0');
   signal sfp_rs0                             : std_logic_vector(7 downto 0) := (others => '0');
   signal sfp_rs1                             : std_logic_vector(7 downto 0) := (others => '0');
@@ -803,20 +795,20 @@ begin
     -- SFP status bits. Behind 4 74HC165, 8-parallel-in/serial-out. 4 x 8 bits.
     --
     -- Parallel load
-    sfp_status_reg_pl_o                        => rtm_sfp_status_reg_pl,
+    sfp_status_reg_pl_o                        => rtm_sfp_status_reg_pl_o,
     -- Clock N
-    sfp_status_reg_clk_n_o                     => rtm_sfp_status_reg_clk_n,
+    sfp_status_reg_clk_n_o                     => rtm_sfp_status_reg_clk_n_o,
     -- Serial output
-    sfp_status_reg_out_i                       => rtm_sfp_status_reg_out,
+    sfp_status_reg_out_i                       => rtm_sfp_status_reg_out_i,
 
     -- SFP control bits. Behind 4 74HC4094D, serial-in/8-parallel-out. 5 x 8 bits.
     --
     -- Strobe
-    sfp_ctl_reg_str_n_o                        => rtm_sfp_ctl_str_n,
+    sfp_ctl_reg_str_n_o                        => rtm_sfp_ctl_str_n_o,
     -- Data input
-    sfp_ctl_reg_din_n_o                        => rtm_sfp_ctl_din_n,
+    sfp_ctl_reg_din_n_o                        => rtm_sfp_ctl_din_n_o,
     -- Parallel output enable
-    sfp_ctl_reg_oe_n_o                         => rtm_sfp_ctl_oe_n,
+    sfp_ctl_reg_oe_n_o                         => rtm_sfp_ctl_oe_n_o,
 
     -- External clock from RTM to FPGA
     ext_clk_p_i                                => rtm_ext_clk_p_i,
@@ -878,14 +870,6 @@ begin
     sfp_fix_detect_n(7-i)     <=  sfp_detect_n(i);
 
   end generate;
-
-  rtm_sfp_status_reg_pl_o    <= rtm_sfp_status_reg_pl;
-  rtm_sfp_status_reg_clk_n_o <= rtm_sfp_status_reg_clk_n;
-  rtm_sfp_status_reg_out     <= rtm_sfp_status_reg_out_i;
-
-  rtm_sfp_ctl_str_n_o        <= rtm_sfp_ctl_str_n;
-  rtm_sfp_ctl_din_n_o        <= rtm_sfp_ctl_din_n;
-  rtm_sfp_ctl_oe_n_o         <= rtm_sfp_ctl_oe_n;
 
   -- Generate large pulse for reset
   cmp_gc_posedge : gc_posedge
