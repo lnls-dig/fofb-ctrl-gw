@@ -243,7 +243,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   -- FOFB CC
   constant c_NUM_FOFC_CC_CORES               : natural := 1;
 
-  constant c_FOFB_CC_0_ID                    : natural := 0;
+  constant c_FOFB_CC_RTM_ID                  : natural := 0;
 
   constant c_SLV_FOFB_CC_CORE_IDS           : t_natural_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
     f_gen_ramp(0, c_NUM_FOFC_CC_CORES);
@@ -505,7 +505,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
   (
-    c_FOFB_CC_0_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,        true)
+    c_FOFB_CC_RTM_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,        true)
   );
 
   -----------------------------------------------------------------------------
@@ -968,18 +968,18 @@ begin
   rtm_reconfig_rst_n <= not rtm_reconfig_rst;
 
   ----------------------------------------------------------------------
-  --                          FOFB DCC 0                              --
+  --                          FOFB DCC RTM                            --
   ----------------------------------------------------------------------
 
   gen_fofb_sfps: for i in 0 to c_NUM_SFPS_FOFB-1 generate
 
     -- RX lines
-    fofb_rio_rx_p(c_FOFB_CC_0_ID)(i) <= rtm_sfp_rx_p(i);
-    fofb_rio_rx_n(c_FOFB_CC_0_ID)(i) <= rtm_sfp_rx_n(i);
+    fofb_rio_rx_p(c_FOFB_CC_RTM_ID)(i) <= rtm_sfp_rx_p(i);
+    fofb_rio_rx_n(c_FOFB_CC_RTM_ID)(i) <= rtm_sfp_rx_n(i);
 
     -- TX lines
-    rtm_sfp_tx_p(i) <= fofb_rio_tx_p(c_FOFB_CC_0_ID)(i);
-    rtm_sfp_tx_n(i) <= fofb_rio_tx_n(c_FOFB_CC_0_ID)(i);
+    rtm_sfp_tx_p(i) <= fofb_rio_tx_p(c_FOFB_CC_RTM_ID)(i);
+    rtm_sfp_tx_n(i) <= fofb_rio_tx_n(c_FOFB_CC_RTM_ID)(i);
 
   end generate;
 
@@ -993,12 +993,12 @@ begin
 
   -- Clocks. Use rtm_clk1_p as this goes to the same bank as SFP 0, 1, 2, 3
   -- transceivers
-  fofb_ref_clk_p(c_FOFB_CC_0_ID) <= rtm_clk1_p;
-  fofb_ref_clk_n(c_FOFB_CC_0_ID) <= rtm_clk1_n;
+  fofb_ref_clk_p(c_FOFB_CC_RTM_ID) <= rtm_clk1_p;
+  fofb_ref_clk_n(c_FOFB_CC_RTM_ID) <= rtm_clk1_n;
 
   -- Trigger signal for DCC timeframe_start.
   -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_0_ID) <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
+  fai_sim_trigger(c_FOFB_CC_RTM_ID) <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
@@ -1019,8 +1019,73 @@ begin
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
-    refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_0_ID),
-    refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_0_ID),
+    refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_RTM_ID),
+    refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_RTM_ID),
+
+    ---------------------------------------------------------------------------
+    -- clock and reset interface
+    ---------------------------------------------------------------------------
+    adcclk_i                                   => fs_clk_array(c_FOFB_CC_RTM_ID),
+    adcreset_i                                 => fs_rst_array(c_FOFB_CC_RTM_ID),
+    sysclk_i                                   => clk_sys,
+    sysreset_n_i                               => fofb_sysreset_n(c_FOFB_CC_RTM_ID),
+
+    ---------------------------------------------------------------------------
+    -- Wishbone Control Interface signals
+    ---------------------------------------------------------------------------
+    wb_slv_i                                  => user_wb_out(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_RTM_ID)),
+    wb_slv_o                                  => user_wb_in(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_RTM_ID)),
+
+    ---------------------------------------------------------------------------
+    -- fast acquisition data interface
+    -- Only used when g_SIM_BPM_DATA = false
+    ---------------------------------------------------------------------------
+    fai_fa_block_start_i                       => fai_fa_block_start(c_FOFB_CC_RTM_ID),
+    fai_fa_data_valid_i                        => fai_fa_data_valid(c_FOFB_CC_RTM_ID),
+    fai_fa_d_i                                 => fai_fa_d(c_FOFB_CC_RTM_ID),
+
+    ---------------------------------------------------------------------------
+    -- Synthetic data fast acquisition data interface.
+    -- Only used when g_SIM_BPM_DATA = true
+    ---------------------------------------------------------------------------
+    fai_sim_data_sel_i                         => fai_sim_data_sel(c_FOFB_CC_RTM_ID),
+    fai_sim_enable_i                           => fai_sim_enable(c_FOFB_CC_RTM_ID),
+    fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_RTM_ID),
+    fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_RTM_ID),
+    fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_RTM_ID),
+
+    ---------------------------------------------------------------------------
+    -- serial I/Os for eight RocketIOs on the Libera
+    ---------------------------------------------------------------------------
+    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_RTM_ID),
+    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_RTM_ID),
+    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_RTM_ID),
+    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_RTM_ID),
+    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_RTM_ID),
+
+    ---------------------------------------------------------------------------
+    -- Higher-level integration interface (PMC, SNIFFER_V5)
+    ---------------------------------------------------------------------------
+    fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_RTM_ID),
+    fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_RTM_ID),
+    xy_buf_addr_i                              => xy_buf_addr(c_FOFB_CC_RTM_ID),
+    xy_buf_dat_o                               => xy_buf_dat(c_FOFB_CC_RTM_ID),
+    xy_buf_rstb_i                              => xy_buf_rstb(c_FOFB_CC_RTM_ID),
+    timeframe_start_o                          => timeframe_start(c_FOFB_CC_RTM_ID),
+    timeframe_end_o                            => timeframe_end(c_FOFB_CC_RTM_ID),
+    fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_RTM_ID),
+    fofb_node_mask_o                           => fofb_node_mask(c_FOFB_CC_RTM_ID),
+    fofb_timestamp_val_o                       => fofb_timestamp_val(c_FOFB_CC_RTM_ID),
+    fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_RTM_ID),
+    fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_RTM_ID),
+    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_RTM_ID)
+  );
+
+  fofb_sysreset_n(c_FOFB_CC_RTM_ID) <= clk_sys_rstn and rtm_reconfig_rst_n and fofb_reset_n;
+
+  fofb_userrst_n(c_FOFB_CC_RTM_ID) <= not fofb_userrst(c_FOFB_CC_RTM_ID);
+
+  ----------------------------------------------------------------------
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
@@ -1091,17 +1156,15 @@ begin
 
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
-    fs_clk_array(i)   <= fofb_userclk(c_FOFB_CC_0_ID);
     fs_ce_array(i)    <= '1';
-    fs_rst_n_array(i) <= fofb_userrst_n(c_FOFB_CC_0_ID);
     fs_rst_array(i)   <= not fs_rst_n_array(i);
 
   end generate;
 
   -- DCC data
 
-  acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_0_ID);
-  acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_0_ID)(0);
+  acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_RTM_ID);
+  acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(0);
 
   --------------------
   -- ACQ Channel 1
@@ -1120,8 +1183,8 @@ begin
   trig_ref_rst_n <= clk_trig_ref_rstn;
 
   -- Assign trigger pulses to trigger channel interfaces
-  trig_acq1_channel_1.pulse <= timeframe_start(c_FOFB_CC_0_ID);
-  trig_acq1_channel_2.pulse <= timeframe_end(c_FOFB_CC_0_ID);
+  trig_acq1_channel_1.pulse <= timeframe_start(c_FOFB_CC_RTM_ID);
+  trig_acq1_channel_2.pulse <= timeframe_end(c_FOFB_CC_RTM_ID);
 
   -- Assign intern triggers to trigger module
   trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq1_channel_1;
