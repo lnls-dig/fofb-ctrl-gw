@@ -21,6 +21,7 @@ package fofb_ctrl_pkg is
     g_DEVICE                                  : device_t := BPM;
     g_USE_DCM                                 : boolean := true;
     g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
+    g_REFCLK_INPUT                            : string  := "REFCLK0";
     g_INTERLEAVED                             : boolean := true;
     -- Extended FAI interface for FOFB
     g_EXTENDED_CONF_BUF                       : boolean := false;
@@ -148,6 +149,7 @@ package fofb_ctrl_pkg is
     g_DEVICE                                  : device_t := BPM;
     g_USE_DCM                                 : boolean := true;
     g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
+    g_REFCLK_INPUT                            : string  := "REFCLK0";
     g_INTERLEAVED                             : boolean := true;
     -- Extended FAI interface for FOFB
     g_EXTENDED_CONF_BUF                       : boolean := false;
@@ -283,6 +285,7 @@ package fofb_ctrl_pkg is
     g_DEVICE                                  : device_t := BPM;
     g_USE_DCM                                 : boolean := true;
     g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
+    g_REFCLK_INPUT                            : string  := "REFCLK0";
     g_INTERLEAVED                             : boolean := true;
     -- Extended FAI interface for FOFB
     g_EXTENDED_CONF_BUF                       : boolean := false;
