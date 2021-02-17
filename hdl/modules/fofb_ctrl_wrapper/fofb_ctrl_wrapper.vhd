@@ -37,6 +37,7 @@ generic
   g_DEVICE                                  : device_t := BPM;
   g_USE_DCM                                 : boolean := true;
   g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
+  g_PHYSICAL_INTERFACE                      : string  := "SFP";
   g_REFCLK_INPUT                            : string  := "REFCLK0";
   g_INTERLEAVED                             : boolean := true;
   -- Extended FAI interface for FOFB
@@ -200,6 +201,7 @@ begin
       DEVICE                                 => g_DEVICE,
       USE_DCM                                => g_USE_DCM,
       SIM_GTPRESET_SPEEDUP                   => g_SIM_GTPRESET_SPEEDUP,
+      PHYSICAL_INTERFACE                     => g_PHYSICAL_INTERFACE,
       REFCLK_INPUT                           => g_REFCLK_INPUT,
       INTERLEAVED                            => g_INTERLEAVED,
       EXTENDED_CONF_BUF                      => g_EXTENDED_CONF_BUF,
