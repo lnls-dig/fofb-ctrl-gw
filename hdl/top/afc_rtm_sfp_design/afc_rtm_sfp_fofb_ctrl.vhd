@@ -1026,6 +1026,7 @@ begin
     g_ADDRESS_GRANULARITY                     => BYTE,
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
+    g_PHYSICAL_INTERFACE                      => "SFP",
     g_LANE_COUNT                              => c_LANE_COUNT,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
@@ -1124,6 +1125,7 @@ begin
     g_ADDRESS_GRANULARITY                     => BYTE,
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
+    g_PHYSICAL_INTERFACE                      => "BACKPLANE",
     g_LANE_COUNT                              => c_LANE_COUNT,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
