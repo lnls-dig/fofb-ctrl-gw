@@ -1008,8 +1008,8 @@ begin
   gen_unused_fofb_sfps: for i in c_NUM_SFPS_FOFB to g_NUM_SFPS-1 generate
 
     -- TX lines
-    rtm_sfp_tx_p(i) <= '1';
-    rtm_sfp_tx_n(i) <= '0';
+    rtm_sfp_tx_p(i) <= '0';
+    rtm_sfp_tx_n(i) <= '1';
 
   end generate;
 
