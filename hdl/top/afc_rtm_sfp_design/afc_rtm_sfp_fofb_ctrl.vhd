@@ -341,6 +341,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   -----------------------------------------------------------------------------
 
   signal afc_si57x_sta_reconfig_done         : std_logic;
+  signal afc_si57x_sta_reconfig_done_pp      : std_logic;
+  signal afc_si57x_reconfig_rst              : std_logic;
+  signal afc_si57x_reconfig_rst_n            : std_logic;
 
   signal afc_si57x_ext_wr                    : std_logic;
   signal afc_si57x_ext_rfreq_value           : std_logic_vector(37 downto 0);
@@ -1109,6 +1112,32 @@ begin
   fofb_userrst_n(c_FOFB_CC_RTM_ID) <= not fofb_userrst(c_FOFB_CC_RTM_ID);
 
   ----------------------------------------------------------------------
+  --                          AFC Si57x                               --
+  ----------------------------------------------------------------------
+
+  -- Generate large pulse for reset
+  cmp_afc_si57x_gc_posedge : gc_posedge
+  port map (
+    clk_i                                      => clk_sys,
+    rst_n_i                                    => clk_sys_rstn,
+    data_i                                     => afc_si57x_sta_reconfig_done,
+    pulse_o                                    => afc_si57x_sta_reconfig_done_pp
+  );
+
+  cmp_afc_si57x_gc_extend_pulse : gc_extend_pulse
+  generic map (
+    g_width                                    => 50000
+  )
+  port map (
+    clk_i                                      => clk_sys,
+    rst_n_i                                    => clk_sys_rstn,
+    pulse_i                                    => afc_si57x_sta_reconfig_done_pp,
+    extended_o                                 => afc_si57x_reconfig_rst
+  );
+
+  afc_si57x_reconfig_rst_n <= not afc_si57x_reconfig_rst;
+
+  ----------------------------------------------------------------------
   --                          FOFB DCC P2P                            --
   ----------------------------------------------------------------------
 
@@ -1223,7 +1252,7 @@ begin
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)
   );
 
-  fofb_sysreset_n(c_FOFB_CC_P2P_ID) <= clk_sys_rstn and fofb_reset_n;
+  fofb_sysreset_n(c_FOFB_CC_P2P_ID) <= clk_sys_rstn and afc_si57x_reconfig_rst_n and fofb_reset_n;
 
   fofb_userrst_n(c_FOFB_CC_P2P_ID) <= not fofb_userrst(c_FOFB_CC_P2P_ID);
 
