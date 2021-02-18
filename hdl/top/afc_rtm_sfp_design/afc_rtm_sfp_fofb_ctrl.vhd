@@ -1033,6 +1033,7 @@ begin
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
     g_PHYSICAL_INTERFACE                      => "SFP",
+    g_REFCLK_INPUT                            => "REFCLK0",
     g_LANE_COUNT                              => c_LANE_COUNT,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
@@ -1178,6 +1179,7 @@ begin
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
     g_PHYSICAL_INTERFACE                      => "BACKPLANE",
+    g_REFCLK_INPUT                            => "REFCLK1",
     g_LANE_COUNT                              => c_LANE_COUNT,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
