@@ -251,6 +251,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_SLV_RTM_8SFP_CORE_IDS           : t_natural_array(c_RTM_8SFP_NUM_CORES-1 downto 0) :=
     f_gen_ramp(0, c_RTM_8SFP_NUM_CORES);
 
+  -- P2P GT IDs
+  constant c_NUM_P2P_GTS_FOFB                : integer := 4; -- maximum of 4 supported
+
   -- FOFB CC
   constant c_NUM_FOFC_CC_CORES               : natural := 2;
 
@@ -1108,6 +1111,26 @@ begin
   ----------------------------------------------------------------------
   --                          FOFB DCC P2P                            --
   ----------------------------------------------------------------------
+
+  gen_fofb_p2p_gts: for i in 0 to c_NUM_P2P_GTS_FOFB-1 generate
+
+    -- RX lines
+    fofb_rio_rx_p(c_FOFB_CC_P2P_ID)(i) <= p2p_gt_rx_p_i(g_P2P_GT_START_ID+i);
+    fofb_rio_rx_n(c_FOFB_CC_P2P_ID)(i) <= p2p_gt_rx_n_i(g_P2P_GT_START_ID+i);
+
+    -- TX lines
+    p2p_gt_tx_p_o(g_P2P_GT_START_ID+i) <= fofb_rio_tx_p(c_FOFB_CC_P2P_ID)(i);
+    p2p_gt_tx_n_o(g_P2P_GT_START_ID+i) <= fofb_rio_tx_n(c_FOFB_CC_P2P_ID)(i);
+
+  end generate;
+
+  gen_unused_fofb_p2p_gts: for i in c_NUM_P2P_GTS_FOFB to g_NUM_P2P_GTS-1 generate
+
+    -- TX lines
+    p2p_gt_tx_p_o(i) <= '0';
+    p2p_gt_tx_n_o(i) <= '1';
+
+  end generate;
 
   -- Clocks. Use rtm_clk1_p as this goes to the same bank as SFP 0, 1, 2, 3
   -- transceivers
