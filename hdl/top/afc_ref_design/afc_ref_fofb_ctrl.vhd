@@ -323,12 +323,6 @@ architecture top of afc_ref_fofb_ctrl is
                                                     (others => '0');
   signal fofb_userrst_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
-  signal xy_buf_addr                         : t_fofb_cc_buf_addr_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
-                                                    (others => (others => '0'));
-  signal xy_buf_dat                          : t_fofb_cc_buf_data_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
-                                                    (others => (others =>'0'));
-  signal xy_buf_rstb                         : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
-                                                    (others => '0');
   signal timeframe_start                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
   signal timeframe_end                       : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
@@ -936,9 +930,6 @@ begin
     ---------------------------------------------------------------------------
     fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_0_ID),
     fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_0_ID),
-    xy_buf_addr_i                              => xy_buf_addr(c_FOFB_CC_0_ID),
-    xy_buf_dat_o                               => xy_buf_dat(c_FOFB_CC_0_ID),
-    xy_buf_rstb_i                              => xy_buf_rstb(c_FOFB_CC_0_ID),
     timeframe_start_o                          => timeframe_start(c_FOFB_CC_0_ID),
     timeframe_end_o                            => timeframe_end(c_FOFB_CC_0_ID),
     fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_0_ID),
