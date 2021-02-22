@@ -95,8 +95,6 @@ package fofb_ctrl_pkg is
     rcb_rstb_i                                 : in  std_logic := '0';
     rcb_rden_i                                 : in  std_logic := '0';
     rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-    fai_rxfifo_clear_i                         : in  std_logic := '0';
-    fai_txfifo_clear_i                         : in  std_logic := '0';
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
@@ -232,8 +230,6 @@ package fofb_ctrl_pkg is
     rcb_rstb_i                                 : in  std_logic := '0';
     rcb_rden_i                                 : in  std_logic := '0';
     rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-    fai_rxfifo_clear_i                         : in  std_logic := '0';
-    fai_txfifo_clear_i                         : in  std_logic := '0';
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
@@ -360,8 +356,6 @@ package fofb_ctrl_pkg is
     rcb_rstb_i                                 : in  std_logic := '0';
     rcb_rden_i                                 : in  std_logic := '0';
     rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-    fai_rxfifo_clear_i                         : in  std_logic := '0';
-    fai_txfifo_clear_i                         : in  std_logic := '0';
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera

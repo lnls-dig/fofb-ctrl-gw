@@ -115,8 +115,6 @@ port
   rcb_rstb_i                                 : in  std_logic := '0';
   rcb_rden_i                                 : in  std_logic := '0';
   rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-  fai_rxfifo_clear_i                         : in  std_logic := '0';
-  fai_txfifo_clear_i                         : in  std_logic := '0';
 
   ---------------------------------------------------------------------------
   -- serial I/Os for eight RocketIOs on the Libera
@@ -256,8 +254,6 @@ begin
     rcb_rstb_i                                 => rcb_rstb_i,
     rcb_rden_i                                 => rcb_rden_i,
     rcb_dat_o                                  => rcb_dat_o,
-    fai_rxfifo_clear_i                         => fai_rxfifo_clear_i,
-    fai_txfifo_clear_i                         => fai_txfifo_clear_i,
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera

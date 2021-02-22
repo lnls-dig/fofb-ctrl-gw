@@ -110,8 +110,6 @@ port
   rcb_rstb_i                                 : in  std_logic := '0';
   rcb_rden_i                                 : in  std_logic := '0';
   rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-  fai_rxfifo_clear_i                         : in  std_logic := '0';
-  fai_txfifo_clear_i                         : in  std_logic := '0';
 
   ---------------------------------------------------------------------------
   -- serial I/Os for eight RocketIOs on the Libera
@@ -160,6 +158,9 @@ architecture rtl of fofb_ctrl_wrapper is
   signal fai_fa_block_start                  : std_logic;
   signal fai_fa_data_valid                   : std_logic;
   signal fai_fa_d                            : std_logic_vector(g_FAI_DW-1 downto 0);
+
+  signal fai_rxfifo_clear                    : std_logic := '0';
+  signal fai_txfifo_clear                    : std_logic := '0';
 
 begin
 
@@ -242,8 +243,8 @@ begin
       rcb_rstb_i                             => rcb_rstb_i,
       rcb_rden_i                             => rcb_rden_i,
       rcb_dat_o                              => rcb_dat_o,
-      fai_rxfifo_clear                       => fai_rxfifo_clear_i,
-      fai_txfifo_clear                       => fai_txfifo_clear_i,
+      fai_rxfifo_clear                       => fai_rxfifo_clear,
+      fai_txfifo_clear                       => fai_txfifo_clear,
       -- serial I/Os for eight RocketIOs on the Libera
       fai_rio_rdp_i                          => fai_rio_rdp_i,
       fai_rio_rdn_i                          => fai_rio_rdn_i,
