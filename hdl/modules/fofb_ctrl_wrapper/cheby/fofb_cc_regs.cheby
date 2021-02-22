@@ -125,7 +125,7 @@ memory-map:
         access: rw
         description: FOFB CC Received Buffer configuration register
         comment: |
-          FOFB CC Time-of-Arrival configuration register
+          FOFB CC Received Buffer configuration register
         children:
           - field:
               name: rd_en
@@ -152,9 +152,9 @@ memory-map:
         address: 0x00000010
         width: 32
         access: rw
-        description: FOFB CC Time-of-Arrival data
+        description: FOFB CC Received Buffer data
         comment: |
-          FOFB CC Time-of-Arrival data
+          FOFB CC Received Buffer data
         children:
           - field:
               name: val
