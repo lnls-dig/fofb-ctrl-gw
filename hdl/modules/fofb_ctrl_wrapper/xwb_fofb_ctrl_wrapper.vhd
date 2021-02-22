@@ -257,9 +257,6 @@ begin
     ---------------------------------------------------------------------------
     fofb_userclk_o                             => fofb_userclk_o,
     fofb_userrst_o                             => fofb_userrst_o,
-    xy_buf_addr_i                              => xy_buf_addr_i,
-    xy_buf_dat_o                               => xy_buf_dat_o,
-    xy_buf_rstb_i                              => xy_buf_rstb_i,
     timeframe_start_o                          => timeframe_start_o,
     timeframe_end_o                            => timeframe_end_o,
     fofb_watchdog_i                            => fofb_watchdog_i,

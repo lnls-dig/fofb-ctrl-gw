@@ -137,9 +137,6 @@ port
   ---------------------------------------------------------------------------
   fofb_userclk_o                             : out std_logic;
   fofb_userrst_o                             : out std_logic;
-  xy_buf_addr_i                              : in  std_logic_vector(NodeW downto 0);
-  xy_buf_dat_o                               : out std_logic_vector(63 downto 0);
-  xy_buf_rstb_i                              : in  std_logic;
   timeframe_start_o                          : out std_logic;
   timeframe_end_o                            : out std_logic;
   fofb_watchdog_i                            : in  std_logic_vector(31 downto 0) := (others => '0');
@@ -190,6 +187,14 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   signal rcb_rstb                            : std_logic := '0';
   signal rcb_rden                            : std_logic := '0';
   signal rcb_dat                             : std_logic_vector(31 downto 0);
+
+  signal xy_buf_addr_bus2dev                 : std_logic_vector(15 downto 0);
+  signal xy_buf_addr_dev2bus                 : std_logic_vector(15 downto 0);
+  signal xy_buf_addr_reg                     : std_logic_vector(15 downto 0);
+  signal xy_buf_addr_sized                   : std_logic_vector(NodeW downto 0);
+  signal xy_buf_addr_load                    : std_logic;
+  signal xy_buf_dat                          : std_logic_vector(63 downto 0);
+  signal xy_buf_rstb                         : std_logic;
 
   -----------------------------
   -- Wishbone slave adapter signals/structures
@@ -323,6 +328,12 @@ begin
       fofb_cc_regs_rcb_ctl_rd_en_o           => rcb_rstb,
       fofb_cc_regs_rcb_ctl_rd_str_o          => rcb_rden,
       fofb_cc_regs_rcb_data_val_i            => rcb_dat,
+      fofb_cc_regs_xy_buff_ctl_unused_i      => (others => '0'),
+      fofb_cc_regs_xy_buff_ctl_addr_o        => xy_buf_addr_bus2dev,
+      fofb_cc_regs_xy_buff_ctl_addr_i        => xy_buf_addr_dev2bus,
+      fofb_cc_regs_xy_buff_ctl_addr_load_o   => xy_buf_addr_load,
+      fofb_cc_regs_xy_buff_data_msb_val_i    => xy_buf_dat(63 downto 32),
+      fofb_cc_regs_xy_buff_data_lsb_val_i    => xy_buf_dat(31 downto 0),
       fofb_cc_regs_ram_reg_addr_i            => fai_cfg_a_out,
       fofb_cc_regs_ram_reg_data_o            => fai_cfg_d_in,
       fofb_cc_regs_ram_reg_rd_i              => fai_cfg_to_wbram_re,
@@ -332,6 +343,28 @@ begin
 
   fai_cfg_to_wbram_we <= fai_cfg_we_out;
   fai_cfg_to_wbram_re <= not fai_cfg_we_out;
+
+  -----------------------------
+  -- FOFB CC X/Y buffer address external load logic
+  -----------------------------
+
+  p_xy_buf_addr_ext_load : process(fai_cfg_clk_out)
+  begin
+    if rising_edge(fai_cfg_clk_out) then
+      xy_buf_rstb <= xy_buf_addr_load;
+
+      if (xy_buf_addr_load = '1') then
+        xy_buf_addr_reg <= xy_buf_addr_bus2dev;
+      end if;
+    end if;
+  end process;
+
+  xy_buf_addr_sized <= xy_buf_addr_reg(NodeW downto 0);
+  xy_buf_addr_dev2bus <= std_logic_vector(
+                             to_unsigned(0,
+                                 xy_buf_addr_dev2bus'length-
+                                 xy_buf_addr_sized'length)) &
+                          xy_buf_addr_sized;
 
   fai_cfg_val_in(31 downto 5) <= (others => '0');
   -- TFS BPM override
@@ -448,9 +481,9 @@ begin
       ---------------------------------------------------------------------------
       fofb_userclk_o                             => fofb_userclk_o,
       fofb_userrst_o                             => fofb_userrst_o,
-      xy_buf_addr_i                              => xy_buf_addr_i,
-      xy_buf_dat_o                               => xy_buf_dat_o,
-      xy_buf_rstb_i                              => xy_buf_rstb_i,
+      xy_buf_addr_i                              => xy_buf_addr_sized,
+      xy_buf_dat_o                               => xy_buf_dat,
+      xy_buf_rstb_i                              => xy_buf_rstb,
       timeframe_start_o                          => timeframe_start_o,
       timeframe_end_o                            => timeframe_end_o,
       fofb_watchdog_i                            => fofb_watchdog_i,

@@ -243,9 +243,6 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     fofb_userclk_o                             : out std_logic;
     fofb_userrst_o                             : out std_logic;
-    xy_buf_addr_i                              : in  std_logic_vector(NodeW downto 0);
-    xy_buf_dat_o                               : out std_logic_vector(63 downto 0);
-    xy_buf_rstb_i                              : in  std_logic;
     timeframe_start_o                          : out std_logic;
     timeframe_end_o                            : out std_logic;
     fofb_watchdog_i                            : in  std_logic_vector(31 downto 0) := (others => '0');
@@ -359,9 +356,6 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     fofb_userclk_o                             : out std_logic;
     fofb_userrst_o                             : out std_logic;
-    xy_buf_addr_i                              : in  std_logic_vector(NodeW downto 0);
-    xy_buf_dat_o                               : out std_logic_vector(63 downto 0);
-    xy_buf_rstb_i                              : in  std_logic;
     timeframe_start_o                          : out std_logic;
     timeframe_end_o                            : out std_logic;
     fofb_watchdog_i                            : in  std_logic_vector(31 downto 0) := (others => '0');
