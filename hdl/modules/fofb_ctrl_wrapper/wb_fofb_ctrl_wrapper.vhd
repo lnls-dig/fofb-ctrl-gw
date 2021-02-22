@@ -118,9 +118,6 @@ port
   ---------------------------------------------------------------------------
   -- FOFB communication controller configuration interface
   ---------------------------------------------------------------------------
-  toa_rstb_i                                 : in  std_logic := '0';
-  toa_rden_i                                 : in  std_logic := '0';
-  toa_dat_o                                  : out std_logic_vector(31 downto 0);
   rcb_rstb_i                                 : in  std_logic := '0';
   rcb_rden_i                                 : in  std_logic := '0';
   rcb_dat_o                                  : out std_logic_vector(31 downto 0);
@@ -192,6 +189,10 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   signal fai_cfg_val_tfs_override            : std_logic;
   signal fai_cfg_to_wbram_we                 : std_logic;
   signal fai_cfg_to_wbram_re                 : std_logic;
+
+  signal toa_rstb                            : std_logic := '0';
+  signal toa_rden                            : std_logic := '0';
+  signal toa_dat                             : std_logic_vector(31 downto 0);
 
   -----------------------------
   -- Wishbone slave adapter signals/structures
@@ -314,10 +315,14 @@ begin
       wb_ack_o                               => wb_slv_adp_in.ack,
       wb_stall_o                             => wb_slv_adp_in.stall,
       fofb_cc_clk_ram_reg_i                  => fai_cfg_clk_out,
+      fofb_cc_clk_sys_i                      => sysclk_i,
       fofb_cc_regs_cfg_val_act_part_o        => fai_cfg_val_act_part,
       fofb_cc_regs_cfg_val_err_clr_o         => fai_cfg_val_err_clr,
       fofb_cc_regs_cfg_val_cc_enable_o       => fai_cfg_val_cc_enable,
       fofb_cc_regs_cfg_val_tfs_override_o    => fai_cfg_val_tfs_override,
+      fofb_cc_regs_toa_ctl_rd_en_o           => toa_rstb,
+      fofb_cc_regs_toa_ctl_rd_str_o          => toa_rden,
+      fofb_cc_regs_toa_data_val_i            => toa_dat,
       fofb_cc_regs_ram_reg_addr_i            => fai_cfg_a_out,
       fofb_cc_regs_ram_reg_data_o            => fai_cfg_d_in,
       fofb_cc_regs_ram_reg_rd_i              => fai_cfg_to_wbram_re,
@@ -414,9 +419,9 @@ begin
       fai_cfg_we_o                               => fai_cfg_we_out,
       fai_cfg_clk_o                              => fai_cfg_clk_out,
       fai_cfg_val_i                              => fai_cfg_val_in,
-      toa_rstb_i                                 => toa_rstb_i,
-      toa_rden_i                                 => toa_rden_i,
-      toa_dat_o                                  => toa_dat_o,
+      toa_rstb_i                                 => toa_rstb,
+      toa_rden_i                                 => toa_rden,
+      toa_dat_o                                  => toa_dat,
       rcb_rstb_i                                 => rcb_rstb_i,
       rcb_rden_i                                 => rcb_rden_i,
       rcb_dat_o                                  => rcb_dat_o,

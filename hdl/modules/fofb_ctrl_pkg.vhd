@@ -224,9 +224,6 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     -- FOFB communication controller configuration interface
     ---------------------------------------------------------------------------
-    toa_rstb_i                                 : in  std_logic := '0';
-    toa_rden_i                                 : in  std_logic := '0';
-    toa_dat_o                                  : out std_logic_vector(31 downto 0);
     rcb_rstb_i                                 : in  std_logic := '0';
     rcb_rden_i                                 : in  std_logic := '0';
     rcb_dat_o                                  : out std_logic_vector(31 downto 0);
@@ -350,9 +347,6 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     -- FOFB communication controller configuration interface
     ---------------------------------------------------------------------------
-    toa_rstb_i                                 : in  std_logic := '0';
-    toa_rden_i                                 : in  std_logic := '0';
-    toa_dat_o                                  : out std_logic_vector(31 downto 0);
     rcb_rstb_i                                 : in  std_logic := '0';
     rcb_rden_i                                 : in  std_logic := '0';
     rcb_dat_o                                  : out std_logic_vector(31 downto 0);
