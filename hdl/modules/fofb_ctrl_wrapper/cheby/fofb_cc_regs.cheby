@@ -68,6 +68,55 @@ memory-map:
               x-wbgen:
                 clock: fofb_cc_clk_ram_reg_i
                 type: BIT
+    - reg:
+        name: toa_ctl
+        address: 0x00000004
+        width: 32
+        access: rw
+        description: FOFB CC Time-of-Arrival configuration register
+        comment: |
+          FOFB CC Time-of-Arrival configuration register
+        children:
+          - field:
+              name: rd_en
+              range: 0
+              description: enable FOFB CC TOA module for reading
+              comment: |
+                write 0: disable FOFB CC TOA module reading
+                write 1: enable FOFB CC TOA module reading
+              x-wbgen:
+                type: BIT
+                clock: fofb_cc_clk_ram_reg_i
+          - field:
+              name: rd_str
+              range: 1
+              description: Read next TOA address
+              comment: |
+                write 0: nothing
+                write 1: read next TOA memory address. This bit auto-clears.
+              x-wbgen:
+                type: MONOSTABLE
+                clock: fofb_cc_clk_ram_reg_i
+    - reg:
+        name: toa_data
+        address: 0x00000008
+        width: 32
+        access: rw
+        description: FOFB CC Time-of-Arrival data
+        comment: |
+          FOFB CC Time-of-Arrival data
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: FOFB CC TOA data
+              comment: |
+                FOFB CC TOA data
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: fofb_cc_clk_sys_i
     - memory:
         name: ram_reg
         memsize: 8k
