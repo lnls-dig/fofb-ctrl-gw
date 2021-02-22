@@ -20,6 +20,16 @@
 #define FOFB_CC_REGS_TOA_DATA_VAL_MASK 0xffffffffUL
 #define FOFB_CC_REGS_TOA_DATA_VAL_SHIFT 0
 
+/* FOFB CC Received Buffer configuration register */
+#define FOFB_CC_REGS_RCB_CTL 0xcUL
+#define FOFB_CC_REGS_RCB_CTL_RD_EN 0x1UL
+#define FOFB_CC_REGS_RCB_CTL_RD_STR 0x2UL
+
+/* FOFB CC Time-of-Arrival data */
+#define FOFB_CC_REGS_RCB_DATA 0x10UL
+#define FOFB_CC_REGS_RCB_DATA_VAL_MASK 0xffffffffUL
+#define FOFB_CC_REGS_RCB_DATA_VAL_SHIFT 0
+
 /* FOFB CC RAM for register map */
 #define FOFB_CC_REGS_RAM_REG 0x2000UL
 #define FOFB_CC_REGS_RAM_REG_SIZE 4 /* 0x4 */
@@ -37,8 +47,14 @@ struct fofb_cc_regs {
   /* [0x8]: REG (rw) FOFB CC Time-of-Arrival data */
   uint32_t toa_data;
 
+  /* [0xc]: REG (rw) FOFB CC Received Buffer configuration register */
+  uint32_t rcb_ctl;
+
+  /* [0x10]: REG (rw) FOFB CC Time-of-Arrival data */
+  uint32_t rcb_data;
+
   /* padding to: 2048 words */
-  uint32_t __padding_0[2045];
+  uint32_t __padding_0[2043];
 
   /* [0x2000]: MEMORY FOFB CC RAM for register map */
   struct ram_reg {

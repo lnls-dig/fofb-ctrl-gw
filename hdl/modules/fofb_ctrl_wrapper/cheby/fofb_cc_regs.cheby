@@ -117,6 +117,56 @@ memory-map:
                 access_dev: WRITE_ONLY
                 access_bus: READ_ONLY
                 clock: fofb_cc_clk_sys_i
+
+    - reg:
+        name: rcb_ctl
+        address: 0x0000000C
+        width: 32
+        access: rw
+        description: FOFB CC Received Buffer configuration register
+        comment: |
+          FOFB CC Time-of-Arrival configuration register
+        children:
+          - field:
+              name: rd_en
+              range: 0
+              description: enable FOFB CC RCB module for reading
+              comment: |
+                write 0: disable FOFB CC RCB module reading
+                write 1: enable FOFB CC RCB module reading
+              x-wbgen:
+                type: BIT
+                clock: fofb_cc_clk_ram_reg_i
+          - field:
+              name: rd_str
+              range: 1
+              description: Read next RCB address
+              comment: |
+                write 0: nothing
+                write 1: read next RCB memory address. This bit auto-clears.
+              x-wbgen:
+                type: MONOSTABLE
+                clock: fofb_cc_clk_ram_reg_i
+    - reg:
+        name: rcb_data
+        address: 0x00000010
+        width: 32
+        access: rw
+        description: FOFB CC Time-of-Arrival data
+        comment: |
+          FOFB CC Time-of-Arrival data
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: FOFB CC RCB data
+              comment: |
+                FOFB CC RCB data
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: fofb_cc_clk_sys_i
     - memory:
         name: ram_reg
         memsize: 8k
