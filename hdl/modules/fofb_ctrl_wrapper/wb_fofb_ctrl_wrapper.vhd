@@ -116,13 +116,6 @@ port
   fai_sim_armed_o                            : out std_logic;
 
   ---------------------------------------------------------------------------
-  -- FOFB communication controller configuration interface
-  ---------------------------------------------------------------------------
-  rcb_rstb_i                                 : in  std_logic := '0';
-  rcb_rden_i                                 : in  std_logic := '0';
-  rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-
-  ---------------------------------------------------------------------------
   -- serial I/Os for eight RocketIOs on the Libera
   ---------------------------------------------------------------------------
   fai_rio_rdp_i                              : in  std_logic_vector(g_LANE_COUNT-1 downto 0);
@@ -193,6 +186,10 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   signal toa_rstb                            : std_logic := '0';
   signal toa_rden                            : std_logic := '0';
   signal toa_dat                             : std_logic_vector(31 downto 0);
+
+  signal rcb_rstb                            : std_logic := '0';
+  signal rcb_rden                            : std_logic := '0';
+  signal rcb_dat                             : std_logic_vector(31 downto 0);
 
   -----------------------------
   -- Wishbone slave adapter signals/structures
@@ -323,6 +320,9 @@ begin
       fofb_cc_regs_toa_ctl_rd_en_o           => toa_rstb,
       fofb_cc_regs_toa_ctl_rd_str_o          => toa_rden,
       fofb_cc_regs_toa_data_val_i            => toa_dat,
+      fofb_cc_regs_rcb_ctl_rd_en_o           => rcb_rstb,
+      fofb_cc_regs_rcb_ctl_rd_str_o          => rcb_rden,
+      fofb_cc_regs_rcb_data_val_i            => rcb_dat,
       fofb_cc_regs_ram_reg_addr_i            => fai_cfg_a_out,
       fofb_cc_regs_ram_reg_data_o            => fai_cfg_d_in,
       fofb_cc_regs_ram_reg_rd_i              => fai_cfg_to_wbram_re,
@@ -422,9 +422,9 @@ begin
       toa_rstb_i                                 => toa_rstb,
       toa_rden_i                                 => toa_rden,
       toa_dat_o                                  => toa_dat,
-      rcb_rstb_i                                 => rcb_rstb_i,
-      rcb_rden_i                                 => rcb_rden_i,
-      rcb_dat_o                                  => rcb_dat_o,
+      rcb_rstb_i                                 => rcb_rstb,
+      rcb_rden_i                                 => rcb_rden,
+      rcb_dat_o                                  => rcb_dat,
 
       ---------------------------------------------------------------------------
       -- serial I/Os for eight RocketIOs on the Libera

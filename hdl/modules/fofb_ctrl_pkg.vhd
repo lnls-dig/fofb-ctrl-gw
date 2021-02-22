@@ -222,13 +222,6 @@ package fofb_ctrl_pkg is
     fai_sim_armed_o                            : out std_logic;
 
     ---------------------------------------------------------------------------
-    -- FOFB communication controller configuration interface
-    ---------------------------------------------------------------------------
-    rcb_rstb_i                                 : in  std_logic := '0';
-    rcb_rden_i                                 : in  std_logic := '0';
-    rcb_dat_o                                  : out std_logic_vector(31 downto 0);
-
-    ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
     ---------------------------------------------------------------------------
     fai_rio_rdp_i                              : in  std_logic_vector(g_LANE_COUNT-1 downto 0);
@@ -343,13 +336,6 @@ package fofb_ctrl_pkg is
     fai_sim_trigger_i                          : in  std_logic := '0';
     fai_sim_trigger_internal_i                 : in  std_logic := '0';
     fai_sim_armed_o                            : out std_logic;
-
-    ---------------------------------------------------------------------------
-    -- FOFB communication controller configuration interface
-    ---------------------------------------------------------------------------
-    rcb_rstb_i                                 : in  std_logic := '0';
-    rcb_rden_i                                 : in  std_logic := '0';
-    rcb_dat_o                                  : out std_logic_vector(31 downto 0);
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
