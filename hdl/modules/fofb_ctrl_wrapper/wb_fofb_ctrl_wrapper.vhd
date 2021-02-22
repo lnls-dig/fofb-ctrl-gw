@@ -168,7 +168,7 @@ architecture rtl of wb_fofb_ctrl_wrapper is
   -- General Contants
   -----------------------------
   -- Number of bits in Wishbone register interface. Plus 2 to account for BYTE addressing
-  constant c_periph_addr_size               : natural := 12+2;
+  constant c_PERIPH_ADDR_SIZE               : natural := 12+2;
 
   -----------------------------
   -- FOFB CC signals/structures
