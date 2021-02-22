@@ -167,6 +167,81 @@ memory-map:
                 access_dev: WRITE_ONLY
                 access_bus: READ_ONLY
                 clock: fofb_cc_clk_sys_i
+
+    - reg:
+        name: xy_buff_ctl
+        address: 0x00000014
+        width: 32
+        access: rw
+        description: FOFB CC X/Y buffer configuration register
+        comment: |
+          FOFB CC X/Y buffer configuration register
+        children:
+          - field:
+              name: unused
+              range: 15-0
+              description: unused
+              comment: |
+                Unused
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: fofb_cc_clk_sys_i
+          - field:
+              name: addr
+              range: 31-16
+              description: Read XY_BUFF address
+              comment: |
+                XY_BUFF memory address.
+              x-wbgen:
+                access_bus: READ_WRITE
+                access_dev: READ_WRITE
+                type: SLV
+                load: LOAD_EXT
+                clock: fofb_cc_clk_ram_reg_i
+    - reg:
+        name: xy_buff_data_msb
+        address: 0x00000018
+        width: 32
+        access: rw
+        description: FOFB CC X/Y buffer MSB
+        comment: |
+          FOFB CC X/Y buffer MSB
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: FOFB CC XY_BUFF data MSB
+              comment: |
+                FOFB CC XY_BUFF data MSB
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: fofb_cc_clk_sys_i
+
+    - reg:
+        name: xy_buff_data_lsb
+        address: 0x0000001C
+        width: 32
+        access: rw
+        description: FOFB CC X/Y buffer LSB
+        comment: |
+          FOFB CC X/Y buffer LSB
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: FOFB CC XY_BUFF data LSB
+              comment: |
+                FOFB CC XY_BUFF data LSB
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: fofb_cc_clk_sys_i
+
     - memory:
         name: ram_reg
         memsize: 8k

@@ -25,10 +25,27 @@
 #define FOFB_CC_REGS_RCB_CTL_RD_EN 0x1UL
 #define FOFB_CC_REGS_RCB_CTL_RD_STR 0x2UL
 
-/* FOFB CC Time-of-Arrival data */
+/* FOFB CC Received Buffer data */
 #define FOFB_CC_REGS_RCB_DATA 0x10UL
 #define FOFB_CC_REGS_RCB_DATA_VAL_MASK 0xffffffffUL
 #define FOFB_CC_REGS_RCB_DATA_VAL_SHIFT 0
+
+/* FOFB CC X/Y buffer configuration register */
+#define FOFB_CC_REGS_XY_BUFF_CTL 0x14UL
+#define FOFB_CC_REGS_XY_BUFF_CTL_UNUSED_MASK 0xffffUL
+#define FOFB_CC_REGS_XY_BUFF_CTL_UNUSED_SHIFT 0
+#define FOFB_CC_REGS_XY_BUFF_CTL_ADDR_MASK 0xffff0000UL
+#define FOFB_CC_REGS_XY_BUFF_CTL_ADDR_SHIFT 16
+
+/* FOFB CC X/Y buffer MSB */
+#define FOFB_CC_REGS_XY_BUFF_DATA_MSB 0x18UL
+#define FOFB_CC_REGS_XY_BUFF_DATA_MSB_VAL_MASK 0xffffffffUL
+#define FOFB_CC_REGS_XY_BUFF_DATA_MSB_VAL_SHIFT 0
+
+/* FOFB CC X/Y buffer LSB */
+#define FOFB_CC_REGS_XY_BUFF_DATA_LSB 0x1cUL
+#define FOFB_CC_REGS_XY_BUFF_DATA_LSB_VAL_MASK 0xffffffffUL
+#define FOFB_CC_REGS_XY_BUFF_DATA_LSB_VAL_SHIFT 0
 
 /* FOFB CC RAM for register map */
 #define FOFB_CC_REGS_RAM_REG 0x2000UL
@@ -50,11 +67,20 @@ struct fofb_cc_regs {
   /* [0xc]: REG (rw) FOFB CC Received Buffer configuration register */
   uint32_t rcb_ctl;
 
-  /* [0x10]: REG (rw) FOFB CC Time-of-Arrival data */
+  /* [0x10]: REG (rw) FOFB CC Received Buffer data */
   uint32_t rcb_data;
 
+  /* [0x14]: REG (rw) FOFB CC X/Y buffer configuration register */
+  uint32_t xy_buff_ctl;
+
+  /* [0x18]: REG (rw) FOFB CC X/Y buffer MSB */
+  uint32_t xy_buff_data_msb;
+
+  /* [0x1c]: REG (rw) FOFB CC X/Y buffer LSB */
+  uint32_t xy_buff_data_lsb;
+
   /* padding to: 2048 words */
-  uint32_t __padding_0[2043];
+  uint32_t __padding_0[2040];
 
   /* [0x2000]: MEMORY FOFB CC RAM for register map */
   struct ram_reg {
