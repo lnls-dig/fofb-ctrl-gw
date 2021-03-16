@@ -69,8 +69,8 @@ port (
   aux_clk_p_i                                : in std_logic;
   aux_clk_n_i                                : in std_logic;
 
-  afc_link01_clk_p_i                         : in std_logic;
-  afc_link01_clk_n_i                         : in std_logic;
+  afc_fp2_clk1_p_i                           : in std_logic;
+  afc_fp2_clk1_n_i                           : in std_logic;
 
   ---------------------------------------------------------------------------
   -- Reset Button
@@ -537,8 +537,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal clk_aux                             : std_logic;
   signal clk_aux_rstn                        : std_logic;
   signal clk_aux_rst                         : std_logic;
-  signal clk_link01_p                        : std_logic;
-  signal clk_link01_n                        : std_logic;
+  signal clk_fp2_clk1_p                      : std_logic;
+  signal clk_fp2_clk1_n                      : std_logic;
   signal clk_200mhz                          : std_logic;
   signal clk_200mhz_rstn                     : std_logic;
   signal clk_pcie                            : std_logic;
@@ -637,8 +637,8 @@ begin
       aux_clk_p_i                              => aux_clk_p_i,
       aux_clk_n_i                              => aux_clk_n_i,
 
-      afc_link01_clk_p_i                       => afc_link01_clk_p_i,
-      afc_link01_clk_n_i                       => afc_link01_clk_n_i,
+      afc_fp2_clk1_p_i                         => afc_fp2_clk1_p_i,
+      afc_fp2_clk1_n_i                         => afc_fp2_clk1_n_i,
 
       ---------------------------------------------------------------------------
       -- Reset Button
@@ -761,8 +761,8 @@ begin
       clk_trig_ref_o                           => clk_trig_ref,
       rst_trig_ref_n_o                         => clk_trig_ref_rstn,
 
-      clk_link01_p_o                           => clk_link01_p,
-      clk_link01_n_o                           => clk_link01_n,
+      clk_fp2_clk1_p_o                         => clk_fp2_clk1_p,
+      clk_fp2_clk1_n_o                         => clk_fp2_clk1_n,
 
       --  Interrupts
       irq_user_i                               => irq_user,
@@ -1155,8 +1155,8 @@ begin
 
   -- Clocks. Use rtm_clk1_p as this goes to the same bank as SFP 0, 1, 2, 3
   -- transceivers
-  fofb_ref_clk_p(c_FOFB_CC_P2P_ID) <= clk_link01_p;
-  fofb_ref_clk_n(c_FOFB_CC_P2P_ID) <= clk_link01_n;
+  fofb_ref_clk_p(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_p;
+  fofb_ref_clk_n(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_n;
 
   -- Trigger signal for DCC timeframe_start.
   -- Trigger pulses are synch'ed with the respective fs_clk

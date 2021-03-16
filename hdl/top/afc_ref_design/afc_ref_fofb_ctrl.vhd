@@ -65,8 +65,8 @@ port (
   aux_clk_p_i                                : in std_logic;
   aux_clk_n_i                                : in std_logic;
 
-  afc_link01_clk_p_i                         : in std_logic;
-  afc_link01_clk_n_i                         : in std_logic;
+  afc_fp2_clk1_p_i                           : in std_logic;
+  afc_fp2_clk1_n_i                           : in std_logic;
 
   ---------------------------------------------------------------------------
   -- Reset Button
@@ -495,8 +495,8 @@ architecture top of afc_ref_fofb_ctrl is
   signal clk_aux                             : std_logic;
   signal clk_aux_rstn                        : std_logic;
   signal clk_aux_rst                         : std_logic;
-  signal clk_link01_p                        : std_logic;
-  signal clk_link01_n                        : std_logic;
+  signal clk_fp2_clk1_p                      : std_logic;
+  signal clk_fp2_clk1_n                      : std_logic;
   signal clk_200mhz                          : std_logic;
   signal clk_200mhz_rstn                     : std_logic;
   signal clk_pcie                            : std_logic;
@@ -577,8 +577,8 @@ begin
       aux_clk_p_i                              => aux_clk_p_i,
       aux_clk_n_i                              => aux_clk_n_i,
 
-      afc_link01_clk_p_i                       => afc_link01_clk_p_i,
-      afc_link01_clk_n_i                       => afc_link01_clk_n_i,
+      afc_fp2_clk1_p_i                         => afc_fp2_clk1_p_i,
+      afc_fp2_clk1_n_i                         => afc_fp2_clk1_n_i,
 
       ---------------------------------------------------------------------------
       -- Reset Button
@@ -701,8 +701,8 @@ begin
       clk_trig_ref_o                           => clk_trig_ref,
       rst_trig_ref_n_o                         => clk_trig_ref_rstn,
 
-      clk_link01_p_o                           => clk_link01_p,
-      clk_link01_n_o                           => clk_link01_n,
+      clk_fp2_clk1_p_o                         => clk_fp2_clk1_p,
+      clk_fp2_clk1_n_o                         => clk_fp2_clk1_n,
 
       --  Interrupts
       irq_user_i                               => irq_user,
