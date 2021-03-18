@@ -40,6 +40,8 @@ generic
   g_PHYSICAL_INTERFACE                      : string  := "SFP";
   g_REFCLK_INPUT                            : string  := "REFCLK0";
   g_INTERLEAVED                             : boolean := true;
+  -- Use simpler/parallel FA IF or not
+  g_USE_PARALLEL_FA_IF                      : boolean := true;
   -- Extended FAI interface for FOFB
   g_EXTENDED_CONF_BUF                       : boolean := false;
   -- Absolute or Difference position data
@@ -79,11 +81,21 @@ port
 
   ---------------------------------------------------------------------------
   -- fast acquisition data interface
-  -- Only used when g_SIM_BPM_DATA = false
+  -- Only used when g_SIM_BPM_DATA = false and
+  -- when g_USE_PARALLEL_FA_IF = false
   ---------------------------------------------------------------------------
   fai_fa_block_start_i                       : in std_logic := '0';
   fai_fa_data_valid_i                        : in std_logic := '0';
   fai_fa_d_i                                 : in std_logic_vector(g_FAI_DW-1 downto 0) := (others => '0');
+
+  ---------------------------------------------------------------------------
+  -- fast acquisition parallel data interface
+  -- Only used when g_SIM_BPM_DATA = false and
+  -- when g_USE_PARALLEL_FA_IF = true
+  ---------------------------------------------------------------------------
+  fai_fa_pl_data_valid_i                     : in std_logic := '0';
+  fai_fa_pl_d_x_i                            : in std_logic_2d_32(g_BPMS-1 downto 0) := (others => (others => '0'));
+  fai_fa_pl_d_y_i                            : in std_logic_2d_32(g_BPMS-1 downto 0) := (others => (others => '0'));
 
   ---------------------------------------------------------------------------
   -- Synthetic data fast acquisition data interface.
@@ -159,6 +171,10 @@ architecture rtl of fofb_ctrl_wrapper is
   signal fai_fa_data_valid                   : std_logic;
   signal fai_fa_d                            : std_logic_vector(g_FAI_DW-1 downto 0);
 
+  signal fai_fa_pl_data_valid                : std_logic;
+  signal fai_fa_pl_d_x                       : std_logic_2d_32(g_BPMS-1 downto 0);
+  signal fai_fa_pl_d_y                       : std_logic_2d_32(g_BPMS-1 downto 0);
+
   signal fai_rxfifo_clear                    : std_logic := '0';
   signal fai_txfifo_clear                    : std_logic := '0';
 
@@ -166,23 +182,45 @@ begin
 
   gen_with_sim_data : if g_SIM_BPM_DATA generate
 
-    cmp_fofb_cc_fai_fa_gen : entity work.fofb_cc_fai_fa_gen
-    generic map (
-      FAI_DW                                 => g_FAI_DW,
-      FAI_VALID_CYCLES                       => c_FA_IF_WR_SIZE
-    )
-    port map (
-      adcclk_i                               => adcclk_i,
-      adcreset_i                             => adcreset_i,
-      data_sel_i                             => fai_sim_data_sel_i,
-      fai_fa_block_start_o                   => fai_fa_block_start,
-      fai_fa_data_valid_o                    => fai_fa_data_valid,
-      fai_fa_d_o                             => fai_fa_d,
-      fai_enable_i                           => fai_sim_enable_i,
-      fai_trigger_i                          => fai_sim_trigger_i,
-      fai_trigger_internal_i                 => fai_sim_trigger_internal_i,
-      fai_armed_o                            => fai_sim_armed_o
-    );
+    gen_with_old_fa_if : if (not g_USE_PARALLEL_FA_IF) generate
+      cmp_fofb_cc_fai_fa_gen : entity work.fofb_cc_fai_fa_gen
+      generic map (
+        FAI_DW                                 => g_FAI_DW,
+        FAI_VALID_CYCLES                       => c_FA_IF_WR_SIZE
+      )
+      port map (
+        adcclk_i                               => adcclk_i,
+        adcreset_i                             => adcreset_i,
+        data_sel_i                             => fai_sim_data_sel_i,
+        fai_fa_block_start_o                   => fai_fa_block_start,
+        fai_fa_data_valid_o                    => fai_fa_data_valid,
+        fai_fa_d_o                             => fai_fa_d,
+        fai_enable_i                           => fai_sim_enable_i,
+        fai_trigger_i                          => fai_sim_trigger_i,
+        fai_trigger_internal_i                 => fai_sim_trigger_internal_i,
+        fai_armed_o                            => fai_sim_armed_o
+      );
+    end generate;
+
+    gen_with_parallel_fa_if : if g_USE_PARALLEL_FA_IF generate
+
+      cmp_fofb_fai_fa_pl_gen : entity work.fofb_fai_fa_pl_gen
+      generic map (
+        g_BPMS                                 => g_BPMS,
+        g_XY_OFFSET                            => 1000
+      )
+      port map (
+        adcclk_i                               => adcclk_i,
+        adcreset_i                             => adcreset_i,
+        fai_fa_data_valid_o                    => fai_fa_pl_data_valid,
+        fai_fa_d_x_o                           => fai_fa_pl_d_x,
+        fai_fa_d_y_o                           => fai_fa_pl_d_y,
+        fai_enable_i                           => fai_sim_enable_i,
+        fai_trigger_i                          => fai_sim_trigger_i,
+        fai_trigger_internal_i                 => fai_sim_trigger_internal_i,
+        fai_armed_o                            => fai_sim_armed_o
+      );
+    end generate;
 
   end generate;
 
@@ -191,6 +229,10 @@ begin
     fai_fa_block_start <= fai_fa_block_start_i;
     fai_fa_data_valid  <= fai_fa_data_valid_i;
     fai_fa_d           <= fai_fa_d_i;
+
+    fai_fa_pl_data_valid  <= fai_fa_pl_data_valid_i;
+    fai_fa_pl_d_x         <= fai_fa_pl_d_x_i;
+    fai_fa_pl_d_y         <= fai_fa_pl_d_y_i;
 
     fai_sim_armed_o <= '0';
 
@@ -205,6 +247,7 @@ begin
       PHYSICAL_INTERFACE                     => g_PHYSICAL_INTERFACE,
       REFCLK_INPUT                           => g_REFCLK_INPUT,
       INTERLEAVED                            => g_INTERLEAVED,
+      USE_PARALLEL_FA_IF                     => g_USE_PARALLEL_FA_IF,
       EXTENDED_CONF_BUF                      => g_EXTENDED_CONF_BUF,
       TX_BPM_POS_ABS                         => g_TX_BPM_POS_ABS,
       LANE_COUNT                             => g_LANE_COUNT,
@@ -226,10 +269,14 @@ begin
       adcreset_i                             => adcreset_i,
       sysclk_i                               => sysclk_i,
       sysreset_n_i                           => sysreset_n_i,
-      -- fast acquisition data interface
+      -- fast acquisition data interface. Used when USE_PARALLEL_FA_IF = false
       fai_fa_block_start_i                   => fai_fa_block_start,
       fai_fa_data_valid_i                    => fai_fa_data_valid,
       fai_fa_d_i                             => fai_fa_d,
+      -- fast acquisition parallel data interface. Used when USE_PARALLEL_FA_IF = true
+      fai_fa_pl_data_valid_i                 => fai_fa_pl_data_valid,
+      fai_fa_pl_d_x_i                        => fai_fa_pl_d_x,
+      fai_fa_pl_d_y_i                        => fai_fa_pl_d_y,
       -- FOFB communication controller configuration interface
       fai_cfg_a_o                            => fai_cfg_a_o,
       fai_cfg_d_o                            => fai_cfg_d_o,
