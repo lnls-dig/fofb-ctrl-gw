@@ -2,6 +2,5 @@
 
 modules = { "local": [
                 "modules",
-                "ip_cores/CommsCtrlFPGA",
             ]
     };
