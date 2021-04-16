@@ -248,7 +248,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_RTM_8SFP_0_ID                   : natural := 0;
 
-  constant c_SLV_RTM_8SFP_CORE_IDS           : t_natural_array(c_RTM_8SFP_NUM_CORES-1 downto 0) :=
+  constant c_SLV_RTM_8SFP_CORE_IDS           : t_num_array(c_RTM_8SFP_NUM_CORES-1 downto 0) :=
     f_gen_ramp(0, c_RTM_8SFP_NUM_CORES);
 
   -- P2P GT IDs
@@ -260,7 +260,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_FOFB_CC_RTM_ID                  : natural := 0;
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
 
-  constant c_SLV_FOFB_CC_CORE_IDS           : t_natural_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+  constant c_SLV_FOFB_CC_CORE_IDS            : t_num_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
     f_gen_ramp(0, c_NUM_FOFC_CC_CORES);
 
   constant c_BPMS                            : integer := 1;

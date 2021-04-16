@@ -237,7 +237,7 @@ architecture top of afc_ref_fofb_ctrl is
   constant c_FMC_4SFP_0_ID                   : natural := 0;
   constant c_FMC_4SFP_1_ID                   : natural := 1;
 
-  constant c_SLV_FMC_4SFP_CORE_IDS           : t_natural_array(c_FMC_4SFP_NUM_CORES-1 downto 0) :=
+  constant c_SLV_FMC_4SFP_CORE_IDS           : t_num_array(c_FMC_4SFP_NUM_CORES-1 downto 0) :=
     f_gen_ramp(0, c_FMC_4SFP_NUM_CORES);
 
   -- FOFB CC
@@ -245,7 +245,7 @@ architecture top of afc_ref_fofb_ctrl is
 
   constant c_FOFB_CC_0_ID                    : natural := 0;
 
-  constant c_SLV_FOFB_CC_CORE_IDS           : t_natural_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+  constant c_SLV_FOFB_CC_CORE_IDS            : t_num_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
     f_gen_ramp(0, c_NUM_FOFC_CC_CORES);
 
   constant c_BPMS                            : integer := 1;
