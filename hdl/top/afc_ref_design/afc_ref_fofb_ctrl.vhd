@@ -160,7 +160,7 @@ port (
   -- spi_sclk_o                              : out std_logic;
   -- spi_cs_n_o                              : out std_logic;
   -- spi_mosi_o                              : out std_logic;
-  -- spi_miso_i                              : in  std_logic := '0'
+  -- spi_miso_i                              : in  std_logic := '0';
 
   ---------------------------------------------------------------------------
   -- FMC slot 0 - CAEN 4 SFP+
