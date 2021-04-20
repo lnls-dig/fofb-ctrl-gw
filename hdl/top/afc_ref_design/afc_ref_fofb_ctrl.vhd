@@ -522,10 +522,10 @@ begin
 
   cmp_afc_base_acq : afc_base_acq
     generic map (
-      g_DIVCLK_DIVIDE                          => 1,
-      g_CLKBOUT_MULT_F                         => 8,
-      g_CLK0_DIVIDE_F                          => 8, -- 100 MHz
-      g_CLK1_DIVIDE                            => 5, -- Must be 200 MHz
+      g_DIVCLK_DIVIDE                          => 5,
+      g_CLKBOUT_MULT_F                         => 48,
+      g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
+      g_CLK1_DIVIDE                            => 6,    -- Must be 200 MHz
       g_SYS_CLOCK_FREQ                         => c_SYS_CLOCK_FREQ,
       -- AFC Si57x parameters
       g_AFC_SI57x_I2C_FREQ                     => c_AFC_SI57x_I2C_FREQ,
