@@ -562,8 +562,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   signal fpga_si570_oe                       : std_logic;
   signal fofb_sysreset_n                     : std_logic_vector(c_NUM_FOFC_CC_CORES-1 downto 0);
-  signal fofb_reset_n                        : std_logic;
-  signal fofb_reset                          : std_logic;
+  signal fofb_reset_n                        : std_logic := '1';
+  signal fofb_reset                          : std_logic := '0';
 
   -----------------------------------------------------------------------------
   -- VIO/ILA signals
@@ -1313,34 +1313,34 @@ begin
   ----------------------------------------------------------------------
   --                          VIO                                     --
   ----------------------------------------------------------------------
-  cmp_vio_din2_w64_dout2_w64 : entity work.vio_din2_w64_dout2_w64
-  port map (
-    clk                                      => clk_sys,
-    probe_in0                                => probe_in0,
-    probe_in1                                => probe_in1,
-    probe_out0                               => probe_out0,
-    probe_out1                               => probe_out1
-  );
-
-  probe_in0(7 downto 0)  <= sfp_fix_led1;
-  probe_in0(15 downto 8)  <= sfp_fix_los;
-  probe_in0(23 downto 16)  <= sfp_fix_txfault;
-  probe_in0(31 downto 24)  <= sfp_fix_detect_n;
-  probe_in0(63 downto 32)  <= (others => '0');
-
-  probe_in1(63 downto 0) <= (others => '0');
-
-  rtm_ext_rfreq_value <= probe_out0(37 downto 0);
-  rtm_ext_wr          <= probe_out1(0);
-  rtm_ext_n1_value    <= probe_out1(7 downto 1);
-  rtm_ext_hs_value    <= probe_out1(10 downto 8);
-  fofb_reset          <= probe_out1(11);
-  sfp_fix_txdisable   <= probe_out1(19 downto 12);
-  sfp_fix_rs0         <= probe_out1(27 downto 20);
-  sfp_fix_rs1         <= probe_out1(35 downto 28);
-
-  fofb_reset_n        <= not fofb_reset;
-
+--  cmp_vio_din2_w64_dout2_w64 : entity work.vio_din2_w64_dout2_w64
+--  port map (
+--    clk                                      => clk_sys,
+--    probe_in0                                => probe_in0,
+--    probe_in1                                => probe_in1,
+--    probe_out0                               => probe_out0,
+--    probe_out1                               => probe_out1
+--  );
+--
+--  probe_in0(7 downto 0)  <= sfp_fix_led1;
+--  probe_in0(15 downto 8)  <= sfp_fix_los;
+--  probe_in0(23 downto 16)  <= sfp_fix_txfault;
+--  probe_in0(31 downto 24)  <= sfp_fix_detect_n;
+--  probe_in0(63 downto 32)  <= (others => '0');
+--
+--  probe_in1(63 downto 0) <= (others => '0');
+--
+--  rtm_ext_rfreq_value <= probe_out0(37 downto 0);
+--  rtm_ext_wr          <= probe_out1(0);
+--  rtm_ext_n1_value    <= probe_out1(7 downto 1);
+--  rtm_ext_hs_value    <= probe_out1(10 downto 8);
+--  fofb_reset          <= probe_out1(11);
+--  sfp_fix_txdisable   <= probe_out1(19 downto 12);
+--  sfp_fix_rs0         <= probe_out1(27 downto 20);
+--  sfp_fix_rs1         <= probe_out1(35 downto 28);
+--
+--  fofb_reset_n        <= not fofb_reset;
+--
 --  ila_core_inst : entity work.ila_t8_d256_s16384
 --  port map (
 --    clk             => clk_sys,
