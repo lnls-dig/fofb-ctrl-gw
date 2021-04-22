@@ -513,6 +513,8 @@ architecture top of afcv4_ref_fofb_ctrl is
 
   signal fpga_si570_oe                       : std_logic;
   signal fofb_sysreset_n                     : std_logic_vector(c_NUM_FOFC_CC_CORES-1 downto 0);
+  signal fofb_reset_n                        : std_logic := '1';
+  signal fofb_reset                          : std_logic := '0';
 
   -------------------------------------------------------------------------------
   ---- VIO/ILA signals
@@ -938,7 +940,7 @@ begin
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_FMC_ID)
   );
 
-  fofb_sysreset_n(c_FOFB_CC_FMC_ID) <= clk_sys_rstn and fmc0_si57x_reconfig_rst_n;
+  fofb_sysreset_n(c_FOFB_CC_FMC_ID) <= clk_sys_rstn and fmc0_si57x_reconfig_rst_n and fofb_reset_n;
 
   fofb_userrst_n(c_FOFB_CC_FMC_ID) <= not fofb_userrst(c_FOFB_CC_FMC_ID);
 
@@ -1079,7 +1081,7 @@ begin
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)
   );
 
-  fofb_sysreset_n(c_FOFB_CC_P2P_ID) <= clk_sys_rstn and afc_si57x_reconfig_rst_n;
+  fofb_sysreset_n(c_FOFB_CC_P2P_ID) <= clk_sys_rstn and afc_si57x_reconfig_rst_n and fofb_reset_n;
 
   fofb_userrst_n(c_FOFB_CC_P2P_ID) <= not fofb_userrst(c_FOFB_CC_P2P_ID);
 
@@ -1146,5 +1148,53 @@ begin
 
   trig_rcv_intern(c_TRIG_MUX_1_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq2_channel_1;
   trig_rcv_intern(c_TRIG_MUX_1_ID, c_TRIG_RCV_INTERN_CHAN_2_ID) <= trig_acq2_channel_2;
+
+  ----------------------------------------------------------------------
+  --                          VIO                                     --
+  ----------------------------------------------------------------------
+--  cmp_vio_din2_w64_dout2_w64 : entity work.vio_din2_w64_dout2_w64
+--  port map (
+--    clk                                      => clk_sys,
+--    probe_in0                                => probe_in0,
+--    probe_in1                                => probe_in1,
+--    probe_out0                               => probe_out0,
+--    probe_out1                               => probe_out1
+--  );
+--
+--  probe_in0(63 downto 0) <= (others => '0')
+--  probe_in1(63 downto 0) <= (others => '0');
+--
+--  afc_si57x_ext_rfreq_value <= probe_out0(37 downto 0);
+--  afc_si57x_ext_wr          <= probe_out1(0);
+--  afc_si57x_ext_n1_value    <= probe_out1(7 downto 1);
+--  afc_si57x_ext_hs_value    <= probe_out1(10 downto 8);
+--  fofb_reset          <= probe_out1(11);
+--
+--  fofb_reset_n        <= not fofb_reset;
+--
+--  ila_core_inst : entity work.ila_t8_d256_s16384
+--  port map (
+--    clk             => clk_sys,
+--    probe0          => data,
+--    probe1          => trig0
+--  );
+--
+--  trig0(0)          <= fofb_reset;
+--  trig0(1)          <= fofb_reset_n;
+--  trig0(2)          <= afc_si57x_sta_reconfig_done;
+--  trig0(3)          <= afc_si57x_sta_reconfig_done_pp;
+--  trig0(4)          <= afc_si57x_reconfig_rst;
+--  trig0(5)          <= afc_si57x_reconfig_rst_n;
+--  trig0(6)          <= '0';
+--  trig0(7)          <= '0';
+--
+--  data(0)          <= fofb_reset;
+--  data(1)          <= fofb_reset_n;
+--  data(2)          <= afc_si57x_sta_reconfig_done;
+--  data(3)          <= afc_si57x_sta_reconfig_done_pp;
+--  data(4)          <= afc_si57x_reconfig_rst;
+--  data(5)          <= afc_si57x_reconfig_rst_n;
+--
+--  data(255 downto 6) <= (others => '0');
 
 end architecture top;
