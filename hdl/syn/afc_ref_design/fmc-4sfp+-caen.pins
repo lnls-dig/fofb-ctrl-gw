@@ -7,23 +7,23 @@
 
 mezzanine fmc-4sfp+-caen-v1
 
-pin dp3_m2c_p fmc%_sfp_rx_p_i[0]
-pin dp3_m2c_n fmc%_sfp_rx_n_i[0]
+pin dp0_m2c_p fmc%_sfp_rx_p_i[0]
+pin dp0_m2c_n fmc%_sfp_rx_n_i[0]
 pin dp1_m2c_p fmc%_sfp_rx_p_i[1]
 pin dp1_m2c_n fmc%_sfp_rx_n_i[1]
-pin dp0_m2c_p fmc%_sfp_rx_p_i[2]
-pin dp0_m2c_n fmc%_sfp_rx_n_i[2]
-pin dp2_m2c_p fmc%_sfp_rx_p_i[3]
-pin dp2_m2c_n fmc%_sfp_rx_n_i[3]
+pin dp2_m2c_p fmc%_sfp_rx_p_i[2]
+pin dp2_m2c_n fmc%_sfp_rx_n_i[2]
+pin dp3_m2c_p fmc%_sfp_rx_p_i[3]
+pin dp3_m2c_n fmc%_sfp_rx_n_i[3]
 
-pin dp3_c2m_p fmc%_sfp_tx_p_o[0]
-pin dp3_c2m_n fmc%_sfp_tx_n_o[0]
+pin dp0_c2m_p fmc%_sfp_tx_p_o[0]
+pin dp0_c2m_n fmc%_sfp_tx_n_o[0]
 pin dp1_c2m_p fmc%_sfp_tx_p_o[1]
 pin dp1_c2m_n fmc%_sfp_tx_n_o[1]
-pin dp0_c2m_p fmc%_sfp_tx_p_o[2]
-pin dp0_c2m_n fmc%_sfp_tx_n_o[2]
-pin dp2_c2m_p fmc%_sfp_tx_p_o[3]
-pin dp2_c2m_n fmc%_sfp_tx_n_o[3]
+pin dp2_c2m_p fmc%_sfp_tx_p_o[2]
+pin dp2_c2m_n fmc%_sfp_tx_n_o[2]
+pin dp3_c2m_p fmc%_sfp_tx_p_o[3]
+pin dp3_c2m_n fmc%_sfp_tx_n_o[3]
 
 pin la_p21 fmc%_sfp_scl_b[0] lvcmos25
 pin la_n21 fmc%_sfp_sda_b[0] lvcmos25
