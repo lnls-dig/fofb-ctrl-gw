@@ -295,13 +295,25 @@ set_max_delay -datapath_only -from               [get_clocks $clk_dac_master]   
 # CDC for done/ready flags
 set_max_delay -datapath_only -from               [get_clocks $clk_fast_spi]      -to [get_clocks $clk_adcdac_ref]   $clk_adcdac_ref_period
 
-# FAST SPI clock and SCK_RET/VIRT_SCK_RET (for data) are async.
-# They are dealt with 2-stage synchronizers
-set_clock_groups -asynchronous -group [get_clocks $clk_fast_spi] \
-    -group {virt_rtmlamp_adc_octo_sck_ret \
-            virt_rtmlamp_adc_quad_sck_ret \
-            rtmlamp_adc_octo_sck_ret \
-            rtmlamp_adc_quad_sck_ret}
+# Cosntraint all ADC inputs as a max delay of clk_fast_spi_period, so theier difference
+# are not too large
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sck_ret_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdoa_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdob_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdoc_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdod_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_quad_sck_ret_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_quad_sdoa_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
+set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_quad_sdoc_p_i] \
+    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 
 # reset from UART. ORed with a negative reset pulse and an extension of it.
 # That's why we have two sets of constraints. How to get all startpoints with
@@ -322,6 +334,7 @@ set_max_delay -datapath_only -from [ get_cells $button_exted_rstn_startpoints ] 
 set button_pp_rstn_startpoints          [all_fanin -flat -only_cells -startpoints_only \
     [ get_pins -of_objects [ get_nets -hier -filter {NAME =~ *cmp_button_sys_ffs/*rst_button_sys_pp*} ] -filter {IS_LEAF && (DIRECTION == "OUT")} ]]
 set_max_delay -datapath_only -from [ get_cells $button_pp_rstn_startpoints ]  -to [ get_clocks $clk_fast_spi ] $clk_sys_period
+
 
 #######################################################################
 ##                      Placement Constraints                        ##
