@@ -38,6 +38,7 @@ else:
 # on afc_base xdc files.
 xdc_files = [
     "afcv4_fmc_4sfp+_caen.xdc",
+    "afcv4_rtm_lamp_ohwr.xdc",
     "afcv4_ref_fofb_ctrl.xdc",
 ]
 

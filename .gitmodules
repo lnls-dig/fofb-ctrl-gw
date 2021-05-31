@@ -10,3 +10,6 @@
 [submodule "hdl/ip_cores/CommsCtrlFPGA"]
 	path = hdl/ip_cores/CommsCtrlFPGA
 	url = https://github.com/lnls-dig/CommsCtrlFPGA
+[submodule "hdl/ip_cores/rtm-lamp-gw"]
+	path = hdl/ip_cores/rtm-lamp-gw
+	url = https://github.com/lnls-dig/rtm-lamp-gw
