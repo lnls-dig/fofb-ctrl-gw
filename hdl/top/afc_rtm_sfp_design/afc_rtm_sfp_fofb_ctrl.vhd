@@ -33,10 +33,10 @@ use work.ifc_generic_pkg.all;
 use work.trigger_common_pkg.all;
 -- Trigger Modules
 use work.trigger_pkg.all;
--- AFC definitions
+-- AFC base definitions
 use work.afc_base_pkg.all;
--- AFC Acq definitions
-use work.afc_base_acq_pkg.all;
+-- AFC base wrappers definitions
+use work.afc_base_wrappers_pkg.all;
 -- General-cores Common
 use work.gencores_pkg.all;
 -- IP cores constants
@@ -580,7 +580,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
 begin
 
-  cmp_afc_base_acq : afc_base_acq
+  cmp_afc_base_acq : afcv3_base_acq
     generic map (
       g_DIVCLK_DIVIDE                          => 5,
       g_CLKBOUT_MULT_F                         => 48,

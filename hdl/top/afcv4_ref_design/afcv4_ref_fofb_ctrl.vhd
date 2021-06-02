@@ -33,10 +33,10 @@ use work.ifc_generic_pkg.all;
 use work.trigger_common_pkg.all;
 -- Trigger Modules
 use work.trigger_pkg.all;
--- AFC definitions
+-- AFC base definitions
 use work.afc_base_pkg.all;
--- AFC Acq definitions
-use work.afc_base_acq_pkg.all;
+-- AFC base wrappers definitions
+use work.afc_base_wrappers_pkg.all;
 -- General-cores Common
 use work.gencores_pkg.all;
 -- IP cores constants
@@ -623,7 +623,7 @@ architecture top of afcv4_ref_fofb_ctrl is
 
 begin
 
-  cmp_afc_base_acq : afc_base_acq
+  cmp_afc_base_acq : afcv4_base_acq
     generic map (
       g_DIVCLK_DIVIDE                          => 5,
       g_CLKBOUT_MULT_F                         => 48,
@@ -647,9 +647,6 @@ begin
       g_WITH_SPI                               => false,
       g_WITH_AFC_SI57x                         => true,
       g_WITH_BOARD_I2C                         => true,
-      -- Select between tristate and bidirection triggers. AFCv3 and lower
-      -- has a tristate port and AFCv4 has bidirectional ones
-      g_TRIGGER_TRISTATE                       => false,
       g_ACQ_NUM_CORES                          => c_ACQ_NUM_CORES,
       g_TRIG_MUX_NUM_CORES                     => c_TRIG_MUX_NUM_CORES,
       g_USER_NUM_CORES                         => c_USER_NUM_CORES,
