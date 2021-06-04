@@ -11,8 +11,8 @@ if locals().get('fetchto', None) is None:
 syn_device = "xc7a200t"
 syn_grade = "-2"
 syn_package = "ffg1156"
-syn_top = "afc_ref_fofb_ctrl"
-syn_project = "afc_ref_fofb_ctrl"
+syn_top = "afcv3_ref_fofb_ctrl"
+syn_project = "afcv3_ref_fofb_ctrl"
 syn_tool = "vivado"
 syn_properties = [
     ["steps.synth_design.args.more options", "-verbose"],
@@ -31,7 +31,7 @@ syn_properties = [
     ["steps.write_bitstream.args.verbose", "1"]
 ]
 
-board = "afc"
+board = "afcv3"
 
 # For appending the afc_ref_design.xdc to synthesis
 afc_base_xdc = ['acq']
@@ -47,8 +47,9 @@ else:
 # other .xdc. We need this as we depend on variables defined
 # on afc_base xdc files.
 xdc_files =[
-    "afc_fmc_4sfp+_caen.xdc",
-    "afc_ref_fofb_ctrl.xdc",
+    "afcv3_fmc_4sfp+_caen.xdc",
+    "afcv3_rtm_lamp_ohwr.xdc",
+    "afcv3_ref_fofb_ctrl.xdc",
 ]
 
 additional_xdc = []
@@ -57,6 +58,6 @@ for f in xdc_files:
 
 modules = {
   "local" : [
-      "../../top/afc_ref_design",
+      "../../top/afcv3_ref_design",
   ]
 }

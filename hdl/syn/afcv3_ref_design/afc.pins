@@ -24,8 +24,9 @@ pin 0 la_n14 H8
 pin 0 la_p15 K11
 pin 0 la_n15 J11
 pin 0 la_p09 J4
-pin 0 clk0m2c_p H16
-pin 0 clk0m2c_n G16
+# Conflicts with RTM
+# pin 0 clk0m2c_p H16
+# pin 0 clk0m2c_n G16
 pin 0 la_p30 N1
 pin 0 la_n30 M1
 pin 0 la_p31 U7
@@ -116,38 +117,40 @@ pin 0 ha_n02 J34
 pin 0 ha_p06 L27
 pin 0 ha_n07 K32
 pin 0 ha_n06 K27
-# RX116_3_N MGTPRXN3_116 E17
-# RX116_3_P MGTPRXP3_116 F17
-pin 0 dp0_m2c_n E17
-pin 0 dp0_m2c_p F17
-# RX116_2_N	MGTPRXN2_116 C16
-# RX116_2_P	MGTPRXP2_116 D16
-pin 0 dp1_m2c_n C16
-pin 0 dp1_m2c_p D16
-# RX116_1_N MGTPRXN1_116 E15
-# RX116_1_P MGTPRXP1_116 F15
-pin 0 dp2_m2c_n E15
-pin 0 dp2_m2c_p F15
-# RX116_0_N MGTPRXN0_116 E13
-# RX116_0_P MGTPRXP0_116 F13
-pin 0 dp3_m2c_n E13
-pin 0 dp3_m2c_p F13
-# TX116_3_N MGTPTXN3_116 A17
-# TX116_3_P MGTPTXP3_116 B17
-pin 0 dp0_c2m_n A17
-pin 0 dp0_c2m_p B17
-# TX116_2_N MGTPTXN2_116 A15
-# TX116_2_P MGTPTXP2_116 B15
-pin 0 dp1_c2m_n A15
-pin 0 dp1_c2m_p B15
-# TX116_1_N MGTPTXN1_116 C14
-# TX116_1_P MGTPTXP1_116 D14
-pin 0 dp2_c2m_n C14
-pin 0 dp2_c2m_p D14
-# TX116_0_N MGTPTXN0_116 A13
-# TX116_0_P MGTPTXP0_116 B13
-pin 0 dp3_c2m_n A13
-pin 0 dp3_c2m_p B13
+# Conflicts with RTM
+#
+# # RX116_3_N MGTPRXN3_116 E17
+# # RX116_3_P MGTPRXP3_116 F17
+# pin 0 dp3_m2c_n E17
+# pin 0 dp3_m2c_p F17
+# # RX116_2_N	MGTPRXN2_116 C16
+# # RX116_2_P	MGTPRXP2_116 D16
+# pin 0 dp2_m2c_n C16
+# pin 0 dp2_m2c_p D16
+# # RX116_1_N MGTPRXN1_116 E15
+# # RX116_1_P MGTPRXP1_116 F15
+# pin 0 dp1_m2c_n E15
+# pin 0 dp1_m2c_p F15
+# # RX116_0_N MGTPRXN0_116 E13
+# # RX116_0_P MGTPRXP0_116 F13
+# pin 0 dp0_m2c_n E13
+# pin 0 dp0_m2c_p F13
+# # TX116_3_N MGTPTXN3_116 A17
+# # TX116_3_P MGTPTXP3_116 B17
+# pin 0 dp3_c2m_n A17
+# pin 0 dp3_c2m_p B17
+# # TX116_2_N MGTPTXN2_116 A15
+# # TX116_2_P MGTPTXP2_116 B15
+# pin 0 dp2_c2m_n A15
+# pin 0 dp2_c2m_p B15
+# # TX116_1_N MGTPTXN1_116 C14
+# # TX116_1_P MGTPTXP1_116 D14
+# pin 0 dp1_c2m_n C14
+# pin 0 dp1_c2m_p D14
+# # TX116_0_N MGTPTXN0_116 A13
+# # TX116_0_P MGTPTXP0_116 B13
+# pin 0 dp0_c2m_n A13
+# pin 0 dp0_c2m_p B13
 
 pin 1 la_p17 AB31
 pin 1 la_n17 AB32
@@ -244,8 +247,10 @@ pin 1 la_n14 AF33
 pin 1 la_p15 AD28
 pin 1 la_n15 AD29
 pin 1 la_p09 AF25
-pin 1 clk0m2c_p AG20
-pin 1 clk0m2c_n AH20
+# Conflicts with RTM
+#
+# pin 1 clk0m2c_p AG20
+# pin 1 clk0m2c_n AH20
 pin 1 la_p31 V31
 pin 1 la_n31 V32
 pin 1 la_p27 AA27
@@ -258,37 +263,129 @@ pin 1 la_n06 AF23
 pin 1 la_n16 AD34
 pin 1 la_p16 AD33
 pin 1 la_p26 AC31
-# RX213_3_P MGTPRXP3_213 AJ21
-# RX213_3_N MGTPRXN3_213 AK21
-pin 1 dp3_m2c_p AJ21
-pin 1 dp3_m2c_n AK21
-# RX213_2_P MGTPRXP2_213 AL20
-# RX213_2_N MGTPRXN2_213 AM20
-pin 1 dp2_m2c_p AL20
-pin 1 dp2_m2c_n AM20
-# RX213_1_P MGTPRXP1_213 AJ19
-# RX213_1_N MGTPRXN1_213 AK19
-pin 1 dp1_m2c_p AJ19
-pin 1 dp1_m2c_n AK19
-# RX213_0_P MGTPRXP0_213 AL18
-# RX213_0_N MGTPRXN0_213 AM18
-pin 1 dp0_m2c_p AL18
-pin 1 dp0_m2c_n AM18
-# TX213_3_P MGTPTXP3_213 AN23
-# TX213_3_N MGTPTXN3_213 AP23
-pin 1 dp3_c2m_p AN23
-pin 1 dp3_c2m_n AP23
-# TX213_2_P MGTPTXP2_213 AL22
-# TX213_2_N MGTPTXN2_213 AM22
-pin 1 dp2_c2m_p AL22
-pin 1 dp2_c2m_n AM22
-# TX213_1_PMGTPTXP1_213 AN21
-# TX213_1_NMGTPTXN1_213 AP21
-pin 1 dp1_c2m_p AN21
-pin 1 dp1_c2m_n AP21
-# TX213_0_P MGTPTXP0_213 AN19
-# TX213_0_N MGTPTXN0_213 AP19
-pin 1 dp0_c2m_p AN19
-pin 1 dp0_c2m_n AP19
+# Conflicts with RTM
+#
+# # RX213_3_P MGTPRXP3_213 AJ21
+# # RX213_3_N MGTPRXN3_213 AK21
+# pin 1 dp3_m2c_p AJ21
+# pin 1 dp3_m2c_n AK21
+# # RX213_2_P MGTPRXP2_213 AL20
+# # RX213_2_N MGTPRXN2_213 AM20
+# pin 1 dp2_m2c_p AL20
+# pin 1 dp2_m2c_n AM20
+# # RX213_1_P MGTPRXP1_213 AJ19
+# # RX213_1_N MGTPRXN1_213 AK19
+# pin 1 dp1_m2c_p AJ19
+# pin 1 dp1_m2c_n AK19
+# # RX213_0_P MGTPRXP0_213 AL18
+# # RX213_0_N MGTPRXN0_213 AM18
+# pin 1 dp0_m2c_p AL18
+# pin 1 dp0_m2c_n AM18
+# # TX213_3_P MGTPTXP3_213 AN23
+# # TX213_3_N MGTPTXN3_213 AP23
+# pin 1 dp3_c2m_p AN23
+# pin 1 dp3_c2m_n AP23
+# # TX213_2_P MGTPTXP2_213 AL22
+# # TX213_2_N MGTPTXN2_213 AM22
+# pin 1 dp2_c2m_p AL22
+# pin 1 dp2_c2m_n AM22
+# # TX213_1_PMGTPTXP1_213 AN21
+# # TX213_1_NMGTPTXN1_213 AP21
+# pin 1 dp1_c2m_p AN21
+# pin 1 dp1_c2m_n AP21
+# # TX213_0_P MGTPTXP0_213 AN19
+# # TX213_0_N MGTPTXN0_213 AP19
+# pin 1 dp0_c2m_p AN19
+# pin 1 dp0_c2m_n AP19
+
+# RTM connections
+
+# Not connected to FPGA
+# pin 0 j1_b3
+# pin 0 j1_a3
+pin 0 j1_c9  U11
+pin 0 j1_c8  AA8
+pin 0 j1_c7  W6
+pin 0 j1_c6  L23
+pin 0 j1_a7  AC11
+
+pin 0 j1_a8  AN7
+pin 0 j1_f5  K12
+pin 0 j1_e5  L12
+pin 0 j1_f8  AD24
+pin 0 j1_e8  AC24
+
+pin 0 j1_f10  AE26
+pin 0 j1_e10  AD26
+pin 0 j1_f9   AE31
+pin 0 j1_e9   AD31
+pin 0 j1_f7   T10
+pin 0 j1_e7   U10
+pin 0 j1_f6   T9
+pin 0 j1_e6   U9
+
+pin 0 j1_c5   M26
+pin 0 j1_c6   L23
+
+# Not connected to FPGA
+# pin 0 j1_d6  XXX
+# pin 0 j1_d7  XXX
+# pin 0 j1_d8  XXX
+# pin 0 j1_d9  XXX
+
+pin 0 j1_a9   AN6
+pin 0 j1_c10  R8
+
+# Not connected to FPGA
+# pin 0 j1_d3
+# pin 0 j1_c3
+
+pin 0 j2_b9 AH20
+pin 0 j2_a9 AG20
+pin 0 j2_b5 G16
+pin 0 j2_a5 H16
+
+pin 0 j2_a1 L4
+pin 0 j2_a2 AE32
+
+pin 0 j2_d10 AM18
+pin 0 j2_c10 AL18
+pin 0 j2_d9  AK19
+pin 0 j2_c9  AJ19
+pin 0 j2_d8  AM20
+pin 0 j2_c8  AL20
+pin 0 j2_d7  AK21
+pin 0 j2_c7  AJ21
+pin 0 j2_d6  E17
+pin 0 j2_c6  F17
+pin 0 j2_d5  E13
+pin 0 j2_c5  F13
+pin 0 j2_d4  E15
+pin 0 j2_c4  F15
+pin 0 j2_d3  C16
+pin 0 j2_c3  D16
+
+pin 0 j2_f10  AP19
+pin 0 j2_e10  AN19
+pin 0 j2_f9   AP21
+pin 0 j2_e9   AN21
+pin 0 j2_f8   AM22
+pin 0 j2_e8   AL22
+pin 0 j2_f7   AP23
+pin 0 j2_e7   AN23
+pin 0 j2_f6   A17
+pin 0 j2_e6   B17
+pin 0 j2_f5   A13
+pin 0 j2_e5   B13
+pin 0 j2_f4   C14
+pin 0 j2_e4   D14
+pin 0 j2_f3   A15
+pin 0 j2_e3   B15
+
+pin 0 j2_c2   Y26
+pin 0 j2_c1   AC28
+
+pin 0 j2_e2   AF10
+pin 0 j2_e1   T32
 
 #eof
