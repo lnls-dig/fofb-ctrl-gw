@@ -146,16 +146,15 @@ set rtmlamp_adc_quad_sck_ret_clk_period                       [get_property PERI
 # Virtual clock for Quad return clock
 create_clock -period 10.000 -name virt_rtmlamp_adc_quad_sck_ret
 
-# Get master clock for DAC
-set clk_dac_master                                            [get_clocks -of_objects [get_nets clk_sys]]
+set clk_dac_master                                            [get_clocks -of_objects [get_nets -hier -filter {NAME =~ */clk_sys}]]
 set clk_dac_master_period                                     [get_property PERIOD [get_clocks $clk_dac_master]]
 
 # Get master clock for ADC
-set clk_fast_spi                                              [get_clocks -of_objects [get_nets clk_user2]]
+set clk_fast_spi                                              [get_clocks -of_objects [get_nets -hier -filter {NAME =~ */clk_user2}]]
 set clk_fast_spi_period                                       [get_property PERIOD [get_clocks $clk_fast_spi]]
 
 # Get reference clocks for ADC/DAC/etc
-set clk_adcdac_ref                                            [get_clocks -of_objects [get_nets clk_aux_raw]]
+set clk_adcdac_ref                                            [get_clocks -of_objects [get_nets -hier -filter {NAME =~ */clk_aux_raw}]]
 set clk_adcdac_ref_period                                     [get_property PERIOD [get_clocks $clk_adcdac_ref]]
 
 #######################################################################
