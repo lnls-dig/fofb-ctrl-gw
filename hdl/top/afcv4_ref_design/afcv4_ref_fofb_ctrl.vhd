@@ -57,7 +57,7 @@ use work.rtm_lamp_pkg.all;
 entity afcv4_ref_fofb_ctrl is
 generic (
   -- Number of P2P GTs
-  g_NUM_P2P_GTS                              : integer := 4;
+  g_NUM_P2P_GTS                              : integer := 8;
   -- Starting index of used P2P GTs
   g_P2P_GT_START_ID                          : integer := 0;
   -- Number of RTM LAMP ADC channels
