@@ -1383,6 +1383,7 @@ begin
 
   end generate;
 
+  -- Only used if FP P2P is not used.
   fofb_ref_clk_p(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_p;
   fofb_ref_clk_n(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_n;
 
@@ -1398,7 +1399,11 @@ begin
     g_ID                                      => 0,
     g_DEVICE                                  => BPM,
     g_PHYSICAL_INTERFACE                      => "BACKPLANE",
-    g_REFCLK_INPUT                            => "REFCLK1",
+    -- clock from right-side GTP
+    g_REFCLK_INPUT                            => "WESTREFCLK1",
+    -- if FP P2P is used we take ref. clock from it, if not we instantiate
+    -- the clock buffers ourselves
+    g_CLK_BUFFERS                             => not c_GT_CFG.with_fp_p2p,
     g_LANE_COUNT                              => c_LANE_COUNT,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
@@ -1408,11 +1413,23 @@ begin
   )
   port map
   (
+    -- Only used when CLK_BUFFERS := false
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
     refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_P2P_ID),
     refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_P2P_ID),
+
+    ---------------------------------------------------------------------------
+    -- external clocks/resets input from adjacent DCC
+    ---------------------------------------------------------------------------
+    -- Only used when CLK_BUFFERS := false
+    ext_initclk_i                              => fofb_initclk(c_FOFB_CC_FP_P2P_ID),
+    ext_refclk_i                               => fofb_refclk(c_FOFB_CC_FP_P2P_ID),
+    ext_mgtreset_i                             => fofb_mgtreset(c_FOFB_CC_FP_P2P_ID),
+    ext_gtreset_i                              => fofb_gtreset(c_FOFB_CC_FP_P2P_ID),
+    ext_userclk_i                              => fofb_userclk(c_FOFB_CC_FP_P2P_ID),
+    ext_userclk_2x_i                           => fofb_userclk_2x(c_FOFB_CC_FP_P2P_ID),
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
@@ -1458,13 +1475,6 @@ begin
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
-    fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_P2P_ID),
-    fofb_userclk_2x_o                          => fofb_userclk_2x(c_FOFB_CC_P2P_ID),
-    fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_P2P_ID),
-    fofb_initclk_o                             => fofb_initclk(c_FOFB_CC_P2P_ID),
-    fofb_refclk_o                              => fofb_refclk(c_FOFB_CC_P2P_ID),
-    fofb_mgtreset_o                            => fofb_mgtreset(c_FOFB_CC_P2P_ID),
-    fofb_gtreset_o                             => fofb_gtreset(c_FOFB_CC_P2P_ID),
     timeframe_start_o                          => timeframe_start(c_FOFB_CC_P2P_ID),
     timeframe_end_o                            => timeframe_end(c_FOFB_CC_P2P_ID),
     fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_P2P_ID),
@@ -1504,6 +1514,9 @@ begin
 
     end generate;
 
+    fofb_ref_clk_p(c_FOFB_CC_FP_P2P_ID) <= clk_fp2_clk1_p;
+    fofb_ref_clk_n(c_FOFB_CC_FP_P2P_ID) <= clk_fp2_clk1_n;
+
     -- Trigger signal for DCC timeframe_start.
     -- Trigger pulses are synch'ed with the respective fs_clk
     fai_sim_trigger(c_FOFB_CC_FP_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
@@ -1516,9 +1529,8 @@ begin
       g_ID                                      => 0,
       g_DEVICE                                  => BPM,
       g_PHYSICAL_INTERFACE                      => "BACKPLANE",
-      -- clock from left-side GTP
-      g_REFCLK_INPUT                            => "EASTREFCLK1",
-      g_CLK_BUFFERS                             => false,
+      g_REFCLK_INPUT                            => "REFCLK1",
+      g_CLK_BUFFERS                             => true,
       g_LANE_COUNT                              => c_LANE_COUNT,
       g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
       -- BPM synthetic data
@@ -1529,15 +1541,10 @@ begin
     port map
     (
       ---------------------------------------------------------------------------
-      -- external clocks/resets input from adjacent DCC
+      -- differential MGT/GTP clock inputs
       ---------------------------------------------------------------------------
-      -- Only used when CLK_BUFFERS := false
-      ext_initclk_i                              => fofb_initclk(c_FOFB_CC_P2P_ID),
-      ext_refclk_i                               => fofb_refclk(c_FOFB_CC_P2P_ID),
-      ext_mgtreset_i                             => fofb_mgtreset(c_FOFB_CC_P2P_ID),
-      ext_gtreset_i                              => fofb_gtreset(c_FOFB_CC_P2P_ID),
-      ext_userclk_i                              => fofb_userclk(c_FOFB_CC_P2P_ID),
-      ext_userclk_2x_i                           => fofb_userclk_2x(c_FOFB_CC_P2P_ID),
+      refclk_p_i                                 => fofb_ref_clk_p(c_FOFB_CC_FP_P2P_ID),
+      refclk_n_i                                 => fofb_ref_clk_n(c_FOFB_CC_FP_P2P_ID),
 
       ---------------------------------------------------------------------------
       -- clock and reset interface
@@ -1584,7 +1591,12 @@ begin
       -- Higher-level integration interface (PMC, SNIFFER_V5)
       ---------------------------------------------------------------------------
       fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_FP_P2P_ID),
+      fofb_userclk_2x_o                          => fofb_userclk_2x(c_FOFB_CC_FP_P2P_ID),
       fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_FP_P2P_ID),
+      fofb_initclk_o                             => fofb_initclk(c_FOFB_CC_FP_P2P_ID),
+      fofb_refclk_o                              => fofb_refclk(c_FOFB_CC_FP_P2P_ID),
+      fofb_mgtreset_o                            => fofb_mgtreset(c_FOFB_CC_FP_P2P_ID),
+      fofb_gtreset_o                             => fofb_gtreset(c_FOFB_CC_FP_P2P_ID),
       timeframe_start_o                          => timeframe_start(c_FOFB_CC_FP_P2P_ID),
       timeframe_end_o                            => timeframe_end(c_FOFB_CC_FP_P2P_ID),
       fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_FP_P2P_ID),
