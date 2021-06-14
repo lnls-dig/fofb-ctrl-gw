@@ -1,0 +1,448 @@
+#
+# Carrier FMC pins description file
+#
+# Syntax:
+# carrier carrier_name number_of_fmc_slots
+# pin FMC_Slot signal_name FPGA_pin
+
+carrier afc-v4-1hpc-1lpc-rtm-variant 2
+
+# FMC 1 connections
+
+pin 0 la_p33 U2
+pin 0 la_n33 U1
+pin 0 la_p32 R1
+pin 0 la_n32 P1
+pin 0 la_p31 U7
+pin 0 la_n31 U6
+pin 0 la_p30 N1
+pin 0 la_n30 M1
+pin 0 la_p29 P9
+pin 0 la_n29 P8
+pin 0 la_p28 T8
+pin 0 la_n28 T7
+pin 0 la_p27 R3
+pin 0 la_n27 R2
+pin 0 la_p26 T3
+pin 0 la_n26 T2
+pin 0 la_p25 N8
+pin 0 la_n25 N7
+pin 0 la_p24 M11
+pin 0 la_n24 M10
+pin 0 la_p23 N3
+pin 0 la_n23 N2
+pin 0 la_p22 M5
+pin 0 la_n22 M4
+pin 0 la_p21 M7
+pin 0 la_n21 M6
+pin 0 la_p20 R10
+pin 0 la_n20 P10
+pin 0 la_p19 U5
+pin 0 la_n19 U4
+pin 0 la_p18 P4
+pin 0 la_n18 P3
+pin 0 la_p17 T5
+pin 0 la_n17 T4
+pin 0 la_p16 L10
+pin 0 la_n16 L9
+pin 0 la_p15 K11
+pin 0 la_n15 J11
+pin 0 la_p14 H9
+pin 0 la_n14 H8
+pin 0 la_p13 G10
+pin 0 la_n13 G9
+pin 0 la_p12 L8
+pin 0 la_n12 K8
+pin 0 la_p11 M2
+pin 0 la_n11 L2
+pin 0 la_p10 H2
+pin 0 la_n10 G2
+pin 0 la_p09 J4
+pin 0 la_n09 J3
+pin 0 la_p08 F3
+pin 0 la_n08 F2
+pin 0 la_p07 K3
+pin 0 la_n07 K2
+pin 0 la_p06 L5
+pin 0 la_n06 K5
+pin 0 la_p05 H4
+pin 0 la_n05 H3
+pin 0 la_p04 K1
+pin 0 la_n04 J1
+pin 0 la_p03 H1
+pin 0 la_n03 G1
+pin 0 la_p02 G7
+pin 0 la_n02 G6
+pin 0 la_p01 G5
+pin 0 la_n01 G4
+pin 0 la_p00 K7
+pin 0 la_n00 K6
+
+pin 0 hb_p21 AC4
+pin 0 hb_n21 AC3
+pin 0 hb_p20 AA3
+pin 0 hb_n20 AA2
+pin 0 hb_p19 AB5
+pin 0 hb_n19 AB4
+pin 0 hb_p18 AB7
+pin 0 hb_n18 AB6
+pin 0 hb_p17 AA5
+pin 0 hb_n17 AA4
+pin 0 hb_p16 AB2
+pin 0 hb_n16 AB1
+pin 0 hb_p15 AC9
+pin 0 hb_n15 AC8
+pin 0 hb_p14 AC2
+pin 0 hb_n14 AC1
+pin 0 hb_p13 Y3
+pin 0 hb_n13 Y2
+pin 0 hb_p12 AC7
+pin 0 hb_n12 AC6
+pin 0 hb_p11 W1
+pin 0 hb_n11 Y1
+pin 0 hb_p10 V7
+pin 0 hb_n10 V6
+pin 0 hb_p09 V2
+pin 0 hb_n09 V1
+pin 0 hb_p08 V3
+pin 0 hb_n08 W3
+pin 0 hb_p07 AB10
+pin 0 hb_n07 AB9
+pin 0 hb_p06 V4
+pin 0 hb_n06 W4
+pin 0 hb_p05 AA10
+pin 0 hb_n05 AA9
+pin 0 hb_p04 Y8
+pin 0 hb_n04 Y7
+pin 0 hb_p03 W10
+pin 0 hb_n03 Y10
+pin 0 hb_p02 V9
+pin 0 hb_n02 V8
+pin 0 hb_p01 W9
+pin 0 hb_n01 W8
+pin 0 hb_p00 W5
+pin 0 hb_n00 Y5
+
+pin 0 ha_p23 K23
+pin 0 ha_n23 J23
+pin 0 ha_p22 J24
+pin 0 ha_n22 H24
+pin 0 ha_p21 G24
+pin 0 ha_n21 G25
+pin 0 ha_p20 K26
+pin 0 ha_n20 J26
+pin 0 ha_p19 H26
+pin 0 ha_n19 G26
+pin 0 ha_p18 H27
+pin 0 ha_n18 G27
+pin 0 ha_p17 J28
+pin 0 ha_n17 H28
+pin 0 ha_p16 H31
+pin 0 ha_n16 G31
+pin 0 ha_p15 G29
+pin 0 ha_n15 G30
+pin 0 ha_p14 M24
+pin 0 ha_n14 L24
+pin 0 ha_p13 K25
+pin 0 ha_n13 J25
+pin 0 ha_p12 H33
+pin 0 ha_n12 G34
+pin 0 ha_p11 M25
+pin 0 ha_n11 L25
+pin 0 ha_p10 H32
+pin 0 ha_n10 G32
+pin 0 ha_p09 K31
+pin 0 ha_n09 J31
+pin 0 ha_p08 L29
+pin 0 ha_n08 L30
+pin 0 ha_p07 L32
+pin 0 ha_n07 K32
+pin 0 ha_p06 L27
+pin 0 ha_n06 K27
+pin 0 ha_p05 J33
+pin 0 ha_n05 H34
+pin 0 ha_p04 L33
+pin 0 ha_n04 L34
+pin 0 ha_p03 K30
+pin 0 ha_n03 J30
+pin 0 ha_p02 K33
+pin 0 ha_n02 J34
+pin 0 ha_p01 L28
+pin 0 ha_n01 K28
+pin 0 ha_p00 J29
+pin 0 ha_n00 H29
+
+# FMC 1 MGT pins
+
+# RX116_3_N MGTPRXN3_116 E17
+# RX116_3_P MGTPRXP3_116 F17
+pin 0 dp0_m2c_n E17
+pin 0 dp0_m2c_p F17
+# RX116_2_N	MGTPRXN2_116 C16
+# RX116_2_P	MGTPRXP2_116 D16
+pin 0 dp1_m2c_n C16
+pin 0 dp1_m2c_p D16
+# RX116_1_N MGTPRXN1_116 E15
+# RX116_1_P MGTPRXP1_116 F15
+pin 0 dp2_m2c_n E15
+pin 0 dp2_m2c_p F15
+# RX116_0_N MGTPRXN0_116 E13
+# RX116_0_P MGTPRXP0_116 F13
+pin 0 dp3_m2c_n E13
+pin 0 dp3_m2c_p F13
+# TX116_3_N MGTPTXN3_116 A17
+# TX116_3_P MGTPTXP3_116 B17
+pin 0 dp0_c2m_n A17
+pin 0 dp0_c2m_p B17
+# TX116_2_N MGTPTXN2_116 A15
+# TX116_2_P MGTPTXP2_116 B15
+pin 0 dp1_c2m_n A15
+pin 0 dp1_c2m_p B15
+# TX116_1_N MGTPTXN1_116 C14
+# TX116_1_P MGTPTXP1_116 D14
+pin 0 dp2_c2m_n C14
+pin 0 dp2_c2m_p D14
+# TX116_0_N MGTPTXN0_116 A13
+# TX116_0_P MGTPTXP0_116 B13
+pin 0 dp3_c2m_n A13
+pin 0 dp3_c2m_p B13
+
+# clock pins to GTP
+pin 0 clk0m2c_p H16
+pin 0 clk0m2c_n G16
+pin 0 clk1m2c_p H14
+pin 0 clk1m2c_n G14
+
+# FMC 2 connections
+
+pin 1 la_p33 V33
+pin 1 la_n33 V34
+pin 1 la_p32 AA34
+pin 1 la_n32 AB34
+pin 1 la_p31 V31
+pin 1 la_n31 V32
+pin 1 la_p30 W33
+pin 1 la_n30 W34
+pin 1 la_p29 AC33
+pin 1 la_n29 AC34
+pin 1 la_p28 W28
+pin 1 la_n28 W29
+pin 1 la_p27 AA27
+pin 1 la_n27 AA28
+pin 1 la_p26 AC31
+pin 1 la_n26 AC32
+pin 1 la_p25 AA29
+pin 1 la_n25 AB29
+pin 1 la_p24 Y32
+pin 1 la_n24 Y33
+pin 1 la_p23 W25
+pin 1 la_n23 Y25
+pin 1 la_p22 AA24
+pin 1 la_n22 AA25
+pin 1 la_p21 AA32
+pin 1 la_n21 AA33
+pin 1 la_p20 AB24
+pin 1 la_n20 AB25
+pin 1 la_p19 AB26
+pin 1 la_n19 AB27
+pin 1 la_p18 W30
+pin 1 la_n18 W31
+pin 1 la_p17 AB31
+pin 1 la_n17 AB32
+pin 1 la_p16 AD33
+pin 1 la_n16 AD34
+pin 1 la_p15 AD28
+pin 1 la_n15 AD29
+pin 1 la_p14 AE33
+pin 1 la_n14 AF33
+pin 1 la_p13 AF34
+pin 1 la_n13 AG34
+pin 1 la_p12 AE27
+pin 1 la_n12 AF27
+pin 1 la_p11 AD30
+pin 1 la_n11 AE30
+pin 1 la_p10 AG32
+pin 1 la_n10 AH32
+pin 1 la_p09 AF25
+pin 1 la_n09 AG25
+pin 1 la_p08 AD25
+pin 1 la_n08 AE25
+pin 1 la_p07 AG27
+pin 1 la_n07 AH27
+pin 1 la_p06 AE23
+pin 1 la_n06 AF23
+pin 1 la_p05 AH33
+pin 1 la_n05 AH34
+pin 1 la_p04 AC26
+pin 1 la_n04 AC27
+pin 1 la_p03 AG24
+pin 1 la_n03 AH24
+pin 1 la_p02 AG31
+pin 1 la_n02 AH31
+pin 1 la_p01 AF29
+pin 1 la_n01 AF30
+pin 1 la_p00 AE28
+pin 1 la_n00 AF28
+
+# Unconnected in this variant
+# pin 1 hb_p18 N29
+# pin 1 hb_n18 M29
+# pin 1 hb_p15 U30
+# pin 1 hb_n15 T30
+# pin 1 hb_p06 R30
+# pin 1 hb_n06 P30
+# pin 1 hb_p05 P33
+# pin 1 hb_n05 P34
+# pin 1 hb_p03 U34
+# pin 1 hb_n03 T34
+# pin 1 hb_p21 T33
+# pin 1 hb_n21 R33
+# pin 1 hb_p20 N32
+# pin 1 hb_n20 N33
+# pin 1 hb_p19 M30
+# pin 1 hb_n19 M31
+# pin 1 hb_p17 P28
+# pin 1 hb_n17 P29
+# pin 1 hb_p16 U31
+# pin 1 hb_n16 U32
+# pin 1 hb_p14 R31
+# pin 1 hb_n14 P31
+# pin 1 hb_p13 N27
+# pin 1 hb_n13 N28
+# pin 1 hb_p12 N31
+# pin 1 hb_n12 M32
+# pin 1 hb_p11 T27
+# pin 1 hb_n11 R27
+# pin 1 hb_p10 U25
+# pin 1 hb_n10 T25
+# pin 1 hb_p09 T28
+# pin 1 hb_n09 R28
+# pin 1 hb_p08 R26
+# pin 1 hb_n08 P26
+# pin 1 hb_p07 P24
+# pin 1 hb_n07 N24
+# pin 1 hb_p04 U26
+# pin 1 hb_n04 U27
+# pin 1 hb_p02 N34
+# pin 1 hb_n02 M34
+# pin 1 hb_p01 N26
+# pin 1 hb_n01 M27
+# pin 1 hb_p00 U29
+# pin 1 hb_n00 T29
+#
+# pin 1 ha_p13 AN28
+# pin 1 ha_n13 AP28
+# pin 1 ha_p12 AM29
+# pin 1 ha_n12 AN29
+# pin 1 ha_p23 AJ33
+# pin 1 ha_n23 AJ34
+# pin 1 ha_p22 AL34
+# pin 1 ha_n22 AM34
+# pin 1 ha_p21 AP29
+# pin 1 ha_n21 AP30
+# pin 1 ha_p20 AJ31
+# pin 1 ha_n20 AK32
+# pin 1 ha_p19 AJ30
+# pin 1 ha_n19 AK31
+# pin 1 ha_p18 AN33
+# pin 1 ha_n18 AP33
+# pin 1 ha_p17 AJ28
+# pin 1 ha_n17 AK28
+# pin 1 ha_p16 AK27
+# pin 1 ha_n16 AL27
+# pin 1 ha_p15 AJ29
+# pin 1 ha_n15 AK30
+# pin 1 ha_p14 AN34
+# pin 1 ha_n14 AP34
+# pin 1 ha_p11 AK33
+# pin 1 ha_n11 AL33
+# pin 1 ha_p10 AP25
+# pin 1 ha_n10 AP26
+# pin 1 ha_p09 AJ26
+# pin 1 ha_n09 AK26
+# pin 1 ha_p08 AM27
+# pin 1 ha_n08 AN27
+# pin 1 ha_p07 AM31
+# pin 1 ha_n07 AN32
+# pin 1 ha_p06 AL32
+# pin 1 ha_n06 AM32
+# pin 1 ha_p05 AL25
+# pin 1 ha_n05 AM25
+# pin 1 ha_p04 AJ25
+# pin 1 ha_n04 AK25
+# pin 1 ha_p03 AM26
+# pin 1 ha_n03 AN26
+# pin 1 ha_p02 AN31
+# pin 1 ha_n02 AP31
+# pin 1 ha_p01 AL28
+# pin 1 ha_n01 AL29
+# pin 1 ha_p00 AL30
+# pin 1 ha_n00 AM30
+
+# RTM connections
+#
+# j1 connector is also called j6 in some .pins files
+# for AFC
+#
+pin 0 j1_b10 T29
+pin 0 j1_a10 U29
+pin 0 j1_d10 R28
+pin 0 j1_c10 T28
+pin 0 j1_f10 P26
+pin 0 j1_e10 R26
+pin 0 j1_b5 AL29
+pin 0 j1_a5 AL28
+pin 0 j1_d5 AN27
+pin 0 j1_c5 AM27
+pin 0 j1_f5 AM25
+pin 0 j1_e5 AL25
+pin 0 j1_b6 AM30
+pin 0 j1_a6 AL30
+pin 0 j1_d6 AP28
+pin 0 j1_c6 AN28
+pin 0 j1_f6 AK25
+pin 0 j1_e6 AJ25
+pin 0 j1_b7 AN29
+pin 0 j1_a7 AM29
+pin 0 j1_d7 AK26
+pin 0 j1_c7 AJ26
+pin 0 j1_f7 AM32
+pin 0 j1_e7 AL32
+pin 0 j1_b8 AP26
+pin 0 j1_a8 AP25
+pin 0 j1_d8 AP30
+pin 0 j1_c8 AP29
+pin 0 j1_f8 AP33
+pin 0 j1_e8 AN33
+pin 0 j1_b9 P30
+pin 0 j1_a9 R30
+pin 0 j1_d9 M34
+pin 0 j1_c9 N34
+pin 0 j1_f9 N24
+pin 0 j1_e9 P24
+pin 0 j1_d4 AN26
+pin 0 j1_c4 AM26
+pin 0 j1_f4 AN32
+pin 0 j1_e4 AM31
+pin 0 j1_f3 AP31
+pin 0 j1_e3 AN31
+pin 0 j2_b1 T25
+pin 0 j2_a1 U25
+pin 0 j2_d1 R27
+pin 0 j2_c1 T27
+pin 0 j2_f1 N28
+pin 0 j2_e1 N27
+pin 0 j2_b2 M27
+pin 0 j2_a2 N26
+pin 0 j2_d2 T34
+pin 0 j2_c2 U34
+pin 0 j2_f2 P34
+pin 0 j2_e2 P33
+pin 0 j2_b3 R33
+pin 0 j2_a3 T33
+pin 0 j2_b4 M29
+pin 0 j2_a4 N29
+pin 0 j2_b7 P29
+pin 0 j2_a7 P28
+pin 0 j2_b8 T30
+pin 0 j2_a8 U30

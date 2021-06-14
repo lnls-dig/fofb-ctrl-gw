@@ -33,10 +33,10 @@ use work.ifc_generic_pkg.all;
 use work.trigger_common_pkg.all;
 -- Trigger Modules
 use work.trigger_pkg.all;
--- AFC definitions
+-- AFC base definitions
 use work.afc_base_pkg.all;
--- AFC Acq definitions
-use work.afc_base_acq_pkg.all;
+-- AFC base wrappers definitions
+use work.afc_base_wrappers_pkg.all;
 -- General-cores Common
 use work.gencores_pkg.all;
 -- IP cores constants
@@ -248,7 +248,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_RTM_8SFP_0_ID                   : natural := 0;
 
-  constant c_SLV_RTM_8SFP_CORE_IDS           : t_natural_array(c_RTM_8SFP_NUM_CORES-1 downto 0) :=
+  constant c_SLV_RTM_8SFP_CORE_IDS           : t_num_array(c_RTM_8SFP_NUM_CORES-1 downto 0) :=
     f_gen_ramp(0, c_RTM_8SFP_NUM_CORES);
 
   -- P2P GT IDs
@@ -260,7 +260,7 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_FOFB_CC_RTM_ID                  : natural := 0;
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
 
-  constant c_SLV_FOFB_CC_CORE_IDS           : t_natural_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+  constant c_SLV_FOFB_CC_CORE_IDS            : t_num_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
     f_gen_ramp(0, c_NUM_FOFC_CC_CORES);
 
   constant c_BPMS                            : integer := 1;
@@ -562,8 +562,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   signal fpga_si570_oe                       : std_logic;
   signal fofb_sysreset_n                     : std_logic_vector(c_NUM_FOFC_CC_CORES-1 downto 0);
-  signal fofb_reset_n                        : std_logic;
-  signal fofb_reset                          : std_logic;
+  signal fofb_reset_n                        : std_logic := '1';
+  signal fofb_reset                          : std_logic := '0';
 
   -----------------------------------------------------------------------------
   -- VIO/ILA signals
@@ -580,12 +580,12 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
 begin
 
-  cmp_afc_base_acq : afc_base_acq
+  cmp_afc_base_acq : afcv3_base_acq
     generic map (
-      g_DIVCLK_DIVIDE                          => 1,
-      g_CLKBOUT_MULT_F                         => 8,
-      g_CLK0_DIVIDE_F                          => 8, -- 100 MHz
-      g_CLK1_DIVIDE                            => 5, -- Must be 200 MHz
+      g_DIVCLK_DIVIDE                          => 5,
+      g_CLKBOUT_MULT_F                         => 48,
+      g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
+      g_CLK1_DIVIDE                            => 6,    -- Must be 200 MHz
       g_SYS_CLOCK_FREQ                         => c_SYS_CLOCK_FREQ,
       -- AFC Si57x parameters
       g_AFC_SI57x_I2C_FREQ                     => c_AFC_SI57x_I2C_FREQ,
@@ -1313,34 +1313,34 @@ begin
   ----------------------------------------------------------------------
   --                          VIO                                     --
   ----------------------------------------------------------------------
-  cmp_vio_din2_w64_dout2_w64 : entity work.vio_din2_w64_dout2_w64
-  port map (
-    clk                                      => clk_sys,
-    probe_in0                                => probe_in0,
-    probe_in1                                => probe_in1,
-    probe_out0                               => probe_out0,
-    probe_out1                               => probe_out1
-  );
-
-  probe_in0(7 downto 0)  <= sfp_fix_led1;
-  probe_in0(15 downto 8)  <= sfp_fix_los;
-  probe_in0(23 downto 16)  <= sfp_fix_txfault;
-  probe_in0(31 downto 24)  <= sfp_fix_detect_n;
-  probe_in0(63 downto 32)  <= (others => '0');
-
-  probe_in1(63 downto 0) <= (others => '0');
-
-  rtm_ext_rfreq_value <= probe_out0(37 downto 0);
-  rtm_ext_wr          <= probe_out1(0);
-  rtm_ext_n1_value    <= probe_out1(7 downto 1);
-  rtm_ext_hs_value    <= probe_out1(10 downto 8);
-  fofb_reset          <= probe_out1(11);
-  sfp_fix_txdisable   <= probe_out1(19 downto 12);
-  sfp_fix_rs0         <= probe_out1(27 downto 20);
-  sfp_fix_rs1         <= probe_out1(35 downto 28);
-
-  fofb_reset_n        <= not fofb_reset;
-
+--  cmp_vio_din2_w64_dout2_w64 : entity work.vio_din2_w64_dout2_w64
+--  port map (
+--    clk                                      => clk_sys,
+--    probe_in0                                => probe_in0,
+--    probe_in1                                => probe_in1,
+--    probe_out0                               => probe_out0,
+--    probe_out1                               => probe_out1
+--  );
+--
+--  probe_in0(7 downto 0)  <= sfp_fix_led1;
+--  probe_in0(15 downto 8)  <= sfp_fix_los;
+--  probe_in0(23 downto 16)  <= sfp_fix_txfault;
+--  probe_in0(31 downto 24)  <= sfp_fix_detect_n;
+--  probe_in0(63 downto 32)  <= (others => '0');
+--
+--  probe_in1(63 downto 0) <= (others => '0');
+--
+--  rtm_ext_rfreq_value <= probe_out0(37 downto 0);
+--  rtm_ext_wr          <= probe_out1(0);
+--  rtm_ext_n1_value    <= probe_out1(7 downto 1);
+--  rtm_ext_hs_value    <= probe_out1(10 downto 8);
+--  fofb_reset          <= probe_out1(11);
+--  sfp_fix_txdisable   <= probe_out1(19 downto 12);
+--  sfp_fix_rs0         <= probe_out1(27 downto 20);
+--  sfp_fix_rs1         <= probe_out1(35 downto 28);
+--
+--  fofb_reset_n        <= not fofb_reset;
+--
 --  ila_core_inst : entity work.ila_t8_d256_s16384
 --  port map (
 --    clk             => clk_sys,

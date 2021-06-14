@@ -39,6 +39,7 @@ generic
   g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
   g_PHYSICAL_INTERFACE                      : string  := "SFP";
   g_REFCLK_INPUT                            : string  := "REFCLK0";
+  g_CLK_BUFFERS                             : boolean := true;
   g_INTERLEAVED                             : boolean := true;
   -- Use simpler/parallel FA IF or not
   g_USE_PARALLEL_FA_IF                      : boolean := true;
@@ -68,8 +69,19 @@ port
   ---------------------------------------------------------------------------
   -- differential MGT/GTP clock inputs
   ---------------------------------------------------------------------------
-  refclk_p_i                                 : in std_logic;
-  refclk_n_i                                 : in std_logic;
+  refclk_p_i                                 : in std_logic := '0';
+  refclk_n_i                                 : in std_logic := '1';
+
+  ---------------------------------------------------------------------------
+  -- external clocks/resets input from adjacent DCC
+  ---------------------------------------------------------------------------
+  -- Only used when CLK_BUFFERS := false
+  ext_initclk_i                              : in std_logic := '0';
+  ext_refclk_i                               : in std_logic := '0';
+  ext_mgtreset_i                             : in std_logic := '0';
+  ext_gtreset_i                              : in std_logic := '0';
+  ext_userclk_i                              : in std_logic := '0';
+  ext_userclk_2x_i                           : in std_logic := '0';
 
   ---------------------------------------------------------------------------
   -- clock and reset interface
@@ -144,7 +156,12 @@ port
   -- Higher-level integration interface (PMC, SNIFFER_V5)
   ---------------------------------------------------------------------------
   fofb_userclk_o                             : out std_logic;
+  fofb_userclk_2x_o                          : out std_logic;
   fofb_userrst_o                             : out std_logic;
+  fofb_initclk_o                             : out std_logic;
+  fofb_refclk_o                              : out std_logic;
+  fofb_mgtreset_o                            : out std_logic;
+  fofb_gtreset_o                             : out std_logic;
   xy_buf_addr_i                              : in  std_logic_vector(NodeW downto 0);
   xy_buf_dat_o                               : out std_logic_vector(63 downto 0);
   xy_buf_rstb_i                              : in  std_logic;
@@ -246,6 +263,7 @@ begin
       SIM_GTPRESET_SPEEDUP                   => g_SIM_GTPRESET_SPEEDUP,
       PHYSICAL_INTERFACE                     => g_PHYSICAL_INTERFACE,
       REFCLK_INPUT                           => g_REFCLK_INPUT,
+      CLK_BUFFERS                            => g_CLK_BUFFERS,
       INTERLEAVED                            => g_INTERLEAVED,
       USE_PARALLEL_FA_IF                     => g_USE_PARALLEL_FA_IF,
       EXTENDED_CONF_BUF                      => g_EXTENDED_CONF_BUF,
@@ -264,6 +282,13 @@ begin
       -- differential MGT/GTP clock inputs
       refclk_p_i                             => refclk_p_i,
       refclk_n_i                             => refclk_n_i,
+      -- Only used when CLK_BUFFERS := false
+      ext_initclk_i                          => ext_initclk_i,
+      ext_refclk_i                           => ext_refclk_i,
+      ext_mgtreset_i                         => ext_mgtreset_i,
+      ext_gtreset_i                          => ext_gtreset_i,
+      ext_userclk_i                          => ext_userclk_i,
+      ext_userclk_2x_i                       => ext_userclk_2x_i,
       -- clock and reset interface
       adcclk_i                               => adcclk_i,
       adcreset_i                             => adcreset_i,
@@ -305,7 +330,12 @@ begin
       coeff_y_dat_o                          => coeff_y_dat_o,
       -- Higher-level integration interface (PMC, SNIFFER_V5)
       fofb_userclk_o                         => fofb_userclk_o,
+      fofb_userclk_2x_o                      => fofb_userclk_2x_o,
       fofb_userrst_o                         => fofb_userrst_o,
+      fofb_initclk_o                         => fofb_initclk_o,
+      fofb_refclk_o                          => fofb_refclk_o,
+      fofb_mgtreset_o                        => fofb_mgtreset_o,
+      fofb_gtreset_o                         => fofb_gtreset_o,
       xy_buf_addr_i                          => xy_buf_addr_i,
       xy_buf_dat_o                           => xy_buf_dat_o,
       xy_buf_rstb_i                          => xy_buf_rstb_i,

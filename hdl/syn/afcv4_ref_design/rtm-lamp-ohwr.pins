@@ -1,0 +1,68 @@
+
+#
+# Mezzanine top level pin assignment file:
+# syntax: pin FMC_pin_name Core_Pin_name IO_Standard
+# % is replaced with FMC number if the carrier supports more than 1 mezzanine
+#
+
+mezzanine rtm-lamp-ohwr-v1
+
+# Not connected in the carrier. Goes to clock switch.
+# pin j1_b3   rtmlamp_sync_clk1_n_o               lvds_25
+# pin j1_a3   rtmlamp_sync_clk1_p_o               lvds_25
+
+pin j1_c8   rtmlamp_adc_cnv_o                   lvcmos25
+
+pin j1_a8   rtmlamp_dac_ldac_n_o                lvcmos25
+
+pin j1_f5   rtmlamp_adc_octo_sck_n_o           lvds_25
+pin j1_e5   rtmlamp_adc_octo_sck_p_o           lvds_25
+
+pin j1_f8   rtmlamp_adc_octo_sck_ret_n_i       lvds_25
+pin j1_e8   rtmlamp_adc_octo_sck_ret_p_i       lvds_25
+
+pin j1_b5   rtmlamp_adc_quad_sck_n_o           lvds_25
+pin j1_a5   rtmlamp_adc_quad_sck_p_o           lvds_25
+
+pin j1_b6   rtmlamp_adc_quad_sck_ret_n_i       lvds_25
+pin j1_a6   rtmlamp_adc_quad_sck_ret_p_i       lvds_25
+
+pin j1_c9   rtmlamp_amp_shift_clk_o             lvcmos25
+pin j1_c7   rtmlamp_amp_shift_din_o             lvcmos25
+pin j1_b7   rtmlamp_amp_shift_oe_n_o            lvcmos25
+pin j1_a7   rtmlamp_amp_shift_str_o             lvcmos25
+pin j1_d5   rtmlamp_amp_shift_pl_o              lvcmos25
+pin j1_d10  rtmlamp_amp_shift_dout_i            lvcmos25
+
+pin j1_f10  rtmlamp_adc_octo_sdoa_n_i           lvds_25
+pin j1_e10  rtmlamp_adc_octo_sdoa_p_i           lvds_25
+pin j1_f9   rtmlamp_adc_octo_sdob_n_i           lvds_25
+pin j1_e9   rtmlamp_adc_octo_sdob_p_i           lvds_25
+pin j1_f7   rtmlamp_adc_octo_sdoc_n_i           lvds_25
+pin j1_e7   rtmlamp_adc_octo_sdoc_p_i           lvds_25
+pin j1_f6   rtmlamp_adc_octo_sdod_n_i           lvds_25
+pin j1_e6   rtmlamp_adc_octo_sdod_p_i           lvds_25
+
+pin j1_c5   rtmlamp_dac_sck_o                   lvcmos25
+pin j1_c6   rtmlamp_dac_cs_n_o                  lvcmos25
+
+pin j1_d6   rtmlamp_dac_sdi_o[11]               lvcmos25
+pin j1_d7   rtmlamp_dac_sdi_o[10]               lvcmos25
+pin j1_d8   rtmlamp_dac_sdi_o[9]                lvcmos25
+pin j1_d9   rtmlamp_dac_sdi_o[8]                lvcmos25
+
+pin j1_a9   rtmlamp_dac_sdi_o[7]                lvcmos25
+pin j1_c10  rtmlamp_dac_sdi_o[6]                lvcmos25
+pin j2_e1   rtmlamp_dac_sdi_o[5]                lvcmos25
+pin j2_c1   rtmlamp_dac_sdi_o[4]                lvcmos25
+pin j2_a1   rtmlamp_dac_sdi_o[3]                lvcmos25
+pin j2_e2   rtmlamp_dac_sdi_o[2]                lvcmos25
+pin j2_c2   rtmlamp_dac_sdi_o[1]                lvcmos25
+pin j2_a2   rtmlamp_dac_sdi_o[0]                lvcmos25
+
+pin j2_b4   rtmlamp_adc_quad_sdoa_n_i           lvds_25
+pin j2_a4   rtmlamp_adc_quad_sdoa_p_i           lvds_25
+pin j2_b3   rtmlamp_adc_quad_sdoc_n_i           lvds_25
+pin j2_a3   rtmlamp_adc_quad_sdoc_p_i           lvds_25
+
+#eof

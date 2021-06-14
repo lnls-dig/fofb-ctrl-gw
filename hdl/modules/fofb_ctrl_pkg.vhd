@@ -23,6 +23,7 @@ package fofb_ctrl_pkg is
     g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
     g_PHYSICAL_INTERFACE                      : string  := "SFP";
     g_REFCLK_INPUT                            : string  := "REFCLK0";
+    g_CLK_BUFFERS                             : boolean := true;
     g_INTERLEAVED                             : boolean := true;
     -- Extended FAI interface for FOFB
     g_EXTENDED_CONF_BUF                       : boolean := false;
@@ -50,8 +51,19 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
-    refclk_p_i                                 : in std_logic;
-    refclk_n_i                                 : in std_logic;
+    refclk_p_i                                 : in std_logic := '0';
+    refclk_n_i                                 : in std_logic := '1';
+
+    ---------------------------------------------------------------------------
+    -- external clocks/resets input from adjacent DCC
+    ---------------------------------------------------------------------------
+    -- Only used when CLK_BUFFERS := false
+    ext_initclk_i                              : in std_logic := '0';
+    ext_refclk_i                               : in std_logic := '0';
+    ext_mgtreset_i                             : in std_logic := '0';
+    ext_gtreset_i                              : in std_logic := '0';
+    ext_userclk_i                              : in std_logic := '0';
+    ext_userclk_2x_i                           : in std_logic := '0';
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
@@ -117,7 +129,12 @@ package fofb_ctrl_pkg is
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
     fofb_userclk_o                             : out std_logic;
+    fofb_userclk_2x_o                          : out std_logic;
     fofb_userrst_o                             : out std_logic;
+    fofb_initclk_o                             : out std_logic;
+    fofb_refclk_o                              : out std_logic;
+    fofb_mgtreset_o                            : out std_logic;
+    fofb_gtreset_o                             : out std_logic;
     xy_buf_addr_i                              : in  std_logic_vector(NodeW downto 0);
     xy_buf_dat_o                               : out std_logic_vector(63 downto 0);
     xy_buf_rstb_i                              : in  std_logic;
@@ -150,6 +167,7 @@ package fofb_ctrl_pkg is
     g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
     g_PHYSICAL_INTERFACE                      : string  := "SFP";
     g_REFCLK_INPUT                            : string  := "REFCLK0";
+    g_CLK_BUFFERS                             : boolean := true;
     g_INTERLEAVED                             : boolean := true;
     -- Extended FAI interface for FOFB
     g_EXTENDED_CONF_BUF                       : boolean := false;
@@ -177,8 +195,19 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
-    refclk_p_i                                 : in std_logic;
-    refclk_n_i                                 : in std_logic;
+    refclk_p_i                                 : in std_logic := '0';
+    refclk_n_i                                 : in std_logic := '1';
+
+    ---------------------------------------------------------------------------
+    -- external clocks/resets input from adjacent DCC
+    ---------------------------------------------------------------------------
+    -- Only used when CLK_BUFFERS := false
+    ext_initclk_i                              : in std_logic := '0';
+    ext_refclk_i                               : in std_logic := '0';
+    ext_mgtreset_i                             : in std_logic := '0';
+    ext_gtreset_i                              : in std_logic := '0';
+    ext_userclk_i                              : in std_logic := '0';
+    ext_userclk_2x_i                           : in std_logic := '0';
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
@@ -242,7 +271,12 @@ package fofb_ctrl_pkg is
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
     fofb_userclk_o                             : out std_logic;
+    fofb_userclk_2x_o                          : out std_logic;
     fofb_userrst_o                             : out std_logic;
+    fofb_initclk_o                             : out std_logic;
+    fofb_refclk_o                              : out std_logic;
+    fofb_mgtreset_o                            : out std_logic;
+    fofb_gtreset_o                             : out std_logic;
     timeframe_start_o                          : out std_logic;
     timeframe_end_o                            : out std_logic;
     fofb_watchdog_i                            : in  std_logic_vector(31 downto 0) := (others => '0');
@@ -272,6 +306,7 @@ package fofb_ctrl_pkg is
     g_SIM_GTPRESET_SPEEDUP                    : integer := 0;
     g_PHYSICAL_INTERFACE                      : string  := "SFP";
     g_REFCLK_INPUT                            : string  := "REFCLK0";
+    g_CLK_BUFFERS                             : boolean := true;
     g_INTERLEAVED                             : boolean := true;
     -- Extended FAI interface for FOFB
     g_EXTENDED_CONF_BUF                       : boolean := false;
@@ -299,8 +334,19 @@ package fofb_ctrl_pkg is
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
-    refclk_p_i                                 : in std_logic;
-    refclk_n_i                                 : in std_logic;
+    refclk_p_i                                 : in std_logic := '0';
+    refclk_n_i                                 : in std_logic := '1';
+
+    ---------------------------------------------------------------------------
+    -- external clocks/resets input from adjacent DCC
+    ---------------------------------------------------------------------------
+    -- Only used when CLK_BUFFERS := false
+    ext_initclk_i                              : in std_logic := '0';
+    ext_refclk_i                               : in std_logic := '0';
+    ext_mgtreset_i                             : in std_logic := '0';
+    ext_gtreset_i                              : in std_logic := '0';
+    ext_userclk_i                              : in std_logic := '0';
+    ext_userclk_2x_i                           : in std_logic := '0';
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
@@ -355,7 +401,12 @@ package fofb_ctrl_pkg is
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
     fofb_userclk_o                             : out std_logic;
+    fofb_userclk_2x_o                          : out std_logic;
     fofb_userrst_o                             : out std_logic;
+    fofb_initclk_o                             : out std_logic;
+    fofb_refclk_o                              : out std_logic;
+    fofb_mgtreset_o                            : out std_logic;
+    fofb_gtreset_o                             : out std_logic;
     timeframe_start_o                          : out std_logic;
     timeframe_end_o                            : out std_logic;
     fofb_watchdog_i                            : in  std_logic_vector(31 downto 0) := (others => '0');
