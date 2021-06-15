@@ -1318,6 +1318,7 @@ begin
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
     fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_FMC_ID),
+    fofb_userclk_2x_o                          => fofb_userclk_2x(c_FOFB_CC_FMC_ID),
     fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_FMC_ID),
     timeframe_start_o                          => timeframe_start(c_FOFB_CC_FMC_ID),
     timeframe_end_o                            => timeframe_end(c_FOFB_CC_FMC_ID),
@@ -1475,6 +1476,9 @@ begin
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
+    fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_P2P_ID),
+    fofb_userclk_2x_o                          => fofb_userclk_2x(c_FOFB_CC_P2P_ID),
+    fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_P2P_ID),
     timeframe_start_o                          => timeframe_start(c_FOFB_CC_P2P_ID),
     timeframe_end_o                            => timeframe_end(c_FOFB_CC_P2P_ID),
     fofb_dma_ok_i                              => fofb_dma_ok(c_FOFB_CC_P2P_ID),
