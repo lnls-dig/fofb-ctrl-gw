@@ -78,10 +78,6 @@ port
   -- Only used when CLK_BUFFERS := false
   ext_initclk_i                              : in std_logic := '0';
   ext_refclk_i                               : in std_logic := '0';
-  ext_mgtreset_i                             : in std_logic := '0';
-  ext_gtreset_i                              : in std_logic := '0';
-  ext_userclk_i                              : in std_logic := '0';
-  ext_userclk_2x_i                           : in std_logic := '0';
 
   ---------------------------------------------------------------------------
   -- clock and reset interface
@@ -285,10 +281,6 @@ begin
       -- Only used when CLK_BUFFERS := false
       ext_initclk_i                          => ext_initclk_i,
       ext_refclk_i                           => ext_refclk_i,
-      ext_mgtreset_i                         => ext_mgtreset_i,
-      ext_gtreset_i                          => ext_gtreset_i,
-      ext_userclk_i                          => ext_userclk_i,
-      ext_userclk_2x_i                       => ext_userclk_2x_i,
       -- clock and reset interface
       adcclk_i                               => adcclk_i,
       adcreset_i                             => adcreset_i,
