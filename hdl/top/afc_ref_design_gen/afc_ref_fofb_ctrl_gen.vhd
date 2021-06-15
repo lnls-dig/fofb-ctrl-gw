@@ -463,10 +463,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   signal fofb_ext_initclk                    : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
   signal fofb_ext_refclk                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
-  signal fofb_ext_mgtreset                   : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
-  signal fofb_ext_gtreset                    : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
-  signal fofb_ext_userclk                    : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
-  signal fofb_ext_userclk_2x                 : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
 
   -----------------------------------------------------------------------------
   -- FMC 0 4SFP CAEN signals
@@ -1427,10 +1423,6 @@ begin
     -- Only used when CLK_BUFFERS := false
     ext_initclk_i                              => fofb_initclk(c_FOFB_CC_FP_P2P_ID),
     ext_refclk_i                               => fofb_refclk(c_FOFB_CC_FP_P2P_ID),
-    ext_mgtreset_i                             => fofb_mgtreset(c_FOFB_CC_FP_P2P_ID),
-    ext_gtreset_i                              => fofb_gtreset(c_FOFB_CC_FP_P2P_ID),
-    ext_userclk_i                              => fofb_userclk(c_FOFB_CC_FP_P2P_ID),
-    ext_userclk_2x_i                           => fofb_userclk_2x(c_FOFB_CC_FP_P2P_ID),
 
     ---------------------------------------------------------------------------
     -- clock and reset interface
