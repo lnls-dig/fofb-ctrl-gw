@@ -1515,7 +1515,7 @@ begin
 
     -- Trigger signal for DCC timeframe_start.
     -- Trigger pulses are synch'ed with the respective fs_clk
-    fai_sim_trigger(c_FOFB_CC_FP_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
+    fai_sim_trigger(c_FOFB_CC_FP_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_FP_P2P_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
     cmp_fofb_ctrl_wrapper_2 : xwb_fofb_ctrl_wrapper
     generic map
