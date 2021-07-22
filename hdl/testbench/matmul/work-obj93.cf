@@ -1,12 +1,15 @@
 v 4
-file . "mult_tb.vhd" "07d30f0281f051d8e531fd2071ea054a8ec9667a" "20210722135316.180":
-  entity mult_tb at 18( 904) + 0 on 16;
-  architecture behave of mult_tb at 32( 1102) + 0 on 17;
-file . "../../modules/matmul/matmul.vhd" "875d6d6f641114f04958795dcd82459c7ac6e91d" "20210722135316.139":
-  entity matmul at 18( 906) + 0 on 12;
-  architecture behave of matmul at 58( 2232) + 0 on 13;
-file . "../../modules/matmul/mult_pkg.vhd" "dd9bfde280c4acc924fd1b30871b19d4315e607d" "20210722135316.127":
-  package mult_pkg at 18( 900) + 0 on 11;
-file . "../../modules/matmul/mac_fofb.vhd" "8bb6ede476086f513a2cb6c2116baa7e6980f0d6" "20210722135316.152":
-  entity mac_fofb at 18( 919) + 0 on 14;
-  architecture behave of mac_fofb at 65( 2526) + 0 on 15;
+file . "../../modules/matmul/mac_fofb.vhd" "9d41674629e7bbfd72ddc0117ca47ada79b1fd93" "20210722144956.587":
+  entity mac_fofb at 18( 919) + 0 on 28;
+  architecture behave of mac_fofb at 63( 2436) + 0 on 29;
+file . "../../modules/matmul/mult_pkg.vhd" "0305f444a14d2756c1ca1c4e0d367b34ec71577a" "20210722144956.552":
+  package mult_pkg at 18( 900) + 0 on 25;
+file . "../../modules/matmul/matmul.vhd" "875d6d6f641114f04958795dcd82459c7ac6e91d" "20210722144956.569":
+  entity matmul at 18( 906) + 0 on 26;
+  architecture behave of matmul at 58( 2232) + 0 on 27;
+file . "mult_tb.vhd" "20718c711c18208884d68d96fb2a8be1d84e5b22" "20210722150033.069":
+  entity mult_tb at 18( 904) + 0 on 52;
+  architecture behave of mult_tb at 32( 1102) + 0 on 53;
+file . "../../modules/matmul/fofb_matmul_top.vhd" "bee33dd91829c5ba75ca3983dfef61deea4e9322" "20210722150033.052":
+  entity fofb_matmul_top at 18( 919) + 0 on 50;
+  architecture behave of fofb_matmul_top at 63( 2444) + 0 on 51;

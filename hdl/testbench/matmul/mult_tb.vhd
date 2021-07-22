@@ -54,7 +54,7 @@ architecture behave of mult_tb is
 
 begin
 
-  mac_fofb_INST : mac_fofb
+  mac_fofb_INST : fofb_matmul_top
   port map (
     clk_i         => clk_s,
     rst_n_i       => rst_s,

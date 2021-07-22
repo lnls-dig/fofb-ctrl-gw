@@ -60,8 +60,6 @@ package mult_pkg is
       g_b_width                           : natural := 32;
       -- Width for output c
       g_c_width                           : natural := 32;
-      -- Extra bits for accumulator
-      g_extra_width                       : natural := 4;
       -- Number of products
       g_mac_size                          : natural := 160
       );
@@ -89,5 +87,43 @@ package mult_pkg is
       valid_end_o                         : out std_logic
       );
   end component mac_fofb;
+
+  component fofb_matmul_top is
+    generic(
+      -- Width for input a[k]
+      g_a_width                           : natural := 32;
+      -- Width for index k (coeff_x_addr)
+      g_k_width                           : natural := 9;
+      -- Width for input b[k] (coeff_x_dat)
+      g_b_width                           : natural := 32;
+      -- Width for output c
+      g_c_width                           : natural := 32;
+      -- Number of products
+      g_mac_size                          : natural := 160;
+      -- Matrix multiplication g_mac_size
+      g_mat_size                          : natural := 1
+    );
+
+    port (
+      -- Core clock
+      clk_i                               : in std_logic;
+      -- Reset
+      rst_n_i                             : in std_logic;
+      -- Data valid input
+      valid_i                             : in std_logic;
+      -- Input a[k]
+      coeff_a_dat_i                       : in signed(g_a_width-1 downto 0);
+      -- Input b[k]
+      coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
+      -- Input k
+      coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
+      -- Result output
+      c_o                                 : out signed(g_c_width-1 downto 0);
+      -- Data valid output for debugging
+      valid_debug_o                       : out std_logic;
+      -- Validate the end of fofb cycle
+      valid_end_o                         : out std_logic
+    );
+  end component fofb_matmul_top;
 
 end package mult_pkg;

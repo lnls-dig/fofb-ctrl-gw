@@ -32,8 +32,6 @@ entity mac_fofb is
     g_b_width                           : natural := 32;
     -- Width for output c
     g_c_width                           : natural := 32;
-    -- Extra bits for accumulator
-    g_extra_width                       : natural := 4;
     -- Number of products
     g_mac_size                          : natural := 160
   );
