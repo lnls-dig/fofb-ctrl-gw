@@ -98,9 +98,7 @@ package mult_pkg is
       g_b_width                           : natural := 32;
       -- Width for output c
       g_c_width                           : natural := 32;
-      -- Number of products
-      g_mac_size                          : natural := 160;
-      -- Matrix multiplication g_mac_size
+      -- Matrix multiplication size
       g_mat_size                          : natural := 1
     );
 

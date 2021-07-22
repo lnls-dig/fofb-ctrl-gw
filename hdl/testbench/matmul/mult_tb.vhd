@@ -37,6 +37,7 @@ architecture behave of mult_tb is
   constant g_k_width  : natural     := 9;
   constant g_b_width  : natural     := 32;
   constant g_c_width  : natural     := 32;
+  constant g_mat_size : natural     := 8;
 
   signal clk_s        : std_logic   := '0';
   signal rst_s        : std_logic   := '0';
@@ -54,17 +55,19 @@ architecture behave of mult_tb is
 
 begin
 
-  mac_fofb_INST : fofb_matmul_top
-  port map (
-    clk_i         => clk_s,
-    rst_n_i       => rst_s,
-    valid_i       => v_i_s,
-    coeff_a_dat_i => a_s,
-    coeff_b_dat_i => b_s,
-    coeff_k_addr_i=> k_s,
-    c_o           => c_s,
-    valid_debug_o => v_o_s
-    );
+  gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
+    matrix_multiplication_INST : mac_fofb
+      port map (
+        clk_i         => clk_s,
+        rst_n_i       => rst_s,
+        valid_i       => v_i_s,
+        coeff_a_dat_i => a_s,
+        coeff_b_dat_i => b_s,
+        coeff_k_addr_i=> k_s,
+        c_o           => c_s,
+        valid_debug_o => v_o_s
+      );
+  end generate;
 
   clk_process : process is
   begin

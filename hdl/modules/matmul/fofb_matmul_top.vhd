@@ -32,10 +32,8 @@ entity fofb_matmul_top is
     g_b_width                           : natural := 32;
     -- Width for output c
     g_c_width                           : natural := 32;
-    -- Number of products
-    g_mac_size                          : natural := 160;
-    -- Matrix multiplication g_mac_size
-    g_mat_size                          : natural := 1
+    -- Matrix multiplication size
+    g_mat_size                          : natural := 8
   );
 
   port (
@@ -62,17 +60,6 @@ end fofb_matmul_top;
 
 architecture behave of fofb_matmul_top is
 
---   signal clk_s           : std_logic_vector(g_mat_size-1 downto 0) := (others => '0');
---   signal rst_s        : std_logic   := '0';
---   signal v_i_s        : std_logic   := '0';
---   signal v_o_s        : std_logic   := '0';
---   signal valid_tr     : std_logic   := '0';
---
---   signal a_s          : signed(g_a_width-1 downto 0)               := (others => '0');
---   signal k_s          : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
---   signal b_s          : signed(g_b_width-1 downto 0)               := (others => '0');
---   signal c_s          : signed(g_c_width-1 downto 0)               := (others => '0');
-
 begin
   gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
     matrix_multiplication_INST : mac_fofb
@@ -86,6 +73,6 @@ begin
         c_o           => c_o,
         valid_debug_o => valid_debug_o,
         valid_end_o   => valid_end_o
-        );
+      );
   end generate;
 end architecture behave;
