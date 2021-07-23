@@ -33,11 +33,11 @@ architecture behave of mult_tb is
 
   constant clk_period : time        := 0.25 ms;
 
-  constant g_a_width  : natural     := 32;
-  constant g_k_width  : natural     := 9;
-  constant g_b_width  : natural     := 32;
-  constant g_c_width  : natural     := 32;
-  constant g_mat_size : natural     := 8;
+  constant c_a_width  : natural     := 32;
+  constant c_k_width  : natural     := 9;
+  constant c_b_width  : natural     := 32;
+  constant c_c_width  : natural     := 32;
+  constant c_mat_size : natural     := 8;
 
   signal clk_s        : std_logic   := '0';
   signal rst_s        : std_logic   := '0';
@@ -45,27 +45,27 @@ architecture behave of mult_tb is
   signal v_o_s        : std_logic   := '0';
   signal valid_tr     : std_logic   := '0';
 
-  signal a_s          : signed(g_a_width-1 downto 0)               := (others => '0');
-  signal k_s          : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
-  signal b_s          : signed(g_b_width-1 downto 0)               := (others => '0');
-  signal c_s          : signed(g_c_width-1 downto 0)               := (others => '0');
+  signal a_s          : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal b_s          : signed(c_b_width-1 downto 0)               := (others => '0');
+  signal c_s          : signed(c_c_width-1 downto 0)               := (others => '0');
 
-  signal c_acc_s      : signed(g_c_width-1 downto 0)               := (others => '0');
-  signal my_out_s     : signed(g_c_width-1 downto 0)               := (others => '0');
+  signal c_acc_s      : signed(c_c_width-1 downto 0)               := (others => '0');
+  signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
 
 begin
 
-  gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
+  gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
     matrix_multiplication_INST : mac_fofb
       port map (
-        clk_i         => clk_s,
-        rst_n_i       => rst_s,
-        valid_i       => v_i_s,
-        coeff_a_dat_i => a_s,
-        coeff_b_dat_i => b_s,
-        coeff_k_addr_i=> k_s,
-        c_o           => c_s,
-        valid_debug_o => v_o_s
+        clk_i          => clk_s,
+        rst_n_i        => rst_s,
+        valid_i        => v_i_s,
+        coeff_a_dat_i  => a_s,
+        coeff_b_dat_i  => b_s,
+        coeff_k_addr_i => k_s,
+        c_o            => c_s,
+        valid_debug_o  => v_o_s
       );
   end generate;
 
@@ -95,7 +95,7 @@ begin
    file k_data_file                      : text open read_mode is "k.txt";
    variable a_line, b_line, k_line       : line;
    variable a_datain, b_datain           : integer;
-   variable k_datain                     : bit_vector(g_k_width-1 downto 0);
+   variable k_datain                     : bit_vector(c_k_width-1 downto 0);
 
     begin
       if rising_edge(clk_s) then

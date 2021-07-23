@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-22-07  1.0      melissa.aguiar        Created
+-- 2021-23-07  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -49,12 +49,12 @@ entity fofb_matmul_top is
     coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
     -- Input k
     coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
-    -- Result output
-    c_o                                 : out signed(g_c_width-1 downto 0);
+    -- Result output array
+    c_o                                 : out t_array;
     -- Data valid output for debugging
-    valid_debug_o                       : out std_logic;
+    valid_debug_o                       : out std_logic_vector(g_mat_size-1 downto 0);
     -- Validate the end of fofb cycle
-    valid_end_o                         : out std_logic
+    valid_end_o                         : out std_logic_vector(g_mat_size-1 downto 0)
   );
 end fofb_matmul_top;
 
@@ -64,15 +64,15 @@ begin
   gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
     matrix_multiplication_INST : mac_fofb
       port map (
-        clk_i         => clk_i,
-        rst_n_i       => rst_n_i,
-        valid_i       => valid_i,
-        coeff_a_dat_i => coeff_a_dat_i,
-        coeff_b_dat_i => coeff_b_dat_i,
-        coeff_k_addr_i=> coeff_k_addr_i,
-        c_o           => c_o,
-        valid_debug_o => valid_debug_o,
-        valid_end_o   => valid_end_o
+        clk_i          => clk_i,
+        rst_n_i        => rst_n_i,
+        valid_i        => valid_i,
+        coeff_a_dat_i  => coeff_a_dat_i,
+        coeff_b_dat_i  => coeff_b_dat_i,
+        coeff_k_addr_i => coeff_k_addr_i,
+        c_o            => c_o(i),
+        valid_debug_o  => valid_debug_o(i),
+        valid_end_o    => valid_end_o(i)
       );
   end generate;
 end architecture behave;

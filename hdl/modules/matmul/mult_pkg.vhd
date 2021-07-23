@@ -21,6 +21,10 @@ use ieee.numeric_std.all;
 
 package mult_pkg is
 
+  constant c_mat_size   : natural := 8;
+  constant c_out_width  : natural := 32;
+  type t_array is array (0 to c_mat_size-1) of signed(c_out_width-1 downto 0);
+
   component matmul is
     generic(
       -- Width for input a[k]
