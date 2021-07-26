@@ -43,12 +43,13 @@ architecture behave of mult_tb is
   signal rst_s        : std_logic   := '0';
   signal v_i_s        : std_logic   := '0';
   signal v_o_s        : std_logic   := '0';
+  signal v_end_s      : std_logic   := '0';
   signal valid_tr     : std_logic   := '0';
 
   signal a_s          : signed(c_a_width-1 downto 0)               := (others => '0');
   signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal b_s          : signed(c_b_width-1 downto 0)               := (others => '0');
-  signal c_s          : signed(c_c_width-1 downto 0)               := (others => '0');
+  signal c_s          : signed(c_c_width-1 downto 0);
 
   signal c_acc_s      : signed(c_c_width-1 downto 0)               := (others => '0');
   signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
@@ -56,7 +57,7 @@ architecture behave of mult_tb is
 begin
 
   gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
-    matrix_multiplication_INST : mac_fofb
+    matrix_multiplication_INST : fofb_matmul_top
       port map (
         clk_i          => clk_s,
         rst_n_i        => rst_s,
@@ -65,7 +66,8 @@ begin
         coeff_b_dat_i  => b_s,
         coeff_k_addr_i => k_s,
         c_o            => c_s,
-        valid_debug_o  => v_o_s
+        valid_debug_o  => v_o_s,
+        valid_end_o    => v_end_s
       );
   end generate;
 
