@@ -18,6 +18,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use IEEE.math_real.all;
 
 
 package mult_pkg is
@@ -128,5 +129,30 @@ package mult_pkg is
       valid_end_o                         : out std_logic
     );
   end component fofb_matmul_top;
+
+  component generic_dpram
+    generic (
+      g_data_width               : natural := 32;
+      g_size                     : natural := 32;
+      g_with_byte_enable         : boolean := false;
+      g_addr_conflict_resolution : string  := "dont_care";
+      g_init_file                : string  := "b_hex.txt";
+      g_fail_if_file_not_found   : boolean := true;
+      g_dual_clock               : boolean := true);
+    port (
+      rst_n_i : in  std_logic := '1';
+      clka_i  : in  std_logic;
+      bwea_i  : in  std_logic_vector((g_data_width+7)/8-1 downto 0);
+      wea_i   : in  std_logic := '0';
+      aa_i    : in  std_logic_vector(integer(ceil(log2(real(g_size))))-1 downto 0);
+      da_i    : in  std_logic_vector(g_data_width-1 downto 0);
+      qa_o    : out std_logic_vector(g_data_width-1 downto 0);
+      clkb_i  : in  std_logic;
+      bweb_i  : in  std_logic_vector((g_data_width+7)/8-1 downto 0);
+      web_i   : in  std_logic := '0';
+      ab_i    : in  std_logic_vector(integer(ceil(log2(real(g_size))))-1 downto 0);
+      db_i    : in  std_logic_vector(g_data_width-1 downto 0);
+      qb_o    : out std_logic_vector(g_data_width-1 downto 0));
+  end component;
 
 end package mult_pkg;

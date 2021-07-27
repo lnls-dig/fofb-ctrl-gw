@@ -56,7 +56,7 @@ architecture behave of mult_tb is
 
 begin
 
-  gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
+  --gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
     matrix_multiplication_INST : fofb_matmul_top
       port map (
         clk_i          => clk_s,
@@ -69,7 +69,7 @@ begin
         valid_debug_o  => v_o_s,
         valid_end_o    => v_end_s
       );
-  end generate;
+  --end generate;
 
   clk_process : process is
   begin
