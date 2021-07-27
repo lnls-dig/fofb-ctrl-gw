@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-23-07  1.0      melissa.aguiar        Created
+-- 2021-27-07  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
   library ieee;
@@ -26,14 +26,14 @@
 
   entity fofb_matmul_top is
   generic(
-    -- Standard parameters for generic_dpram
-    g_data_width                        : natural;
-    g_size                              : natural;
-    g_with_byte_enable                  : boolean := false;
-    g_addr_conflict_resolution          : string  := "dont_care";
-    g_init_file                         : string  := "b_k.txt";
-    g_dual_clock                        : boolean := true;
-
+    -- Standard parameters of generic_dpram
+    g_data_width               : natural := 32;
+    g_size                     : natural := 512; -- 16384; -- Error: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
+    g_with_byte_enable         : boolean := false;
+    g_addr_conflict_resolution : string  := "read_first";
+    g_init_file                : string  := "b_hex.txt";
+    g_dual_clock               : boolean := true;
+    g_fail_if_file_not_found   : boolean := true;
     -- Width for input a[k]
     g_a_width                           : natural := 32;
     -- Width for index k (coeff_x_addr)
@@ -71,6 +71,17 @@
   architecture behave of fofb_matmul_top is
 
   component generic_dpram
+
+  generic (
+    g_data_width               : natural;
+    g_size                     : natural;
+    g_with_byte_enable         : boolean;
+    g_addr_conflict_resolution : string;
+    g_init_file                : string;
+    g_dual_clock               : boolean;
+    g_fail_if_file_not_found   : boolean
+  );
+
   port(
     rst_n_i : in std_logic := '1';      -- synchronous reset, active LO
 
@@ -108,6 +119,18 @@
 
   --gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
   cmp_ram_interface : generic_dpram
+
+  generic map (
+    -- Standard parameters
+    g_data_width               => g_data_width,
+    g_size                     => g_size,
+    g_with_byte_enable         => g_with_byte_enable,
+    g_addr_conflict_resolution => g_addr_conflict_resolution,
+    g_init_file                => g_init_file,
+    g_dual_clock               => g_dual_clock,
+    g_fail_if_file_not_found   => g_fail_if_file_not_found
+    )
+
   port map(
     rst_n_i=> rst_n_i,
 
