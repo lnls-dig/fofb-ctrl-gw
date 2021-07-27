@@ -25,6 +25,8 @@ use std.textio.all;
 
 library work;
 use work.mult_pkg.all;
+use work.genram_pkg.all;
+use work.memory_loader_pkg.all;
 
 entity mult_tb is
 end mult_tb;

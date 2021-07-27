@@ -26,9 +26,14 @@
 
   entity fofb_matmul_top is
   generic(
-    -- generic_dpram
-    g_data_width                        : natural := 32;
-    g_size                              : natural := 32;
+    -- Standard parameters for generic_dpram
+    g_data_width                        : natural;
+    g_size                              : natural;
+    g_with_byte_enable                  : boolean := false;
+    g_addr_conflict_resolution          : string  := "dont_care";
+    g_init_file                         : string  := "b_k.txt";
+    g_dual_clock                        : boolean := true;
+
     -- Width for input a[k]
     g_a_width                           : natural := 32;
     -- Width for index k (coeff_x_addr)
@@ -65,17 +70,39 @@
 
   architecture behave of fofb_matmul_top is
 
+  component generic_dpram
+  port(
+    rst_n_i : in std_logic := '1';      -- synchronous reset, active LO
+
+    -- Port A
+    clka_i : in  std_logic;
+    bwea_i : in  std_logic_vector((g_data_width+7)/8-1 downto 0);
+    wea_i  : in  std_logic;
+    aa_i   : in  std_logic_vector(f_log2_size(g_size)-1 downto 0);
+    da_i   : in  std_logic_vector(g_data_width-1 downto 0);
+    qa_o   : out std_logic_vector(g_data_width-1 downto 0);
+
+    -- Port B
+    clkb_i : in  std_logic;
+    bweb_i : in  std_logic_vector((g_data_width+7)/8-1 downto 0);
+    web_i  : in  std_logic;
+    ab_i   : in  std_logic_vector(f_log2_size(g_size)-1 downto 0);
+    db_i   : in  std_logic_vector(g_data_width-1 downto 0);
+    qb_o   : out std_logic_vector(g_data_width-1 downto 0)
+  );
+  end component;
+
   -- Port A
   signal wea_s          : std_logic := '0';
-  signal aa_s           : std_logic_vector(g_a_width-1 downto 0) := (others => '0');
-  signal da_s           : std_logic_vector(g_a_width-1 downto 0) := (others => '0');
-  signal qa_s           : std_logic_vector(g_a_width-1 downto 0) := (others => '0');
+  signal aa_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0) := (others => '0');
+  signal da_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
+  signal qa_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
 
   -- Port B
   signal web_s          : std_logic := '0';
-  signal ab_s           : std_logic_vector(g_b_width-1 downto 0) := (others => '0');
-  signal db_s           : std_logic_vector(g_b_width-1 downto 0) := (others => '0');
-  signal qb_s           : std_logic_vector(g_b_width-1 downto 0) := (others => '0');
+  signal ab_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0) := (others => '0');
+  signal db_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
+  signal qb_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
 
   begin
 
