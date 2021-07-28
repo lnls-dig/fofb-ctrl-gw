@@ -30,13 +30,13 @@
   entity fofb_matmul_top is
   generic(
     -- Standard parameters of generic_dpram
-    g_data_width               : natural := 32;
-    g_size                     : natural := 512; -- Error using the value 16384: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
-    g_with_byte_enable         : boolean := false;
-    g_addr_conflict_resolution : string  := "read_first";
-    g_init_file                : string  := "b_hex.txt";
-    g_dual_clock               : boolean := true;
-    g_fail_if_file_not_found   : boolean := true;
+    g_data_width                        : natural := 32;
+    g_size                              : natural := 512; -- Error using the value 16384: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
+    g_with_byte_enable                  : boolean := false;
+    g_addr_conflict_resolution          : string  := "read_first";
+    g_init_file                         : string  := "../../testbench/matmul/coeff_hex.ram";
+    g_dual_clock                        : boolean := true;
+    g_fail_if_file_not_found            : boolean := true;
     -- Width for input a[k]
     g_a_width                           : natural := 32;
     -- Width for index k (coeff_x_addr)
