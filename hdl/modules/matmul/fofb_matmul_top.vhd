@@ -34,7 +34,7 @@
     g_size                              : natural := 512; -- Error using the value 16384: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
     g_with_byte_enable                  : boolean := false;
     g_addr_conflict_resolution          : string  := "read_first";
-    g_init_file                         : string  := "../../testbench/matmul/coeff_hex.ram";
+    g_init_file                         : string  := "../../testbench/matmul/coeff_bin.ram";
     g_dual_clock                        : boolean := true;
     g_fail_if_file_not_found            : boolean := true;
     -- Width for input a[k]
@@ -107,15 +107,15 @@
   end component;
 
   -- Port A
-  signal wea_s          : std_logic := '1';
-  signal aa_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0) := (others => '0');
-  signal da_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal qa_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal wea_s          : std_logic := '0';
+  signal aa_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0);
+  signal da_s           : std_logic_vector(g_data_width-1 downto 0);
+  signal qa_s           : std_logic_vector(g_data_width-1 downto 0);
   -- Port B
-  signal web_s          : std_logic := '1';
-  signal ab_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0) := (others => '0');
-  signal db_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal qb_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal web_s          : std_logic := '0';
+  signal ab_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0);
+  signal db_s           : std_logic_vector(g_data_width-1 downto 0);
+  signal qb_s           : std_logic_vector(g_data_width-1 downto 0);
 
   begin
 
