@@ -59,7 +59,7 @@ architecture behave of mult_tb is
 begin
 
   --gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
-    matrix_multiplication_INST : fofb_matmul_top
+    fofb_matmul_top_INST : fofb_matmul_top
       port map (
         clk_i          => clk_s,
         rst_n_i        => rst_s,

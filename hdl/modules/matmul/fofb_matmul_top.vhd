@@ -19,6 +19,9 @@
   use ieee.std_logic_1164.ALL;
   use ieee.numeric_std.all;
 
+  library std;
+  use std.textio.all;
+
   library work;
   use work.mult_pkg.all;
   use work.genram_pkg.all;
@@ -28,7 +31,7 @@
   generic(
     -- Standard parameters of generic_dpram
     g_data_width               : natural := 32;
-    g_size                     : natural := 512; -- 16384; -- Error: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
+    g_size                     : natural := 512; -- Error using the value 16384: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
     g_with_byte_enable         : boolean := false;
     g_addr_conflict_resolution : string  := "read_first";
     g_init_file                : string  := "b_hex.txt";
@@ -56,7 +59,7 @@
     -- Input a[k]
     coeff_a_dat_i                       : in signed(g_a_width-1 downto 0);
     -- Input b[k]
-    coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
+    coeff_b_dat_i                       : in signed(g_b_width-1 downto 0); -- This input will be removed (coeff_b comes from generic_dpram)
     -- Input k
     coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
     -- Result output array
@@ -83,7 +86,7 @@
   );
 
   port(
-    rst_n_i : in std_logic := '1';      -- synchronous reset, active LO
+    rst_n_i : in std_logic := '1';
 
     -- Port A
     clka_i : in  std_logic;
@@ -104,16 +107,15 @@
   end component;
 
   -- Port A
-  signal wea_s          : std_logic := '0';
+  signal wea_s          : std_logic := '1';
   signal aa_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0) := (others => '0');
-  signal da_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
-  signal qa_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
-
+  signal da_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal qa_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
   -- Port B
-  signal web_s          : std_logic := '0';
+  signal web_s          : std_logic := '1';
   signal ab_s           : std_logic_vector(f_log2_size(g_size)-1 downto 0) := (others => '0');
-  signal db_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
-  signal qb_s           : std_logic_vector(g_data_width-1 downto 0) := (others => '0');
+  signal db_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal qb_s           : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
 
   begin
 
@@ -132,8 +134,8 @@
     )
 
   port map(
+    -- Synchronous reset
     rst_n_i=> rst_n_i,
-
     -- Port A
     clka_i => clk_i,
     bwea_i => (others => '1'),
@@ -141,7 +143,6 @@
     aa_i   => aa_s,
     da_i   => da_s,
     qa_o   => qa_s,
-
     -- Port B
     clkb_i => clk_i,
     bweb_i => (others => '1'),
