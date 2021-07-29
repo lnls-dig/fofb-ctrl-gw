@@ -40,12 +40,12 @@ entity fofb_matmul_top is
 
     -- Width for inputs x and y
     g_a_width                    : natural := 32;
-    -- Width for index k
+    -- Width for ram addr
     g_k_width                    : natural := 9;
     -- Width for output c
     g_c_width                    : natural := 32;
     -- Matrix multiplication size
-    g_mat_size                   : natural := 8
+    g_mat_size                   : natural := 4
   );
   port (
     -- Core clock
@@ -58,14 +58,16 @@ entity fofb_matmul_top is
     coeff_x_dat_i                : in signed(g_a_width-1 downto 0);
     -- Input y
     coeff_y_dat_i                : in signed(g_a_width-1 downto 0);
-    -- Input k
-    coeff_k_addr_i               : in std_logic_vector(g_k_width-1 downto 0);
+    -- Input ram addr
+    coeff_x_addr_i               : in std_logic_vector(g_k_width-1 downto 0);
+    coeff_y_addr_i               : in std_logic_vector(g_k_width-1 downto 0);
     -- Result output array
-    c_o                          : out signed(g_c_width-1 downto 0);
+    c_x_o                        : out t_array;
+    c_y_o                        : out t_array;
     -- Valid output for debugging
-    valid_debug_o                : out std_logic;
+    valid_debug_o                : out std_logic_vector(g_mat_size-1 downto 0);
     -- Valid end of fofb cycle
-    valid_end_o                  : out std_logic
+    valid_end_o                  : out std_logic_vector(g_mat_size-1 downto 0)
   );
 end fofb_matmul_top;
 
@@ -116,49 +118,61 @@ architecture behave of fofb_matmul_top is
 
 begin
 
-  --gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
-  cmp_ram_interface : generic_dpram
-    generic map (
-      g_data_width               => g_data_width,
-      g_size                     => g_size,
-      g_with_byte_enable         => g_with_byte_enable,
-      g_addr_conflict_resolution => g_addr_conflict_resolution,
-      g_init_file                => g_init_file,
-      g_dual_clock               => g_dual_clock,
-      g_fail_if_file_not_found   => g_fail_if_file_not_found
-    )
-    port map(
-      -- Synchronous reset
-      rst_n_i                    => rst_n_i,
+  gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
 
-      -- Port A
-      clka_i                     => clk_i,
-      bwea_i                     => (others => '1'),
-      wea_i                      => wea_s,
-      aa_i                       => std_logic_vector(coeff_k_addr_i),
-      da_i                       => da_s,
-      qa_o                       => qa_s,
+    cmp_ram_interface : generic_dpram
+      generic map (
+        g_data_width               => g_data_width,
+        g_size                     => g_size,
+        g_with_byte_enable         => g_with_byte_enable,
+        g_addr_conflict_resolution => g_addr_conflict_resolution,
+        g_init_file                => g_init_file,
+        g_dual_clock               => g_dual_clock,
+        g_fail_if_file_not_found   => g_fail_if_file_not_found
+      )
+      port map(
+        -- Synchronous reset
+        rst_n_i                    => rst_n_i,
 
-      -- Port B
-      clkb_i                     => clk_i,
-      bweb_i                     => (others => '1'),
-      web_i                      => web_s,
-      ab_i                       => ab_s,
-      db_i                       => db_s,
-      qb_o                       => qb_s
-    );
+        -- Port A
+        clka_i                     => clk_i,
+        bwea_i                     => (others => '1'),
+        wea_i                      => wea_s,
+        aa_i                       => coeff_x_addr_i,
+        da_i                       => da_s,
+        qa_o                       => qa_s,
 
-  matrix_multiplication_INST : mac_fofb
-    port map (
-      clk_i                      => clk_i,
-      rst_n_i                    => rst_n_i,
-      valid_i                    => valid_i,
-      coeff_a_dat_i              => coeff_x_dat_i,
-      coeff_b_dat_i              => signed(qa_s),
-      coeff_k_addr_i             => coeff_k_addr_i,
-      c_o                        => c_o,
-      valid_debug_o              => valid_debug_o,
-      valid_end_o                => valid_end_o
-    );
-  --end generate;
+        -- Port B
+        clkb_i                     => clk_i,
+        bweb_i                     => (others => '1'),
+        web_i                      => web_s,
+        ab_i                       => coeff_y_addr_i,
+        db_i                       => db_s,
+        qb_o                       => qb_s
+      );
+
+    matrix_multiplication_INST_X : mac_fofb
+      port map (
+        clk_i                      => clk_i,
+        rst_n_i                    => rst_n_i,
+        valid_i                    => valid_i,
+        coeff_a_dat_i              => coeff_x_dat_i,
+        coeff_b_dat_i              => signed(qa_s),
+        c_o                        => c_x_o(i),
+        valid_debug_o              => valid_debug_o(i),
+        valid_end_o                => valid_end_o(i)
+      );
+
+    matrix_multiplication_INST_Y : mac_fofb
+      port map (
+        clk_i                      => clk_i,
+        rst_n_i                    => rst_n_i,
+        valid_i                    => valid_i,
+        coeff_a_dat_i              => coeff_y_dat_i,
+        coeff_b_dat_i              => signed(qb_s),
+        c_o                        => c_y_o(i),
+        valid_debug_o              => valid_debug_o(i),
+        valid_end_o                => valid_end_o(i)
+      );
+  end generate;
 end architecture behave;

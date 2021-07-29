@@ -39,20 +39,19 @@ architecture behave of mult_tb is
   constant c_k_width  : natural                                    := 9;
   constant c_b_width  : natural                                    := 32;
   constant c_c_width  : natural                                    := 32;
-  constant c_mat_size : natural                                    := 8;
+  constant c_mat_size : natural                                    := 4;
 
   signal clk_s        : std_logic                                  := '0';
   signal rst_s        : std_logic                                  := '0';
   signal v_i_s        : std_logic                                  := '0';
-  signal v_o_s        : std_logic                                  := '0';
-  signal v_end_s      : std_logic                                  := '0';
+  signal v_o_s        : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal v_end_s      : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_tr     : std_logic                                  := '0';
 
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal c_s          : signed(c_c_width-1 downto 0)               := (others => '0');
+  signal k_x_s, k_y_s : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal c_x_s, c_y_s : t_array;
 
-  signal c_acc_s      : signed(c_c_width-1 downto 0)               := (others => '0');
   signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
 
 begin
@@ -65,8 +64,10 @@ begin
         valid_i        => v_i_s,
         coeff_x_dat_i  => x_s,
         coeff_y_dat_i  => y_s,
-        coeff_k_addr_i => k_s,
-        c_o            => c_s,
+        coeff_x_addr_i => k_x_s,
+        coeff_y_addr_i => k_y_s,
+        c_x_o          => c_x_s,
+        c_y_o          => c_y_s,
         valid_debug_o  => v_o_s,
         valid_end_o    => v_end_s
       );
@@ -114,7 +115,9 @@ begin
 
           -- Pass the variable to a signal
           x_s <= to_signed(a_datain, x_s'length);
-          k_s <= to_stdlogicvector(k_datain);
+          y_s <= to_signed(a_datain, y_s'length);
+          k_x_s <= to_stdlogicvector(k_datain);
+          k_y_s <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit
           v_i_s <= '1';
@@ -134,8 +137,8 @@ begin
     variable pass_test          : std_logic := '0';
 
     begin
-      if v_o_s = '1' then
-        dataout := to_integer(c_s);
+      if v_o_s(0) = '1' then
+        dataout := to_integer(c_x_s(0));
 
         if rising_edge(clk_s) then
           -- Write output to a txt file

@@ -46,10 +46,6 @@ entity mac_fofb is
     coeff_a_dat_i                       : in signed(g_a_width-1 downto 0);
     -- Input b[k]
     coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
-    -- Input k
-    coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
-    -- Output k
-    coeff_k_addr_o                      : out std_logic_vector(g_k_width-1 downto 0);
     -- Result output
     c_o                                 : out signed(g_c_width-1 downto 0);
     -- Data valid output for debugging
@@ -93,14 +89,14 @@ begin
 
   matmul_INST : matmul
     port map (
-      clk_i       => clk_i,
-      rst_n_i     => rst_n_i,
-      clear_acc_i => clr_s,
-      valid_i     => v_i_s,
-      a_i         => a_s,
-      b_i         => coeff_b_dat_s,
-      c_o         => c_o,
-      valid_o     => v_o_s
+      clk_i           => clk_i,
+      rst_n_i         => rst_n_i,
+      clear_acc_i     => clr_s,
+      valid_i         => v_i_s,
+      a_i             => a_s,
+      b_i             => coeff_b_dat_s,
+      c_o             => c_o,
+      valid_o         => v_o_s
     );
 
   MAC_TOP : process(clk_i)
@@ -116,12 +112,12 @@ begin
         valid_debug_o <= '0';
 
       else
-        coeff_b_dat_s   <= coeff_b_dat_i;
-        a_reg_s         <= coeff_a_dat_i;
-        a_s             <= a_reg_s;
-        v_reg_s         <= valid_i;
-        v_i_s           <= v_reg_s;
-        valid_debug_o   <= v_o_s;
+        coeff_b_dat_s <= coeff_b_dat_i;
+        a_reg_s       <= coeff_a_dat_i;
+        a_s           <= a_reg_s;
+        v_reg_s       <= valid_i;
+        v_i_s         <= v_reg_s;
+        valid_debug_o <= v_o_s;
 
         if v_o_s = '1' then
           if (cnt < g_mac_size-1) then

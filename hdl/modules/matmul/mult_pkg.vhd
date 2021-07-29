@@ -23,7 +23,7 @@ use IEEE.math_real.all;
 
 package mult_pkg is
 
-  constant c_mat_size   : natural := 8;
+  constant c_mat_size   : natural := 4;
   constant c_out_width  : natural := 32;
   type t_array is array (0 to c_mat_size-1) of signed(c_out_width-1 downto 0);
 
@@ -80,10 +80,6 @@ package mult_pkg is
       coeff_a_dat_i                       : in signed(g_a_width-1 downto 0);
       -- Input b[k]
       coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
-      -- Input k
-      coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
-      -- Output k
-      coeff_k_addr_o                      : out std_logic_vector(g_k_width-1 downto 0);
       -- Result output
       c_o                                 : out signed(g_c_width-1 downto 0);
       -- Data valid output for debugging
@@ -106,12 +102,12 @@ package mult_pkg is
 
       -- Width for inputs x and y
       g_a_width                           : natural := 32;
-      -- Width for index k
+      -- Width for ram addr
       g_k_width                           : natural := 9;
       -- Width for output c
       g_c_width                           : natural := 32;
       -- Matrix multiplication size
-      g_mat_size                          : natural := 8
+      g_mat_size                          : natural := 4
     );
     port (
       -- Core clock
@@ -124,14 +120,16 @@ package mult_pkg is
       coeff_x_dat_i                       : in signed(g_a_width-1 downto 0);
       -- Input y
       coeff_y_dat_i                       : in signed(g_a_width-1 downto 0);
-      -- Input k
-      coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
+      -- Input ram addr
+      coeff_x_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
+      coeff_y_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
       -- Result output array
-      c_o                                 : out signed(g_c_width-1 downto 0);
+      c_x_o                               : out t_array;
+      c_y_o                               : out t_array;
       -- Data valid output for debugging
-      valid_debug_o                       : out std_logic;
-      -- Validate the end of fofb cycle
-      valid_end_o                         : out std_logic
+      valid_debug_o                       : out std_logic_vector(g_mat_size-1 downto 0);
+      -- Valid end of fofb cycle
+      valid_end_o                         : out std_logic_vector(g_mat_size-1 downto 0)
     );
   end component fofb_matmul_top;
 
