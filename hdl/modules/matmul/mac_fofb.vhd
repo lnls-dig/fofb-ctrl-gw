@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-20-07  1.0      melissa.aguiar        Created
+-- 2021-29-07  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -26,16 +26,15 @@ entity mac_fofb is
   generic(
     -- Width for input a[k]
     g_a_width                           : natural := 32;
-    -- Width for index k (coeff_x_addr)
+    -- Width for index k
     g_k_width                           : natural := 9;
-    -- Width for input b[k] (coeff_x_dat)
+    -- Width for input b[k]
     g_b_width                           : natural := 32;
     -- Width for output c
     g_c_width                           : natural := 32;
     -- Number of products
     g_mac_size                          : natural := 160
   );
-
   port (
     -- Core clock
     clk_i                               : in std_logic;
@@ -80,29 +79,28 @@ architecture behave of mac_fofb is
       c_o                               : out signed(g_c_width-1 downto 0);
       -- Data valid output
       valid_o                           : out std_logic
-      );
+    );
   end component;
 
-  signal clr_s, v_i_s, v_reg_s, v_o_s   : std_logic := '0';
-  signal a_s, a_reg_s                   : signed(g_a_width-1 downto 0)   := (others => '0');
-  signal coeff_b_dat_s                  : signed(g_b_width-1 downto 0)   := (others => '0');
-  signal coeff_k_addr_s                 : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
-  signal coeff_y_dat_s                  : signed(g_b_width-1 downto 0)   := (others => '0');
+  signal clr_s, v_i_s, v_reg_s, v_o_s   : std_logic                              := '0';
+  signal a_s, a_reg_s                   : signed(g_a_width-1 downto 0)           := (others => '0');
+  signal coeff_b_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
+  signal coeff_y_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
   signal coeff_y_addr_s                 : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
-  signal cnt                            : integer := 0;
+  signal cnt                            : integer                                := 0;
 
 begin
 
   matmul_INST : matmul
-  port map (
-    clk_i       => clk_i,
-    rst_n_i     => rst_n_i,
-    clear_acc_i => clr_s,
-    valid_i     => v_i_s,
-    a_i         => a_s,
-    b_i         => coeff_b_dat_s,
-    c_o         => c_o,
-    valid_o     => v_o_s
+    port map (
+      clk_i       => clk_i,
+      rst_n_i     => rst_n_i,
+      clear_acc_i => clr_s,
+      valid_i     => v_i_s,
+      a_i         => a_s,
+      b_i         => coeff_b_dat_s,
+      c_o         => c_o,
+      valid_o     => v_o_s
     );
 
   MAC_TOP : process(clk_i)
@@ -118,17 +116,15 @@ begin
         valid_debug_o <= '0';
 
       else
-        coeff_k_addr_s  <= coeff_k_addr_i;
         coeff_b_dat_s   <= coeff_b_dat_i;
-        a_reg_s         <= coeff_a_dat_i;   -- Delay coeff_a to wait for coeff_b
+        a_reg_s         <= coeff_a_dat_i;
         a_s             <= a_reg_s;
-        v_reg_s         <= valid_i;         -- Delay valid bit to wait for coeff_b
+        v_reg_s         <= valid_i;
         v_i_s           <= v_reg_s;
         valid_debug_o   <= v_o_s;
-        coeff_k_addr_o  <= coeff_k_addr_s;
 
         if v_o_s = '1' then
-          if (cnt < g_mac_size) then
+          if (cnt < g_mac_size-1) then
             valid_end_o <= '0';
             cnt <= cnt + 1;
 

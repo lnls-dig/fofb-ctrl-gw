@@ -30,46 +30,45 @@ package mult_pkg is
   component matmul is
     generic(
       -- Width for input a[k]
-      g_a_width                       : natural := 32;
+      g_a_width                           : natural := 32;
       -- Width for input b[k]
-      g_b_width                       : natural := 32;
+      g_b_width                           : natural := 32;
       -- Width for output c
-      g_c_width                       : natural := 32
-      );
+      g_c_width                           : natural := 32
+    );
     port(
       -- Core clock
-      clk_i                           : in std_logic;
+      clk_i                               : in std_logic;
       -- Reset
-      rst_n_i                         : in std_logic;
+      rst_n_i                             : in std_logic;
       -- Clear
-      clear_acc_i                     : in std_logic;
+      clear_acc_i                         : in std_logic;
       -- Data valid input
-      valid_i                         : in std_logic;
+      valid_i                             : in std_logic;
       -- Input a[k]
-      a_i                             : in signed(g_a_width-1 downto 0);
+      a_i                                 : in signed(g_a_width-1 downto 0);
       -- Input b[k]
-      b_i                             : in signed(g_b_width-1 downto 0);
+      b_i                                 : in signed(g_b_width-1 downto 0);
       -- Result output
-      c_o                             : out signed(g_c_width-1 downto 0);
+      c_o                                 : out signed(g_c_width-1 downto 0);
       -- Data valid output
-      valid_o                         : out std_logic
-      );
+      valid_o                             : out std_logic
+    );
   end component matmul;
 
   component mac_fofb is
     generic(
       -- Width for input a[k]
       g_a_width                           : natural := 32;
-      -- Width for index k (coeff_x_addr)
+      -- Width for index k
       g_k_width                           : natural := 9;
-      -- Width for input b[k] (coeff_x_dat)
+      -- Width for input b[k]
       g_b_width                           : natural := 32;
       -- Width for output c
       g_c_width                           : natural := 32;
       -- Number of products
       g_mac_size                          : natural := 160
-      );
-
+    );
     port (
       -- Core clock
       clk_i                               : in std_logic;
@@ -91,23 +90,29 @@ package mult_pkg is
       valid_debug_o                       : out std_logic;
       -- Validate the end of fofb cycle
       valid_end_o                         : out std_logic
-      );
+    );
   end component mac_fofb;
 
   component fofb_matmul_top is
     generic(
-      -- Width for input a[k]
+      -- Standard parameters of generic_dpram
+      g_data_width                        : natural := 32;
+      g_size                              : natural := 512; -- Value 16384 error: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
+      g_with_byte_enable                  : boolean := false;
+      g_addr_conflict_resolution          : string  := "read_first";
+      g_init_file                         : string  := "../../testbench/matmul/coeff_bin.ram";
+      g_dual_clock                        : boolean := true;
+      g_fail_if_file_not_found            : boolean := true;
+
+      -- Width for inputs x and y
       g_a_width                           : natural := 32;
-      -- Width for index k (coeff_x_addr)
+      -- Width for index k
       g_k_width                           : natural := 9;
-      -- Width for input b[k] (coeff_x_dat)
-      g_b_width                           : natural := 32;
       -- Width for output c
       g_c_width                           : natural := 32;
       -- Matrix multiplication size
-      g_mat_size                          : natural := 1
+      g_mat_size                          : natural := 8
     );
-
     port (
       -- Core clock
       clk_i                               : in std_logic;
@@ -115,13 +120,13 @@ package mult_pkg is
       rst_n_i                             : in std_logic;
       -- Data valid input
       valid_i                             : in std_logic;
-      -- Input a[k]
-      coeff_a_dat_i                       : in signed(g_a_width-1 downto 0);
-      -- Input b[k]
-      coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
+      -- Input x
+      coeff_x_dat_i                       : in signed(g_a_width-1 downto 0);
+      -- Input y
+      coeff_y_dat_i                       : in signed(g_a_width-1 downto 0);
       -- Input k
       coeff_k_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
-      -- Result output
+      -- Result output array
       c_o                                 : out signed(g_c_width-1 downto 0);
       -- Data valid output for debugging
       valid_debug_o                       : out std_logic;

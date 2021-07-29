@@ -23,7 +23,6 @@ library work;
 use work.mult_pkg.all;
 
 entity matmul is
-
   generic(
     -- Width for input a[k]
     g_a_width                                     : natural := 32;
@@ -34,7 +33,6 @@ entity matmul is
     -- Extra bits for accumulator
     g_extra_width                                 : natural := 4
   );
-
   port (
     -- Core clock
     clk_i                                         : in std_logic;
@@ -52,7 +50,7 @@ entity matmul is
     c_o                                           : out signed(g_c_width-1 downto 0);
     -- Data valid output
     valid_o                                       : out std_logic
-    );
+  );
 end matmul;
 
 architecture behave of matmul is
@@ -63,8 +61,8 @@ architecture behave of matmul is
   signal mult_reg_s                               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
   signal adder_out_s, adder_reg1_s, adder_reg2_s  : signed(2*g_c_width+g_extra_width-1 downto 0) := (others =>'0');
   -- Registers for bit valid
-  signal valid_reg1_s, valid_reg2_s, valid_reg3_s : std_logic;
-  signal valid_reg4_s, valid_reg5_s               : std_logic;
+  signal valid_reg1_s, valid_reg2_s, valid_reg3_s : std_logic                                    := '0';
+  signal valid_reg4_s, valid_reg5_s               : std_logic                                    := '0';
 
 begin
   MAC : process (clk_i)
@@ -72,55 +70,55 @@ begin
     if (rising_edge(clk_i)) then
       if rst_n_i = '0' then
         -- Clear all registers
-        a_reg_s      <= (others => '0');
-        b_reg_s      <= (others => '0');
-        mult_reg_s   <= (others => '0');
-        adder_out_s  <= (others => '0');
-        adder_reg1_s <= (others => '0');
-        adder_reg2_s <= (others => '0');
-        valid_reg1_s <= '0';
-        valid_reg2_s <= '0';
-        valid_reg3_s <= '0';
-        valid_reg4_s <= '0';
-        valid_reg5_s <= '0';
+        a_reg_s       <= (others => '0');
+        b_reg_s       <= (others => '0');
+        mult_reg_s    <= (others => '0');
+        adder_out_s   <= (others => '0');
+        adder_reg1_s  <= (others => '0');
+        adder_reg2_s  <= (others => '0');
+        valid_reg1_s  <= '0';
+        valid_reg2_s  <= '0';
+        valid_reg3_s  <= '0';
+        valid_reg4_s  <= '0';
+        valid_reg5_s  <= '0';
 
       elsif (clear_acc_i = '1') then
         -- Clear data from accumulator
-        adder_out_s <= (others => '0');
+        adder_out_s   <= (others => '0');
 
       else
         -- Pipeline stage 1: Store the inputs in a register
-        a_reg_s <= a_i;
-        b_reg_s <= b_i;
+        a_reg_s       <= a_i;
+        b_reg_s       <= b_i;
         -- Store the valid bit from stage 1 in a register
-        valid_reg1_s <= valid_i;
+        valid_reg1_s  <= valid_i;
 
         -- Pipeline stage 2: Store multiplication result in a register
-        mult_reg_s <= a_reg_s * b_reg_s;
+        mult_reg_s    <= a_reg_s * b_reg_s;
         -- Store the valid bit from stage 2 in a register
-        valid_reg2_s <= valid_reg1_s;
+        valid_reg2_s  <= valid_reg1_s;
 
         -- Pipeline stage 3: Store accumulation result in a register
         if (valid_reg2_s = '1') then
           adder_out_s <= adder_out_s + mult_reg_s;
         end if;
         -- Store the valid bit from stage 3 in a register
-        valid_reg3_s <= valid_reg2_s;
+        valid_reg3_s  <= valid_reg2_s;
 
         -- Pipeline stage 4: Register the accumulation to fully pipeline the DSP cascade
-        adder_reg1_s <= adder_out_s;
+        adder_reg1_s  <= adder_out_s;
         -- Store the valid bit from stage 4 in a register
-        valid_reg4_s <= valid_reg3_s;
+        valid_reg4_s  <= valid_reg3_s;
 
         -- Pipeline stage 5: Register the accumulation to fully pipeline the DSP cascade
-        adder_reg2_s <= adder_reg1_s;
+        adder_reg2_s  <= adder_reg1_s;
         -- Store the valid bit from stage 5 in a register
-        valid_reg5_s <= valid_reg4_s;
+        valid_reg5_s  <= valid_reg4_s;
         -- Store the valid bit output
-        valid_o <= valid_reg5_s;
+        valid_o       <= valid_reg5_s;
 
         -- Truncate the output
-        c_o <= resize(adder_reg2_s, c_o'length);
+        c_o           <= resize(adder_reg2_s, c_o'length);
 
       end if; -- Reset
     end if; -- Clock

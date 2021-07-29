@@ -33,25 +33,24 @@ end mult_tb;
 
 architecture behave of mult_tb is
 
-  constant clk_period : time        := 0.25 ms;
+  constant clk_period : time                                       := 0.25 ms;
 
-  constant c_a_width  : natural     := 32;
-  constant c_k_width  : natural     := 9;
-  constant c_b_width  : natural     := 32;
-  constant c_c_width  : natural     := 32;
-  constant c_mat_size : natural     := 8;
+  constant c_a_width  : natural                                    := 32;
+  constant c_k_width  : natural                                    := 9;
+  constant c_b_width  : natural                                    := 32;
+  constant c_c_width  : natural                                    := 32;
+  constant c_mat_size : natural                                    := 8;
 
-  signal clk_s        : std_logic   := '0';
-  signal rst_s        : std_logic   := '0';
-  signal v_i_s        : std_logic   := '0';
-  signal v_o_s        : std_logic   := '0';
-  signal v_end_s      : std_logic   := '0';
-  signal valid_tr     : std_logic   := '0';
+  signal clk_s        : std_logic                                  := '0';
+  signal rst_s        : std_logic                                  := '0';
+  signal v_i_s        : std_logic                                  := '0';
+  signal v_o_s        : std_logic                                  := '0';
+  signal v_end_s      : std_logic                                  := '0';
+  signal valid_tr     : std_logic                                  := '0';
 
-  signal a_s          : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
   signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal b_s          : signed(c_b_width-1 downto 0)               := (others => '0');
-  signal c_s          : signed(c_c_width-1 downto 0);
+  signal c_s          : signed(c_c_width-1 downto 0)               := (others => '0');
 
   signal c_acc_s      : signed(c_c_width-1 downto 0)               := (others => '0');
   signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
@@ -64,8 +63,8 @@ begin
         clk_i          => clk_s,
         rst_n_i        => rst_s,
         valid_i        => v_i_s,
-        coeff_a_dat_i  => a_s,
-        coeff_b_dat_i  => b_s,
+        coeff_x_dat_i  => x_s,
+        coeff_y_dat_i  => y_s,
         coeff_k_addr_i => k_s,
         c_o            => c_s,
         valid_debug_o  => v_o_s,
@@ -95,10 +94,9 @@ begin
   input_read : process(clk_s)
 
    file a_data_file                      : text open read_mode is "a_k.txt";
-   file b_data_file                      : text open read_mode is "b_k.txt";
    file k_data_file                      : text open read_mode is "k.txt";
-   variable a_line, b_line, k_line       : line;
-   variable a_datain, b_datain           : integer;
+   variable a_line, k_line               : line;
+   variable a_datain                     : integer;
    variable k_datain                     : bit_vector(c_k_width-1 downto 0);
 
     begin
@@ -106,22 +104,17 @@ begin
         rst_s <= '1';
 
         if not endfile(a_data_file) and valid_tr = '1' then
-        -- Reading input a[k] from a txt file
-        readline(a_data_file, a_line);
-        read(a_line, a_datain);
+          -- Reading input a[k] from a txt file
+          readline(a_data_file, a_line);
+          read(a_line, a_datain);
 
-        -- Reading input k from a txt file
-        readline(k_data_file, k_line);
-        read(k_line, k_datain);
+          -- Reading input k from a txt file
+          readline(k_data_file, k_line);
+          read(k_line, k_datain);
 
-        -- Reading input b[k] from a txt file
-        readline(b_data_file, b_line);
-        read(b_line, b_datain);
-
-        -- Pass the variable to a signal
-        a_s <= to_signed(a_datain, a_s'length);
-        k_s <= to_stdlogicvector(k_datain);
-        b_s <= to_signed(b_datain, b_s'length);
+          -- Pass the variable to a signal
+          x_s <= to_signed(a_datain, x_s'length);
+          k_s <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit
           v_i_s <= '1';
