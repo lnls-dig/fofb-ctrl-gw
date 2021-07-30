@@ -2,8 +2,8 @@
 -- Title      :  Matrix multiplication package
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
--- Company    : CNPEM LNLS-DIG
--- Platform   : FPGA-generic
+-- Company    :  CNPEM LNLS-DIG
+-- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
 -- Description:  Package for the matrix multiplication core
 -------------------------------------------------------------------------------
@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-04-07  1.0      melissa.aguiar        Created
+-- 2021-30-07  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -111,25 +111,32 @@ package mult_pkg is
     );
     port (
       -- Core clock
-      clk_i                               : in std_logic;
+      clk_i                        : in std_logic;
+
       -- Reset
-      rst_n_i                             : in std_logic;
+      rst_n_i                      : in std_logic;
+
       -- Data valid input
-      valid_i                             : in std_logic;
-      -- Input x
-      coeff_x_dat_i                       : in signed(g_a_width-1 downto 0);
-      -- Input y
-      coeff_y_dat_i                       : in signed(g_a_width-1 downto 0);
-      -- Input ram addr
-      coeff_x_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
-      coeff_y_addr_i                      : in std_logic_vector(g_k_width-1 downto 0);
+      valid_i                      : in std_logic;
+
+      -- Input x, y and addr from DCC
+      coeff_x_dcc_i                : in signed(g_a_width-1 downto 0);
+      coeff_y_dcc_i                : in signed(g_a_width-1 downto 0);
+      coeff_dcc_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
+
+      -- Input RAM data
+      coeff_ram_dat_x_i            : in signed(g_data_width-1 downto 0);
+      coeff_ram_dat_y_i            : in signed(g_data_width-1 downto 0);
+
       -- Result output array
-      c_x_o                               : out t_array;
-      c_y_o                               : out t_array;
-      -- Data valid output for debugging
-      valid_debug_o                       : out std_logic_vector(g_mat_size-1 downto 0);
+      c_x_o                        : out t_array;
+      c_y_o                        : out t_array;
+
+      -- Valid output for debugging
+      valid_debug_o                : out std_logic_vector(g_mat_size-1 downto 0);
+
       -- Valid end of fofb cycle
-      valid_end_o                         : out std_logic_vector(g_mat_size-1 downto 0)
+      valid_end_o                  : out std_logic_vector(g_mat_size-1 downto 0)
     );
   end component fofb_matmul_top;
 

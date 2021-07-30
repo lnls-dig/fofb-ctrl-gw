@@ -1,18 +1,18 @@
 -------------------------------------------------------------------------------
--- Title      :  Matrix multiplication core
+-- Title      :  Matrix multiplication module
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
--- Company    : CNPEM LNLS-DIG
--- Platform   : FPGA-generic
+-- Company    :  CNPEM LNLS-DIG
+-- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
--- Description:  Matrix multiplication core top level for the Fast Orbit Feedback
+-- Description:  Matrix multiplication module for the Fast Orbit Feedback
 -------------------------------------------------------------------------------
 -- Copyright (c) 2020 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-29-07  1.0      melissa.aguiar        Created
+-- 2021-30-07  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -78,8 +78,8 @@ architecture behave of mac_fofb is
     );
   end component;
 
-  signal clr_s, v_i_s, v_reg_s, v_o_s   : std_logic                              := '0';
-  signal a_s, a_reg_s                   : signed(g_a_width-1 downto 0)           := (others => '0');
+  signal clr_s, v_i_s, v_o_s            : std_logic                              := '0';
+  signal a_s                            : signed(g_a_width-1 downto 0)           := (others => '0');
   signal coeff_b_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
   signal coeff_y_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
   signal coeff_y_addr_s                 : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
@@ -104,7 +104,6 @@ begin
     if (rising_edge(clk_i)) then
       if rst_n_i = '0' then
         a_s           <= (others => '0');
-        a_reg_s       <= (others => '0');
         coeff_b_dat_s <= (others => '0');
         clr_s         <= '0';
         cnt           <=  0;
@@ -113,10 +112,8 @@ begin
 
       else
         coeff_b_dat_s <= coeff_b_dat_i;
-        a_reg_s       <= coeff_a_dat_i;
-        a_s           <= a_reg_s;
-        v_reg_s       <= valid_i;
-        v_i_s         <= v_reg_s;
+        a_s       <= coeff_a_dat_i;
+        v_i_s         <= valid_i;
         valid_debug_o <= v_o_s;
 
         if v_o_s = '1' then

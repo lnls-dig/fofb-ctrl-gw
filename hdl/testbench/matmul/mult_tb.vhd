@@ -2,17 +2,17 @@
 -- Title      :  Matrix multiplication testbench
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
--- Company    : CNPEM LNLS-DIG
--- Platform   : FPGA-generic
+-- Company    :  CNPEM LNLS-DIG
+-- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
--- Description:  Testbench for the matrix multiplication core
+-- Description:  Testbench for the matrix multiplication top level
 -------------------------------------------------------------------------------
 -- Copyright (c) 2020 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-20-07  1.0      melissa.aguiar        Created
+-- 2021-30-07  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -49,7 +49,9 @@ architecture behave of mult_tb is
   signal valid_tr     : std_logic                                  := '0';
 
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal k_x_s, k_y_s : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal x_ram_s      : signed(c_b_width-1 downto 0)               := (others => '0');
+  signal y_ram_s      : signed(c_b_width-1 downto 0)               := (others => '0');
+  signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal c_x_s, c_y_s : t_array;
 
   signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
@@ -59,17 +61,18 @@ begin
   --gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
     fofb_matmul_top_INST : fofb_matmul_top
       port map (
-        clk_i          => clk_s,
-        rst_n_i        => rst_s,
-        valid_i        => v_i_s,
-        coeff_x_dat_i  => x_s,
-        coeff_y_dat_i  => y_s,
-        coeff_x_addr_i => k_x_s,
-        coeff_y_addr_i => k_y_s,
-        c_x_o          => c_x_s,
-        c_y_o          => c_y_s,
-        valid_debug_o  => v_o_s,
-        valid_end_o    => v_end_s
+        clk_i             => clk_s,
+        rst_n_i           => rst_s,
+        valid_i           => v_i_s,
+        coeff_x_dcc_i     => x_s,
+        coeff_y_dcc_i     => y_s,
+        coeff_dcc_addr_i  => k_s,
+        coeff_ram_dat_x_i => y_ram_s,
+        coeff_ram_dat_y_i => x_ram_s,
+        c_x_o             => c_x_s,
+        c_y_o             => c_y_s,
+        valid_debug_o    => v_o_s,
+        valid_end_o      => v_end_s
       );
   --end generate;
 
@@ -116,8 +119,7 @@ begin
           -- Pass the variable to a signal
           x_s <= to_signed(a_datain, x_s'length);
           y_s <= to_signed(a_datain, y_s'length);
-          k_x_s <= to_stdlogicvector(k_datain);
-          k_y_s <= to_stdlogicvector(k_datain);
+          k_s <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit
           v_i_s <= '1';
