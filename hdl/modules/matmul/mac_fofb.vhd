@@ -112,7 +112,7 @@ begin
 
       else
         coeff_b_dat_s <= coeff_b_dat_i;
-        a_s       <= coeff_a_dat_i;
+        a_s           <= coeff_a_dat_i;
         v_i_s         <= valid_i;
         valid_debug_o <= v_o_s;
 

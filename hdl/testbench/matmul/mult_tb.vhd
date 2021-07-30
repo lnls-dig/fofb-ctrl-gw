@@ -58,7 +58,6 @@ architecture behave of mult_tb is
 
 begin
 
-  --gen_matrix_multiplication : for i in 0 to c_mat_size-1 generate
     fofb_matmul_top_INST : fofb_matmul_top
       port map (
         clk_i             => clk_s,
@@ -71,10 +70,9 @@ begin
         coeff_ram_dat_y_i => x_ram_s,
         c_x_o             => c_x_s,
         c_y_o             => c_y_s,
-        valid_debug_o    => v_o_s,
-        valid_end_o      => v_end_s
+        valid_debug_o     => v_o_s,
+        valid_end_o       => v_end_s
       );
-  --end generate;
 
   clk_process : process is
   begin
@@ -151,7 +149,7 @@ begin
           readline(c_data_file, c_line);
           read(c_line, c_datain);
 
-          -- Report if it the test fail
+          -- Report if the test fails
           if dataout /= c_datain then
             report "FAIL";
             pass_test := '0';

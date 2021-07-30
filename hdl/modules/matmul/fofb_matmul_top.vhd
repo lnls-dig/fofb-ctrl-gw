@@ -114,16 +114,16 @@ begin
   begin
     if (rising_edge(clk_i)) then
       -- Coeffs from DCC delayed to align with Coeffs from DPRAM
-      coeff_x_reg_s <= coeff_x_dcc_i;
-      coeff_x_dcc_s <= coeff_x_reg_s;
-      coeff_y_reg_s <= coeff_y_dcc_i;
-      coeff_y_dcc_s <= coeff_y_reg_s;
+      coeff_x_reg_s                <= coeff_x_dcc_i;
+      coeff_x_dcc_s                <= coeff_x_reg_s;
+      coeff_y_reg_s                <= coeff_y_dcc_i;
+      coeff_y_dcc_s                <= coeff_y_reg_s;
 
       -- Valid bit delayed to align with Coeffs from DPRAM
-      v_reg_s       <= valid_i;
-      v_i_s         <= v_reg_s;
+      v_reg_s                      <= valid_i;
+      v_i_s                        <= v_reg_s;
     end if;
-  end process;
+  end process matmul_top;
 
   gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
 
