@@ -46,6 +46,11 @@ generic
   g_REFCLK_INPUT                            : string  := "REFCLK0";
   g_CLK_BUFFERS                             : boolean := true;
   g_INTERLEAVED                             : boolean := true;
+  -- Use simpler/parallel FA IF or not
+  g_USE_PARALLEL_FA_IF                      : boolean := true;
+  -- Use external DCC interface to inject data.
+  -- Overrides FA_IF, all types
+  g_USE_EXT_CC_IF                           : boolean := false;
   -- Extended FAI interface for FOFB
   g_EXTENDED_CONF_BUF                       : boolean := false;
   -- Absolute or Difference position data
@@ -108,10 +113,34 @@ port
   ---------------------------------------------------------------------------
   -- fast acquisition data interface
   -- Only used when g_SIM_BPM_DATA = false
+  -- and g_USE_PARALLEL_FA_IF = false
+  -- and USE_EXT_CC_IF = false
   ---------------------------------------------------------------------------
   fai_fa_block_start_i                       : in std_logic := '0';
   fai_fa_data_valid_i                        : in std_logic := '0';
   fai_fa_d_i                                 : in std_logic_vector(g_FAI_DW-1 downto 0) := (others => '0');
+
+  ---------------------------------------------------------------------------
+  -- fast acquisition parallel data interface
+  -- Only used when g_SIM_BPM_DATA = false
+  -- and g_USE_PARALLEL_FA_IF = true
+  -- and USE_EXT_CC_IF = false
+  ---------------------------------------------------------------------------
+  fai_fa_pl_data_valid_i                     : in std_logic := '0';
+  fai_fa_pl_d_x_i                            : in std_logic_2d_32(g_BPMS-1 downto 0) := (others => (others => '0'));
+  fai_fa_pl_d_y_i                            : in std_logic_2d_32(g_BPMS-1 downto 0) := (others => (others => '0'));
+
+  ---------------------------------------------------------------------------
+  -- external CC interface for data from another DCC. Used
+  -- when the other DCC is typically in a DISTRIBUTOR mode and
+  -- the other one (using this inteface) is part of another DCC
+  -- network that receives data from both externl GT links and
+  -- DCC. Used when USE_EXT_CC_IF = true. Overrides USE_PARALLEL_FA_IF
+  ---------------------------------------------------------------------------
+  ext_cc_clk_i                               : in std_logic := '0';
+  ext_cc_rst_n_i                             : in std_logic := '1';
+  ext_cc_dat_i                               : in std_logic_vector((32*PacketSize-1) downto 0) := (others => '0');
+  ext_cc_dat_val_i                           : in std_logic := '0';
 
   ---------------------------------------------------------------------------
   -- Synthetic data fast acquisition data interface.
@@ -403,6 +432,8 @@ begin
       g_REFCLK_INPUT                            => g_REFCLK_INPUT,
       g_CLK_BUFFERS                             => g_CLK_BUFFERS,
       g_INTERLEAVED                             => g_INTERLEAVED,
+      g_USE_PARALLEL_FA_IF                      => g_USE_PARALLEL_FA_IF,
+      g_USE_EXT_CC_IF                           => g_USE_EXT_CC_IF,
       -- Extended FAI interface for FOFB
       g_EXTENDED_CONF_BUF                       => g_EXTENDED_CONF_BUF,
       -- Absolute or Difference position data
@@ -450,9 +481,26 @@ begin
       -- fast acquisition data interface
       -- Only used when g_SIM_BPM_DATA = false
       ---------------------------------------------------------------------------
-      fai_fa_block_start_i                       => fai_fa_block_start_i,
-      fai_fa_data_valid_i                        => fai_fa_data_valid_i,
-      fai_fa_d_i                                 => fai_fa_d_i,
+
+      -- fast acquisition data interface. Used when USE_PARALLEL_FA_IF = false
+      -- and USE_EXT_CC_IF = false
+      fai_fa_block_start_i                     => fai_fa_block_start_i,
+      fai_fa_data_valid_i                      => fai_fa_data_valid_i,
+      fai_fa_d_i                               => fai_fa_d_i,
+      -- fast acquisition parallel data interface. Used when USE_PARALLEL_FA_IF = true
+      -- and USE_EXT_CC_IF = false
+      fai_fa_pl_data_valid_i                   => fai_fa_pl_data_valid_i,
+      fai_fa_pl_d_x_i                          => fai_fa_pl_d_x_i,
+      fai_fa_pl_d_y_i                          => fai_fa_pl_d_y_i,
+      -- external CC interface for data from another DCC. Used
+      -- when the other DCC is typically in a DISTRIBUTOR mode and
+      -- the other one (using this inteface) is part of another DCC
+      -- network that receives data from both externl GT links and
+      -- DCC. Used when USE_EXT_CC_IF = true. Overrides USE_PARALLEL_FA_IF
+      ext_cc_clk_i                             => ext_cc_clk_i,
+      ext_cc_rst_n_i                           => ext_cc_rst_n_i,
+      ext_cc_dat_i                             => ext_cc_dat_i,
+      ext_cc_dat_val_i                         => ext_cc_dat_val_i,
 
       ---------------------------------------------------------------------------
       -- Synthetic data fast acquisition data interface.
