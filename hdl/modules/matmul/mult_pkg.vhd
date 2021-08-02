@@ -26,6 +26,7 @@ package mult_pkg is
   constant c_mat_size   : natural := 4;
   constant c_out_width  : natural := 32;
   type t_array is array (0 to c_mat_size-1) of signed(c_out_width-1 downto 0);
+  type t_array_logic is array (0 to c_mat_size-1) of std_logic_vector(c_out_width-1 downto 0);
 
   component matmul is
     generic(
@@ -125,18 +126,22 @@ package mult_pkg is
       coeff_dcc_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
 
       -- Input RAM data
-      coeff_ram_dat_x_i            : in signed(g_data_width-1 downto 0);
-      coeff_ram_dat_y_i            : in signed(g_data_width-1 downto 0);
+      coeff_ram_dat_x_i            : in t_array;
+      coeff_ram_dat_y_i            : in t_array;
+      coeff_ram_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
+      write_ram_i                  : in std_logic;
 
       -- Result output array
       c_x_o                        : out t_array;
       c_y_o                        : out t_array;
 
       -- Valid output for debugging
-      valid_debug_o                : out std_logic_vector(g_mat_size-1 downto 0);
+      valid_debug_x_o              : out std_logic_vector(g_mat_size-1 downto 0);
+      valid_debug_y_o              : out std_logic_vector(g_mat_size-1 downto 0);
 
       -- Valid end of fofb cycle
-      valid_end_o                  : out std_logic_vector(g_mat_size-1 downto 0)
+      valid_end_x_o                : out std_logic_vector(g_mat_size-1 downto 0);
+      valid_end_y_o                : out std_logic_vector(g_mat_size-1 downto 0)
     );
   end component fofb_matmul_top;
 

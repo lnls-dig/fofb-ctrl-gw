@@ -49,8 +49,8 @@ architecture behave of mult_tb is
   signal valid_tr     : std_logic                                  := '0';
 
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal x_ram_s      : signed(c_b_width-1 downto 0)               := (others => '0');
-  signal y_ram_s      : signed(c_b_width-1 downto 0)               := (others => '0');
+  signal x_ram_s      : t_array;
+  signal y_ram_s      : t_array;
   signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal c_x_s, c_y_s : t_array;
 
@@ -68,10 +68,14 @@ begin
         coeff_dcc_addr_i  => k_s,
         coeff_ram_dat_x_i => y_ram_s,
         coeff_ram_dat_y_i => x_ram_s,
+        coeff_ram_addr_i  => k_s,
+        write_ram_i       => '0',
         c_x_o             => c_x_s,
         c_y_o             => c_y_s,
-        valid_debug_o     => v_o_s,
-        valid_end_o       => v_end_s
+        valid_debug_x_o   => v_o_s,
+        valid_debug_y_o   => v_o_s,
+        valid_end_x_o     => v_end_s,
+        valid_end_y_o     => v_end_s
       );
 
   clk_process : process is
