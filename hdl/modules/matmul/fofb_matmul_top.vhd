@@ -42,6 +42,7 @@ entity fofb_matmul_top is
     g_a_width                    : natural := 32;
     -- Width for ram addr
     g_k_width                    : natural := 9;
+    g_k_160x8_width              : natural := 11;
     -- Width for output c
     g_c_width                    : natural := 32;
     -- Matrix multiplication size
@@ -90,6 +91,19 @@ architecture behave of fofb_matmul_top is
   signal coeff_y_reg_s           : signed(g_a_width-1 downto 0);
   signal v_i_s, v_reg_s          : std_logic := '0';
 
+  signal coeff_ram_addr_s        : std_logic_vector(g_k_160x8_width-1 downto 0)     := (others => '0'); -- must be an input
+  signal coeff_dcc_addr_s        : std_logic_vector(g_k_160x8_width-1 downto 0)     := (others => '0'); -- must be an input
+
+  -- DPRAM-Master port A (write)
+  signal aa_s                    : std_logic_vector(g_k_160x8_width-1 downto 0)     := (others => '0');
+  signal qa_s                    : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal coeff_ram_dat_s         : std_logic_vector (g_data_width-1 downto 0)       := (others => '0');
+
+  -- DPRAM-Master port B (read)
+  signal web_s                   : std_logic := '0';
+  signal ab_s                    : std_logic_vector(g_k_160x8_width-1 downto 0)     := (others => '0');
+  signal db_s                    : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+
   -- DPRAM-X port A (write)
   signal wea_x_s                 : std_logic := '0';
   signal aa_x_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
@@ -128,6 +142,37 @@ begin
       v_i_s                        <= v_reg_s;
     end if;
   end process matmul_top;
+
+  cmp_ram_interface_master : generic_dpram
+    generic map (
+      g_data_width               => g_data_width,
+      g_size                     => 2**g_k_160x8_width,
+      g_with_byte_enable         => g_with_byte_enable,
+      g_addr_conflict_resolution => g_addr_conflict_resolution,
+      g_init_file                => "../../testbench/matmul/coeff_bin_160x8.ram",
+      g_dual_clock               => g_dual_clock,
+      g_fail_if_file_not_found   => g_fail_if_file_not_found
+    )
+    port map(
+      -- Synchronous reset
+      rst_n_i                    => rst_n_i,
+
+      -- Port A (write)
+      clka_i                     => clk_i,
+      bwea_i                     => (others => '1'),
+      wea_i                      => write_ram_i,
+      aa_i                       => coeff_ram_addr_s,
+      da_i                       => coeff_ram_dat_s,
+      qa_o                       => qa_s,
+
+      -- Port B (read)
+      clkb_i                     => clk_i,
+      bweb_i                     => (others => '1'),
+      web_i                      => web_s,
+      ab_i                       => coeff_dcc_addr_s,
+      db_i                       => db_s,
+      qb_o                       => coeff_ram_dat_s
+    );
 
   gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
 
