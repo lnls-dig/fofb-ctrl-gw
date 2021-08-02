@@ -36,10 +36,10 @@ architecture behave of mult_tb is
   constant clk_period : time                                       := 0.25 ms;
 
   constant c_a_width  : natural                                    := 32;
-  constant c_k_width  : natural                                    := 9;
+  constant c_k_width  : natural                                    := 11;
   constant c_b_width  : natural                                    := 32;
   constant c_c_width  : natural                                    := 32;
-  constant c_mat_size : natural                                    := 4;
+  constant c_mat_size : natural                                    := 8;
 
   signal clk_s        : std_logic                                  := '0';
   signal rst_s        : std_logic                                  := '0';
@@ -48,11 +48,11 @@ architecture behave of mult_tb is
   signal v_end_s      : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_tr     : std_logic                                  := '0';
 
-  signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal x_ram_s      : t_array;
-  signal y_ram_s      : t_array;
+  signal x_s          : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal a_ram_s      : t_array;
+  signal b_ram_s      : t_array;
   signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal c_x_s, c_y_s : t_array;
+  signal c_s          : t_array;
 
   signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
 
@@ -64,18 +64,14 @@ begin
         rst_n_i           => rst_s,
         valid_i           => v_i_s,
         coeff_x_dcc_i     => x_s,
-        coeff_y_dcc_i     => y_s,
         coeff_dcc_addr_i  => k_s,
-        coeff_ram_dat_x_i => y_ram_s,
-        coeff_ram_dat_y_i => x_ram_s,
+        coeff_ram_dat_A_i => a_ram_s,
+        coeff_ram_dat_B_i => b_ram_s,
         coeff_ram_addr_i  => k_s,
         write_ram_i       => '0',
-        c_x_o             => c_x_s,
-        c_y_o             => c_y_s,
-        valid_debug_x_o   => v_o_s,
-        valid_debug_y_o   => v_o_s,
-        valid_end_x_o     => v_end_s,
-        valid_end_y_o     => v_end_s
+        c_o               => c_x_s,
+        valid_debug_o     => v_o_s,
+        valid_end_o       => v_end_s
       );
 
   clk_process : process is
@@ -120,7 +116,6 @@ begin
 
           -- Pass the variable to a signal
           x_s <= to_signed(a_datain, x_s'length);
-          y_s <= to_signed(a_datain, y_s'length);
           k_s <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit

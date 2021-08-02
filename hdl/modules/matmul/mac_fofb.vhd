@@ -26,8 +26,6 @@ entity mac_fofb is
   generic(
     -- Width for input a[k]
     g_a_width                           : natural := 32;
-    -- Width for index k
-    g_k_width                           : natural := 9;
     -- Width for input b[k]
     g_b_width                           : natural := 32;
     -- Width for output c
@@ -81,8 +79,6 @@ architecture behave of mac_fofb is
   signal clr_s, v_i_s, v_o_s            : std_logic                              := '0';
   signal a_s                            : signed(g_a_width-1 downto 0)           := (others => '0');
   signal coeff_b_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
-  signal coeff_y_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
-  signal coeff_y_addr_s                 : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
   signal cnt                            : integer                                := 0;
 
 begin
