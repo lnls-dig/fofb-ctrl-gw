@@ -34,7 +34,7 @@ entity fofb_matmul_top is
     g_size                       : natural := 512; -- 2**g_k_width
     g_with_byte_enable           : boolean := false;
     g_addr_conflict_resolution   : string  := "read_first";
-    g_init_file                  : string  := "";--"../../testbench/matmul/coeff_bin.ram";
+    g_init_file                  : string  := ""; -- "../../testbench/matmul/coeff_bin.ram";
     g_dual_clock                 : boolean := true;
     g_fail_if_file_not_found     : boolean := true;
 
@@ -57,11 +57,11 @@ entity fofb_matmul_top is
     rst_n_i                      : in std_logic;
 
     -- Data valid input
-    valid_i                      : in std_logic;
+    valid_i                      : in std_logic_vector(g_mat_size-1 downto 0);
 
     -- Input x, y and addr from DCC
-    coeff_x_dcc_i                : in signed(g_a_width-1 downto 0);
-    coeff_dcc_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
+    coeff_x_dcc_i                : in t_array_dat_signed;
+    coeff_dcc_addr_i             : in t_array_addr_logic;
 
     -- Input RAM data
     coeff_ram_dat_A_i            : in std_logic_vector(g_a_width-1 downto 0);
@@ -70,21 +70,21 @@ entity fofb_matmul_top is
     write_ram_i                  : in std_logic;
 
     -- Result output array
-    c_o                        : out t_array;
+    c_o                          : out t_array_dat_signed;
 
     -- Valid output for debugging
-    valid_debug_o              : out std_logic_vector(g_mat_size-1 downto 0);
+    valid_debug_o                : out std_logic_vector(g_mat_size-1 downto 0);
 
     -- Valid end of fofb cycle
-    valid_end_o                : out std_logic_vector(g_mat_size-1 downto 0)
+    valid_end_o                  : out std_logic_vector(g_mat_size-1 downto 0)
   );
 end fofb_matmul_top;
 
 architecture behave of fofb_matmul_top is
 
-  signal coeff_dcc_s           : signed(g_a_width-1 downto 0);
-  signal coeff_reg_s           : signed(g_a_width-1 downto 0);
-  signal v_i_s, v_reg_s          : std_logic := '0';
+  signal coeff_dcc_s             : t_array_dat_signed;
+  signal coeff_reg_s             : t_array_dat_signed;
+  signal v_i_s, v_reg_s          : std_logic_vector(g_mat_size-1 downto 0);
 
   signal coeff_ram_addr_read_s   : std_logic_vector(g_k_width-1 downto 0)           := (others => '0');
 
@@ -102,9 +102,8 @@ architecture behave of fofb_matmul_top is
 
   -- DPRAM-X port B (read)
   signal web_x_s                 : std_logic := '0';
-  signal ab_x_s                  : std_logic_vector(g_k_width-1 downto 0)           := (others => '0');
   signal db_x_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal coeff_ram_dat_x_s       : t_array_logic;
+  signal coeff_ram_dat_x_s       : t_array_dat_logic;
 
 begin
 
@@ -112,8 +111,8 @@ begin
   begin
     if (rising_edge(clk_i)) then
       -- Coeffs from DCC delayed to align with Coeffs from DPRAM
-      coeff_reg_s                <= coeff_x_dcc_i;
-      coeff_dcc_s                <= coeff_reg_s;
+      coeff_reg_s                  <= coeff_x_dcc_i;
+      coeff_dcc_s                  <= coeff_reg_s;
 
       -- Valid bit delayed to align with Coeffs from DPRAM
       v_reg_s                      <= valid_i;
@@ -123,38 +122,38 @@ begin
 
   cmp_ram_interface_master : generic_dpram
     generic map (
-      g_data_width               => g_data_width,
-      g_size                     => 2**g_k_width,
-      g_with_byte_enable         => g_with_byte_enable,
-      g_addr_conflict_resolution => g_addr_conflict_resolution,
-      g_init_file                => "",--"../../testbench/matmul/coeff_bin_160x8.ram",
-      g_dual_clock               => g_dual_clock,
-      g_fail_if_file_not_found   => g_fail_if_file_not_found
+      g_data_width                 => g_data_width,
+      g_size                       => 2**g_k_width,
+      g_with_byte_enable           => g_with_byte_enable,
+      g_addr_conflict_resolution   => g_addr_conflict_resolution,
+      g_init_file                  => "", -- "../../testbench/matmul/coeff_bin_160x8.ram",
+      g_dual_clock                 => g_dual_clock,
+      g_fail_if_file_not_found     => g_fail_if_file_not_found
     )
     port map(
       -- Synchronous reset
-      rst_n_i                    => rst_n_i,
+      rst_n_i                      => rst_n_i,
 
       -- Port A (write)
-      clka_i                     => clk_i,
-      bwea_i                     => (others => '1'),
-      wea_i                      => write_ram_i,
-      aa_i                       => coeff_ram_addr_i,
-      da_i                       => coeff_ram_dat_A_i,
-      qa_o                       => coeff_ram_dat_write_s,
+      clka_i                       => clk_i,
+      bwea_i                       => (others => '1'),
+      wea_i                        => write_ram_i,
+      aa_i                         => coeff_ram_addr_i,
+      da_i                         => coeff_ram_dat_A_i,
+      qa_o                         => coeff_ram_dat_write_s,
 
       -- Port B (read)
-      clkb_i                     => clk_i,
-      bweb_i                     => (others => '1'),
-      web_i                      => web_s,
-      ab_i                       => coeff_ram_addr_read_s,
-      db_i                       => coeff_ram_dat_B_i,
-      qb_o                       => coeff_ram_dat_read_s
+      clkb_i                       => clk_i,
+      bweb_i                       => (others => '1'),
+      web_i                        => web_s,
+      ab_i                         => coeff_ram_addr_read_s,
+      db_i                         => coeff_ram_dat_B_i,
+      qb_o                         => coeff_ram_dat_read_s
     );
 
   gen_matrix_multiplication : for i in 0 to g_mat_size-1 generate
 
-    coeff_ram_addr_read_s <= std_logic_vector(signed(coeff_dcc_addr_i) + i*g_mac_size);
+    coeff_ram_addr_read_s <= std_logic_vector(signed(coeff_dcc_addr_i(i)) + i*g_mac_size); -- critical warning
 
     cmp_ram_interface : generic_dpram
       generic map (
@@ -174,7 +173,7 @@ begin
         clka_i                     => clk_i,
         bwea_i                     => (others => '1'),
         wea_i                      => wea_x_s,
-        aa_i                       => std_logic_vector(coeff_dcc_addr_i),
+        aa_i                       => aa_x_s,
         da_i                       => std_logic_vector(coeff_ram_dat_read_s),
         qa_o                       => qa_x_s,
 
@@ -182,7 +181,7 @@ begin
         clkb_i                     => clk_i,
         bweb_i                     => (others => '1'),
         web_i                      => web_x_s,
-        ab_i                       => std_logic_vector(coeff_dcc_addr_i),
+        ab_i                       => std_logic_vector(coeff_dcc_addr_i(i)),
         db_i                       => db_x_s,
         qb_o                       => coeff_ram_dat_x_s(i)
       );
@@ -191,8 +190,8 @@ begin
       port map (
         clk_i                      => clk_i,
         rst_n_i                    => rst_n_i,
-        valid_i                    => v_i_s,
-        coeff_a_dat_i              => coeff_dcc_s,
+        valid_i                    => v_i_s(i),
+        coeff_a_dat_i              => coeff_dcc_s(i),
         coeff_b_dat_i              => signed(coeff_ram_dat_x_s(i)),
         c_o                        => c_o(i),
         valid_debug_o              => valid_debug_o(i),

@@ -43,16 +43,17 @@ architecture behave of mult_tb is
 
   signal clk_s        : std_logic                                  := '0';
   signal rst_s        : std_logic                                  := '0';
-  signal v_i_s        : std_logic                                  := '0';
+  signal v_i_s        : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal v_o_s        : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal v_end_s      : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_tr     : std_logic                                  := '0';
 
-  signal x_s          : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal a_ram_s      : t_array;
-  signal b_ram_s      : t_array;
-  signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal c_s          : t_array;
+  signal x_s          : t_array_dat_signed;
+  signal a_ram_s      : std_logic_vector(c_a_width-1 downto 0)     := (others => '0');
+  signal b_ram_s      : std_logic_vector(c_a_width-1 downto 0)     := (others => '0');
+  signal addr_ram_s   : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal k_s          : t_array_addr_logic;
+  signal c_s          : t_array_dat_signed;
 
   signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
 
@@ -67,9 +68,9 @@ begin
         coeff_dcc_addr_i  => k_s,
         coeff_ram_dat_A_i => a_ram_s,
         coeff_ram_dat_B_i => b_ram_s,
-        coeff_ram_addr_i  => k_s,
+        coeff_ram_addr_i  => addr_ram_s,
         write_ram_i       => '0',
-        c_o               => c_x_s,
+        c_o               => c_s,
         valid_debug_o     => v_o_s,
         valid_end_o       => v_end_s
       );
@@ -115,15 +116,33 @@ begin
           read(k_line, k_datain);
 
           -- Pass the variable to a signal
-          x_s <= to_signed(a_datain, x_s'length);
-          k_s <= to_stdlogicvector(k_datain);
+          x_s(0) <= to_signed(a_datain, x_s(0)'length);
+          x_s(1) <= to_signed(a_datain, x_s(1)'length);
+          x_s(2) <= to_signed(a_datain, x_s(2)'length);
+          x_s(3) <= to_signed(a_datain, x_s(3)'length);
+          x_s(4) <= to_signed(a_datain, x_s(4)'length);
+          x_s(5) <= to_signed(a_datain, x_s(5)'length);
+          x_s(6) <= to_signed(a_datain, x_s(6)'length);
+          x_s(7) <= to_signed(a_datain, x_s(7)'length);
+
+
+          k_s(0) <= to_stdlogicvector(k_datain);
+          k_s(1) <= to_stdlogicvector(k_datain);
+          k_s(2) <= to_stdlogicvector(k_datain);
+          k_s(3) <= to_stdlogicvector(k_datain);
+          k_s(4) <= to_stdlogicvector(k_datain);
+          k_s(5) <= to_stdlogicvector(k_datain);
+          k_s(6) <= to_stdlogicvector(k_datain);
+          k_s(7) <= to_stdlogicvector(k_datain);
+
+          addr_ram_s <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit
-          v_i_s <= '1';
+          v_i_s <= (others => '1');
 
         else
           -- Update valid input bit
-          v_i_s <= '0';
+          v_i_s <= (others => '0');
         end if;
       end if;
   end process input_read;
@@ -137,7 +156,7 @@ begin
 
     begin
       if v_o_s(0) = '1' then
-        dataout := to_integer(c_x_s(0));
+        dataout := to_integer(c_s(0));
 
         if rising_edge(clk_s) then
           -- Write output to a txt file
