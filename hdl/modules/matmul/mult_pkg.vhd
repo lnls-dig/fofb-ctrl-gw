@@ -23,10 +23,10 @@ use IEEE.math_real.all;
 
 package mult_pkg is
 
-  constant c_mat_size   : natural := 4;
   constant c_out_width  : natural := 32;
-  type t_array is array (0 to c_mat_size-1) of signed(c_out_width-1 downto 0);
-  type t_array_logic is array (0 to c_mat_size-1) of std_logic_vector(c_out_width-1 downto 0);
+
+  type t_array_signed is array (natural range <>) of signed(c_out_width-1 downto 0);
+  type t_array_logic  is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
 
   component matmul is
     generic(
@@ -61,8 +61,6 @@ package mult_pkg is
     generic(
       -- Width for input a[k]
       g_a_width                           : natural := 32;
-      -- Width for index k
-      g_k_width                           : natural := 9;
       -- Width for input b[k]
       g_b_width                           : natural := 32;
       -- Width for output c
@@ -94,7 +92,7 @@ package mult_pkg is
     generic(
       -- Standard parameters of generic_dpram
       g_data_width                        : natural := 32;
-      g_size                              : natural := 512; -- Value 16384 error: "declaration of a too large object (512 > --max-stack-alloc=128 KB)"
+      g_size                              : natural := 2048; -- 2**g_k_width
       g_with_byte_enable                  : boolean := false;
       g_addr_conflict_resolution          : string  := "read_first";
       g_init_file                         : string  := "../../testbench/matmul/coeff_bin.ram";
@@ -133,8 +131,8 @@ package mult_pkg is
       ram_write_enable_i                  : in std_logic;
 
       -- Result output array
-      c_x_o                               : out t_array;
-      c_y_o                               : out t_array;
+      c_x_o                               : out t_array_signed(g_mat_size-1 downto 0);
+      c_y_o                               : out t_array_signed(g_mat_size-1 downto 0);
 
       -- Valid output for debugging
       valid_debug_x_o                     : out std_logic_vector(g_mat_size-1 downto 0);

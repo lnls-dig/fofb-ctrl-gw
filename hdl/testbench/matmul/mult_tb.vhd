@@ -49,11 +49,9 @@ architecture behave of mult_tb is
   signal valid_tr     : std_logic                                  := '0';
 
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal x_ram_s      : std_logic_vector(c_b_width-1 downto 0);
-  signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal c_x_s, c_y_s : t_array;
-
-  signal my_out_s     : signed(c_c_width-1 downto 0)               := (others => '0');
+  signal ram_data_s   : std_logic_vector(c_b_width-1 downto 0);
+  signal k_s, ram_k_s : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal c_x_s, c_y_s : t_array_signed(c_mat_size-1 downto 0);
 
 begin
 
@@ -65,8 +63,8 @@ begin
         dcc_coeff_x_i      => x_s,
         dcc_coeff_y_i      => y_s,
         dcc_addr_i         => k_s,
-        ram_coeff_dat_i    => x_ram_s,
-        ram_addr_i         => k_s,
+        ram_coeff_dat_i    => ram_data_s,
+        ram_addr_i         => ram_k_s,
         ram_write_enable_i => '0',
         c_x_o              => c_x_s,
         c_y_o              => c_y_s,
@@ -96,7 +94,6 @@ begin
   end process;
 
   input_read : process(clk_s)
-
    file a_data_file                      : text open read_mode is "a_k.txt";
    file k_data_file                      : text open read_mode is "k.txt";
    variable a_line, k_line               : line;
@@ -130,6 +127,34 @@ begin
         end if;
       end if;
   end process input_read;
+
+  ram_input_read : process(clk_s)
+    file ram_b_data_file                  : text open read_mode is "ram_b_k.txt";
+    file ram_k_data_file                  : text open read_mode is "ram_k.txt";
+    variable ram_b_line, ram_k_line       : line;
+    variable ram_b_datain                 : bit_vector(c_b_width-1 downto 0);
+    variable ram_k_datain                 : bit_vector(c_k_width-1 downto 0);
+
+    begin
+      if rising_edge(clk_s) then
+        rst_s <= '1';
+
+        if not endfile(ram_b_data_file) then
+          -- Reading input a[k] from a txt file
+          readline(ram_b_data_file, ram_b_line);
+          read(ram_b_line, ram_b_datain);
+
+          -- Reading input k from a txt file
+          readline(ram_k_data_file, ram_k_line);
+          read(ram_k_line, ram_k_datain);
+
+          -- Pass the variable to a signal
+          ram_data_s <= to_stdlogicvector(ram_b_datain);
+          ram_k_s    <= to_stdlogicvector(ram_k_datain);
+
+        end if;
+      end if;
+  end process ram_input_read;
 
   output_write : process(clk_s)
     file ouput_file             : text open write_mode is "my_output.txt";

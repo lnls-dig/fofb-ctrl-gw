@@ -31,10 +31,10 @@ entity fofb_matmul_top is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                 : natural := 32;
-    g_size                       : natural := 512; -- 2**g_k_width
+    g_size                       : natural := 2048; -- 2**g_k_width
     g_with_byte_enable           : boolean := false;
     g_addr_conflict_resolution   : string  := "read_first";
-    g_init_file                  : string  := ""; -- "../../testbench/matmul/coeff_bin.ram";
+    g_init_file                  : string  := "../../testbench/matmul/coeff_bin.ram";
     g_dual_clock                 : boolean := true;
     g_fail_if_file_not_found     : boolean := true;
 
@@ -70,8 +70,8 @@ entity fofb_matmul_top is
     ram_write_enable_i           : in std_logic;
 
     -- Result output array
-    c_x_o                        : out t_array;
-    c_y_o                        : out t_array;
+    c_x_o                        : out t_array_signed(g_mat_size-1 downto 0);
+    c_y_o                        : out t_array_signed(g_mat_size-1 downto 0);
 
     -- Valid output for debugging
     valid_debug_x_o              : out std_logic_vector(g_mat_size-1 downto 0);
@@ -93,25 +93,25 @@ architecture behave of fofb_matmul_top is
 
   -- DPRAM-X port A (write)
   signal wea_x_s                 : std_logic := '0';
-  signal aa_x_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
-  signal qa_x_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal aa_x_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
+  signal qa_x_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
 
   -- DPRAM-X port B (read)
   signal web_x_s                 : std_logic := '0';
-  signal ab_x_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
-  signal db_x_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal ram_coeff_x_s           : t_array_logic;
+  signal ab_x_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
+  signal db_x_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
+  signal ram_coeff_x_s           : t_array_logic(g_mat_size-1 downto 0);
 
   -- DPRAM-Y port A (write)
   signal wea_y_s                 : std_logic := '0';
-  signal aa_y_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
-  signal qa_y_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
+  signal aa_y_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
+  signal qa_y_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
 
   -- DPRAM-Y port B (read)
   signal web_y_s                 : std_logic := '0';
-  signal ab_y_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
-  signal db_y_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal ram_coeff_y_s           : t_array_logic;
+  signal ab_y_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
+  signal db_y_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
+  signal ram_coeff_y_s           : t_array_logic(g_mat_size-1 downto 0);
 
 begin
 
