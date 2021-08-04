@@ -25,8 +25,8 @@ package mult_pkg is
 
   constant c_out_width  : natural := 32;
 
-  type t_array_signed is array (natural range <>) of signed(c_out_width-1 downto 0);
-  type t_array_logic  is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
+  type t_array_signed   is array (natural range <>) of signed(c_out_width-1 downto 0);
+  type t_array_logic    is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
 
   component matmul is
     generic(
@@ -95,7 +95,7 @@ package mult_pkg is
       g_size                              : natural := 2048; -- 2**g_k_width
       g_with_byte_enable                  : boolean := false;
       g_addr_conflict_resolution          : string  := "read_first";
-      g_init_file                         : string  := "../../testbench/matmul/coeff_bin.ram";
+      g_init_file                         : string  := ""; -- "../../testbench/matmul/coeff_bin.ram";
       g_dual_clock                        : boolean := true;
       g_fail_if_file_not_found            : boolean := true;
 

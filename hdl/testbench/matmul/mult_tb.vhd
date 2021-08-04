@@ -47,7 +47,7 @@ architecture behave of mult_tb is
   signal v_o_s        : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal v_end_s      : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_tr     : std_logic                                  := '0';
-
+  signal ram_write_s  : std_logic                                  := '1';
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s   : std_logic_vector(c_b_width-1 downto 0);
   signal k_s, ram_k_s : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
@@ -65,7 +65,7 @@ begin
         dcc_addr_i         => k_s,
         ram_coeff_dat_i    => ram_data_s,
         ram_addr_i         => ram_k_s,
-        ram_write_enable_i => '0',
+        ram_write_enable_i => clk_s,
         c_x_o              => c_x_s,
         c_y_o              => c_y_s,
         valid_debug_x_o    => v_o_s,
@@ -137,7 +137,6 @@ begin
 
     begin
       if rising_edge(clk_s) then
-        rst_s <= '1';
 
         if not endfile(ram_b_data_file) then
           -- Reading input a[k] from a txt file
