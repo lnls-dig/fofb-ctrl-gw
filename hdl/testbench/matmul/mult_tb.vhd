@@ -36,7 +36,7 @@ architecture behave of mult_tb is
   constant clk_period : time                                       := 0.25 ms;
 
   constant c_a_width  : natural                                    := 32;
-  constant c_k_width  : natural                                    := 9;
+  constant c_k_width  : natural                                    := 11;
   constant c_b_width  : natural                                    := 32;
   constant c_c_width  : natural                                    := 32;
   constant c_mat_size : natural                                    := 4;
@@ -49,8 +49,7 @@ architecture behave of mult_tb is
   signal valid_tr     : std_logic                                  := '0';
 
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal x_ram_s      : t_array;
-  signal y_ram_s      : t_array;
+  signal x_ram_s      : std_logic_vector(c_b_width-1 downto 0);
   signal k_s          : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal c_x_s, c_y_s : t_array;
 
@@ -60,22 +59,21 @@ begin
 
     fofb_matmul_top_INST : fofb_matmul_top
       port map (
-        clk_i             => clk_s,
-        rst_n_i           => rst_s,
-        valid_i           => v_i_s,
-        coeff_x_dcc_i     => x_s,
-        coeff_y_dcc_i     => y_s,
-        coeff_dcc_addr_i  => k_s,
-        coeff_ram_dat_x_i => y_ram_s,
-        coeff_ram_dat_y_i => x_ram_s,
-        coeff_ram_addr_i  => k_s,
-        write_ram_i       => '0',
-        c_x_o             => c_x_s,
-        c_y_o             => c_y_s,
-        valid_debug_x_o   => v_o_s,
-        valid_debug_y_o   => v_o_s,
-        valid_end_x_o     => v_end_s,
-        valid_end_y_o     => v_end_s
+        clk_i              => clk_s,
+        rst_n_i            => rst_s,
+        valid_i            => v_i_s,
+        dcc_coeff_x_i      => x_s,
+        dcc_coeff_y_i      => y_s,
+        dcc_addr_i         => k_s,
+        ram_coeff_dat_i    => x_ram_s,
+        ram_addr_i         => k_s,
+        ram_write_enable_i => '0',
+        c_x_o              => c_x_s,
+        c_y_o              => c_y_s,
+        valid_debug_x_o    => v_o_s,
+        valid_debug_y_o    => v_o_s,
+        valid_end_x_o      => v_end_s,
+        valid_end_y_o      => v_end_s
       );
 
   clk_process : process is

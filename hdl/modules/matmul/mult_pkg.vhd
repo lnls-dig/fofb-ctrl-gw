@@ -103,8 +103,10 @@ package mult_pkg is
 
       -- Width for inputs x and y
       g_a_width                           : natural := 32;
+      -- Width for ram data
+      g_b_width                           : natural := 32;
       -- Width for ram addr
-      g_k_width                           : natural := 9;
+      g_k_width                           : natural := 11;
       -- Width for output c
       g_c_width                           : natural := 32;
       -- Matrix multiplication size
@@ -112,36 +114,35 @@ package mult_pkg is
     );
     port (
       -- Core clock
-      clk_i                        : in std_logic;
+      clk_i                               : in std_logic;
 
       -- Reset
-      rst_n_i                      : in std_logic;
+      rst_n_i                             : in std_logic;
 
       -- Data valid input
-      valid_i                      : in std_logic;
+      valid_i                             : in std_logic;
 
-      -- Input x, y and addr from DCC
-      coeff_x_dcc_i                : in signed(g_a_width-1 downto 0);
-      coeff_y_dcc_i                : in signed(g_a_width-1 downto 0);
-      coeff_dcc_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
+      -- DCC interface
+      dcc_coeff_x_i                       : in signed(g_a_width-1 downto 0);
+      dcc_coeff_y_i                       : in signed(g_a_width-1 downto 0);
+      dcc_addr_i                          : in std_logic_vector(g_k_width-1 downto 0);
 
-      -- Input RAM data
-      coeff_ram_dat_x_i            : in t_array;
-      coeff_ram_dat_y_i            : in t_array;
-      coeff_ram_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
-      write_ram_i                  : in std_logic;
+      -- RAM interface
+      ram_coeff_dat_i                     : in std_logic_vector(g_b_width-1 downto 0);
+      ram_addr_i                          : in std_logic_vector(g_k_width-1 downto 0);
+      ram_write_enable_i                  : in std_logic;
 
       -- Result output array
-      c_x_o                        : out t_array;
-      c_y_o                        : out t_array;
+      c_x_o                               : out t_array;
+      c_y_o                               : out t_array;
 
       -- Valid output for debugging
-      valid_debug_x_o              : out std_logic_vector(g_mat_size-1 downto 0);
-      valid_debug_y_o              : out std_logic_vector(g_mat_size-1 downto 0);
+      valid_debug_x_o                     : out std_logic_vector(g_mat_size-1 downto 0);
+      valid_debug_y_o                     : out std_logic_vector(g_mat_size-1 downto 0);
 
       -- Valid end of fofb cycle
-      valid_end_x_o                : out std_logic_vector(g_mat_size-1 downto 0);
-      valid_end_y_o                : out std_logic_vector(g_mat_size-1 downto 0)
+      valid_end_x_o                       : out std_logic_vector(g_mat_size-1 downto 0);
+      valid_end_y_o                       : out std_logic_vector(g_mat_size-1 downto 0)
     );
   end component fofb_matmul_top;
 

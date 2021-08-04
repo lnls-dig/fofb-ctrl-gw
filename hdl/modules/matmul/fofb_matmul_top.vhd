@@ -34,14 +34,16 @@ entity fofb_matmul_top is
     g_size                       : natural := 512; -- 2**g_k_width
     g_with_byte_enable           : boolean := false;
     g_addr_conflict_resolution   : string  := "read_first";
-    g_init_file                  : string  := "../../testbench/matmul/coeff_bin.ram";
+    g_init_file                  : string  := ""; -- "../../testbench/matmul/coeff_bin.ram";
     g_dual_clock                 : boolean := true;
     g_fail_if_file_not_found     : boolean := true;
 
     -- Width for inputs x and y
     g_a_width                    : natural := 32;
+    -- Width for ram data
+    g_b_width                    : natural := 32;
     -- Width for ram addr
-    g_k_width                    : natural := 9;
+    g_k_width                    : natural := 11;
     -- Width for output c
     g_c_width                    : natural := 32;
     -- Matrix multiplication size
@@ -57,16 +59,15 @@ entity fofb_matmul_top is
     -- Data valid input
     valid_i                      : in std_logic;
 
-    -- Input x, y and addr from DCC
-    coeff_x_dcc_i                : in signed(g_a_width-1 downto 0);
-    coeff_y_dcc_i                : in signed(g_a_width-1 downto 0);
-    coeff_dcc_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
+    -- DCC interface
+    dcc_coeff_x_i                : in signed(g_a_width-1 downto 0);
+    dcc_coeff_y_i                : in signed(g_a_width-1 downto 0);
+    dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
-    -- Input RAM data
-    coeff_ram_dat_x_i            : in t_array;
-    coeff_ram_dat_y_i            : in t_array;
-    coeff_ram_addr_i             : in std_logic_vector(g_k_width-1 downto 0);
-    write_ram_i                  : in std_logic;
+    -- RAM interface
+    ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
+    ram_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+    ram_write_enable_i           : in std_logic;
 
     -- Result output array
     c_x_o                        : out t_array;
@@ -84,8 +85,8 @@ end fofb_matmul_top;
 
 architecture behave of fofb_matmul_top is
 
-  signal coeff_x_dcc_s           : signed(g_a_width-1 downto 0);
-  signal coeff_y_dcc_s           : signed(g_a_width-1 downto 0);
+  signal dcc_coeff_x_s           : signed(g_a_width-1 downto 0);
+  signal dcc_coeff_y_s           : signed(g_a_width-1 downto 0);
   signal coeff_x_reg_s           : signed(g_a_width-1 downto 0);
   signal coeff_y_reg_s           : signed(g_a_width-1 downto 0);
   signal v_i_s, v_reg_s          : std_logic := '0';
@@ -99,7 +100,7 @@ architecture behave of fofb_matmul_top is
   signal web_x_s                 : std_logic := '0';
   signal ab_x_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
   signal db_x_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal coeff_ram_dat_x_s       : t_array_logic;
+  signal ram_coeff_x_s           : t_array_logic;
 
   -- DPRAM-Y port A (write)
   signal wea_y_s                 : std_logic := '0';
@@ -110,7 +111,7 @@ architecture behave of fofb_matmul_top is
   signal web_y_s                 : std_logic := '0';
   signal ab_y_s                  : std_logic_vector(g_k_width-1 downto 0) := (others => '0');
   signal db_y_s                  : std_logic_vector(g_data_width-1 downto 0)        := (others => '0');
-  signal coeff_ram_dat_y_s       : t_array_logic;
+  signal ram_coeff_y_s           : t_array_logic;
 
 begin
 
@@ -118,10 +119,10 @@ begin
   begin
     if (rising_edge(clk_i)) then
       -- Coeffs from DCC delayed to align with Coeffs from DPRAM
-      coeff_x_reg_s                <= coeff_x_dcc_i;
-      coeff_x_dcc_s                <= coeff_x_reg_s;
-      coeff_y_reg_s                <= coeff_y_dcc_i;
-      coeff_y_dcc_s                <= coeff_y_reg_s;
+      coeff_x_reg_s                <= dcc_coeff_x_i;
+      dcc_coeff_x_s                <= coeff_x_reg_s;
+      coeff_y_reg_s                <= dcc_coeff_y_i;
+      dcc_coeff_y_s                <= coeff_y_reg_s;
 
       -- Valid bit delayed to align with Coeffs from DPRAM
       v_reg_s                      <= valid_i;
@@ -149,17 +150,17 @@ begin
         clka_i                     => clk_i,
         bwea_i                     => (others => '1'),
         wea_i                      => wea_x_s,
-        aa_i                       => coeff_ram_addr_i,
-        da_i                       => std_logic_vector(coeff_ram_dat_x_i(i)),
+        aa_i                       => aa_x_s,
+        da_i                       => std_logic_vector(ram_coeff_dat_i),
         qa_o                       => qa_x_s,
 
         -- Port B (read)
         clkb_i                     => clk_i,
         bweb_i                     => (others => '1'),
         web_i                      => web_y_s,
-        ab_i                       => coeff_dcc_addr_i,
+        ab_i                       => dcc_addr_i,
         db_i                       => db_x_s,
-        qb_o                       => coeff_ram_dat_x_s(i)
+        qb_o                       => ram_coeff_x_s(i)
       );
 
     matrix_multiplication_INST_X : mac_fofb
@@ -167,8 +168,8 @@ begin
         clk_i                      => clk_i,
         rst_n_i                    => rst_n_i,
         valid_i                    => v_i_s,
-        coeff_a_dat_i              => coeff_x_dcc_s,
-        coeff_b_dat_i              => signed(coeff_ram_dat_x_s(i)),
+        coeff_a_dat_i              => dcc_coeff_x_s,
+        coeff_b_dat_i              => signed(ram_coeff_x_s(i)),
         c_o                        => c_x_o(i),
         valid_debug_o              => valid_debug_x_o(i),
         valid_end_o                => valid_end_x_o(i)
@@ -192,17 +193,17 @@ begin
         clka_i                     => clk_i,
         bwea_i                     => (others => '1'),
         wea_i                      => wea_y_s,
-        aa_i                       => coeff_ram_addr_i,
-        da_i                       => std_logic_vector(coeff_ram_dat_y_i(i)),
+        aa_i                       => aa_y_s,
+        da_i                       => std_logic_vector(ram_coeff_dat_i),
         qa_o                       => qa_y_s,
 
         -- Port B (read)
         clkb_i                     => clk_i,
         bweb_i                     => (others => '1'),
         web_i                      => web_y_s,
-        ab_i                       => coeff_dcc_addr_i,
+        ab_i                       => dcc_addr_i,
         db_i                       => db_y_s,
-        qb_o                       => coeff_ram_dat_y_s(i)
+        qb_o                       => ram_coeff_y_s(i)
       );
 
     matrix_multiplication_INST_Y : mac_fofb
@@ -210,8 +211,8 @@ begin
         clk_i                      => clk_i,
         rst_n_i                    => rst_n_i,
         valid_i                    => v_i_s,
-        coeff_a_dat_i              => coeff_y_dcc_s,
-        coeff_b_dat_i              => signed(coeff_ram_dat_y_s(i)),
+        coeff_a_dat_i              => dcc_coeff_y_s,
+        coeff_b_dat_i              => signed(ram_coeff_y_s(i)),
         c_o                        => c_y_o(i),
         valid_debug_o              => valid_debug_y_o(i),
         valid_end_o                => valid_end_y_o(i)
