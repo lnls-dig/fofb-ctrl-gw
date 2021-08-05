@@ -34,7 +34,7 @@ entity fofb_matmul_top is
     g_size                       : natural := 2048; -- 2**g_k_width
     g_with_byte_enable           : boolean := false;
     g_addr_conflict_resolution   : string  := "read_first";
-    g_init_file                  : string  := ""; -- "../../testbench/matmul/coeff_bin.ram";
+    g_init_file                  : string  := ""; --"../../testbench/matmul/coeff_bin.ram";
     g_dual_clock                 : boolean := true;
     g_fail_if_file_not_found     : boolean := true;
 
@@ -89,8 +89,10 @@ architecture behave of fofb_matmul_top is
   signal dcc_coeff_y_s           : signed(g_a_width-1 downto 0);
   signal coeff_x_reg_s           : signed(g_a_width-1 downto 0);
   signal coeff_y_reg_s           : signed(g_a_width-1 downto 0);
+
+  signal dcc_addr_reg_s          : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
+
   signal v_i_s, v_reg_s          : std_logic := '0';
-  signal dcc_addr_s              : std_logic_vector(g_k_width-1 downto 0);
 
   -- DPRAM-X port A (write)
   signal wea_x_s                 : std_logic_vector(g_mat_size-1 downto 0);
@@ -125,7 +127,7 @@ begin
       coeff_y_reg_s                <= dcc_coeff_y_i;
       dcc_coeff_y_s                <= coeff_y_reg_s;
 
-      dcc_addr_s                   <= dcc_addr_i;
+      dcc_addr_reg_s               <= dcc_addr_i;
 
       -- Valid bit delayed to align with Coeffs from DPRAM
       v_reg_s                      <= valid_i;
@@ -148,6 +150,7 @@ begin
         wea_y_s(3) <= '0';
 
         aa_x_s  <= unsigned(ram_addr_i);
+        aa_y_s <= (others => '0');
 
       elsif to_integer(unsigned(ram_addr_i)) < 320 then
         wea_x_s(0) <= '0';
@@ -160,6 +163,7 @@ begin
         wea_y_s(2) <= '0';
         wea_y_s(3) <= '0';
 
+        aa_x_s <= (others => '0');
         aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(160, aa_y_s'length);
 
       elsif to_integer(unsigned(ram_addr_i)) < 480 then
@@ -174,6 +178,7 @@ begin
         wea_y_s(3) <= '0';
 
         aa_x_s  <= unsigned(ram_addr_i) - to_unsigned(320, aa_x_s'length);
+        aa_y_s <= (others => '0');
 
       elsif to_integer(unsigned(ram_addr_i)) < 640 then
         wea_x_s(0) <= '0';
@@ -186,6 +191,7 @@ begin
         wea_y_s(2) <= '0';
         wea_y_s(3) <= '0';
 
+        aa_x_s <= (others => '0');
         aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(480, aa_y_s'length);
 
       elsif to_integer(unsigned(ram_addr_i)) < 800 then
@@ -200,6 +206,7 @@ begin
         wea_y_s(3) <= '0';
 
         aa_x_s  <= unsigned(ram_addr_i) - to_unsigned(640, aa_x_s'length);
+        aa_y_s <= (others => '0');
 
       elsif to_integer(unsigned(ram_addr_i)) < 960 then
         wea_x_s(0) <= '0';
@@ -212,6 +219,7 @@ begin
         wea_y_s(2) <= ram_write_enable_i;
         wea_y_s(3) <= '0';
 
+        aa_x_s <= (others => '0');
         aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(800, aa_y_s'length);
 
       elsif to_integer(unsigned(ram_addr_i)) < 1120 then
@@ -226,6 +234,7 @@ begin
         wea_y_s(3) <= '0';
 
         aa_x_s  <= unsigned(ram_addr_i) - to_unsigned(960, aa_x_s'length);
+        aa_y_s <= (others => '0');
 
       elsif to_integer(unsigned(ram_addr_i)) < 1280 then
         wea_x_s(0) <= '0';
@@ -238,6 +247,7 @@ begin
         wea_y_s(2) <= '0';
         wea_y_s(3) <= ram_write_enable_i;
 
+        aa_x_s <= (others => '0');
         aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(1120, aa_y_s'length);
       else
         wea_x_s(0) <= '0';
@@ -281,7 +291,7 @@ begin
         clkb_i                     => clk_i,
         bweb_i                     => (others => '1'),
         web_i                      => web_y_s,
-        ab_i                       => dcc_addr_s,
+        ab_i                       => dcc_addr_reg_s,
         db_i                       => db_x_s,
         qb_o                       => ram_coeff_x_s(i)
       );
@@ -324,7 +334,7 @@ begin
         clkb_i                     => clk_i,
         bweb_i                     => (others => '1'),
         web_i                      => web_y_s,
-        ab_i                       => dcc_addr_s,
+        ab_i                       => dcc_addr_reg_s,
         db_i                       => db_y_s,
         qb_o                       => ram_coeff_y_s(i)
       );

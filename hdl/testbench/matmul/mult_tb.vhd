@@ -49,7 +49,7 @@ architecture behave of mult_tb is
   signal valid_tr     : std_logic                                  := '0';
   signal ram_write_s  : std_logic                                  := '1';
   signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal ram_data_s   : std_logic_vector(c_b_width-1 downto 0);
+  signal ram_data_s   : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal k_s, ram_k_s : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal c_x_s, c_y_s : t_array_signed(c_mat_size-1 downto 0);
 
@@ -65,7 +65,7 @@ begin
         dcc_addr_i         => k_s,
         ram_coeff_dat_i    => ram_data_s,
         ram_addr_i         => ram_k_s,
-        ram_write_enable_i => clk_s,
+        ram_write_enable_i => ram_write_s,
         c_x_o              => c_x_s,
         c_y_o              => c_y_s,
         valid_debug_x_o    => v_o_s,
@@ -82,28 +82,29 @@ begin
 
   valid_tr_gen : process
   begin
+  if rst_s = '0' then
+    wait for 700*clk_period;
+    rst_s <= '1';
+  end if;
   if rst_s = '1' then
-    valid_tr <= '0';
-    wait for clk_period;
     valid_tr <= '1';
+    wait for clk_period;
+    valid_tr <= '0';
     wait for clk_period;
   else
     valid_tr <= '0';
-    wait for clk_period;
   end if;
   end process;
 
   input_read : process(clk_s)
-   file a_data_file                      : text open read_mode is "a_k.txt";
-   file k_data_file                      : text open read_mode is "k.txt";
-   variable a_line, k_line               : line;
-   variable a_datain                     : integer;
-   variable k_datain                     : bit_vector(c_k_width-1 downto 0);
+  file a_data_file                      : text open read_mode is "a_k.txt";
+  file k_data_file                      : text open read_mode is "k.txt";
+  variable a_line, k_line               : line;
+  variable a_datain                     : integer;
+  variable k_datain                     : bit_vector(c_k_width-1 downto 0);
 
     begin
       if rising_edge(clk_s) then
-        rst_s <= '1';
-
         if not endfile(a_data_file) and valid_tr = '1' then
           -- Reading input a[k] from a txt file
           readline(a_data_file, a_line);
@@ -150,7 +151,8 @@ begin
           -- Pass the variable to a signal
           ram_data_s <= to_stdlogicvector(ram_b_datain);
           ram_k_s    <= to_stdlogicvector(ram_k_datain);
-
+        else
+          ram_write_s <= '0';
         end if;
       end if;
   end process ram_input_read;
