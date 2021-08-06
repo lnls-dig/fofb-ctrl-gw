@@ -96,7 +96,7 @@ architecture behave of fofb_matmul_top is
 
   -- DPRAM-X port A (write)
   signal wea_x_s                 : std_logic_vector(g_mat_size-1 downto 0);
-  signal aa_x_s                  : unsigned(g_k_width-1 downto 0)             := (others => '0');
+  signal aa_x_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
   signal qa_x_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
 
   -- DPRAM-X port B (read)
@@ -107,7 +107,7 @@ architecture behave of fofb_matmul_top is
 
   -- DPRAM-Y port A (write)
   signal wea_y_s                 : std_logic_vector(g_mat_size-1 downto 0);
-  signal aa_y_s                  : unsigned(g_k_width-1 downto 0)             := (others => '0');
+  signal aa_y_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
   signal qa_y_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
 
   -- DPRAM-Y port B (read)
@@ -139,128 +139,17 @@ begin
   ram_write : process(clk_i)
   begin
     if (rising_edge(clk_i)) then
-      if to_integer(unsigned(ram_addr_i)) < 160 then
-        wea_x_s(0) <= ram_write_enable_i;
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
+      aa_x_s(g_k_width-4 downto 0) <= ram_addr_i(g_k_width-4 downto 0);
+      aa_y_s(g_k_width-4 downto 0) <= ram_addr_i(g_k_width-4 downto 0);
 
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-
-        aa_x_s  <= unsigned(ram_addr_i);
-        aa_y_s <= (others => '0');
-
-      elsif to_integer(unsigned(ram_addr_i)) < 320 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= ram_write_enable_i;
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-
-        aa_x_s <= (others => '0');
-        aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(160, aa_y_s'length);
-
-      elsif to_integer(unsigned(ram_addr_i)) < 480 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= ram_write_enable_i;
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-
-        aa_x_s  <= unsigned(ram_addr_i) - to_unsigned(320, aa_x_s'length);
-        aa_y_s <= (others => '0');
-
-      elsif to_integer(unsigned(ram_addr_i)) < 640 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= ram_write_enable_i;
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-
-        aa_x_s <= (others => '0');
-        aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(480, aa_y_s'length);
-
-      elsif to_integer(unsigned(ram_addr_i)) < 800 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= ram_write_enable_i;
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-
-        aa_x_s  <= unsigned(ram_addr_i) - to_unsigned(640, aa_x_s'length);
-        aa_y_s <= (others => '0');
-
-      elsif to_integer(unsigned(ram_addr_i)) < 960 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= ram_write_enable_i;
-        wea_y_s(3) <= '0';
-
-        aa_x_s <= (others => '0');
-        aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(800, aa_y_s'length);
-
-      elsif to_integer(unsigned(ram_addr_i)) < 1120 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= ram_write_enable_i;
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-
-        aa_x_s  <= unsigned(ram_addr_i) - to_unsigned(960, aa_x_s'length);
-        aa_y_s <= (others => '0');
-
-      elsif to_integer(unsigned(ram_addr_i)) < 1280 then
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= ram_write_enable_i;
-
-        aa_x_s <= (others => '0');
-        aa_y_s  <= unsigned(ram_addr_i) - to_unsigned(1120, aa_y_s'length);
-      else
-        wea_x_s(0) <= '0';
-        wea_x_s(1) <= '0';
-        wea_x_s(2) <= '0';
-        wea_x_s(3) <= '0';
-
-        wea_y_s(0) <= '0';
-        wea_y_s(1) <= '0';
-        wea_y_s(2) <= '0';
-        wea_y_s(3) <= '0';
-      end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "000" then wea_x_s(0) <= ram_write_enable_i; else wea_x_s(0) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "001" then wea_y_s(0) <= ram_write_enable_i; else wea_y_s(0) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "010" then wea_x_s(1) <= ram_write_enable_i; else wea_x_s(1) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "011" then wea_y_s(1) <= ram_write_enable_i; else wea_y_s(1) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "100" then wea_x_s(2) <= ram_write_enable_i; else wea_x_s(2) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "101" then wea_y_s(2) <= ram_write_enable_i; else wea_y_s(2) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "110" then wea_x_s(3) <= ram_write_enable_i; else wea_x_s(3) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "111" then wea_y_s(3) <= ram_write_enable_i; else wea_y_s(3) <= '0'; end if;
     end if;
   end process ram_write;
 
@@ -284,7 +173,7 @@ begin
         clka_i                     => clk_i,
         bwea_i                     => (others => '1'),
         wea_i                      => wea_x_s(i),
-        aa_i                       => std_logic_vector(aa_x_s),
+        aa_i                       => aa_x_s,
         da_i                       => ram_coeff_dat_s,
         qa_o                       => qa_x_s,
 
@@ -327,7 +216,7 @@ begin
         clka_i                     => clk_i,
         bwea_i                     => (others => '1'),
         wea_i                      => wea_y_s(i),
-        aa_i                       => std_logic_vector(aa_y_s),
+        aa_i                       => aa_y_s,
         da_i                       => ram_coeff_dat_s,
         qa_o                       => qa_y_s,
 

@@ -130,8 +130,8 @@ begin
   end process input_read;
 
   ram_input_read : process(clk_s)
-    file ram_b_data_file                  : text open read_mode is "ram_b_k.txt";
-    file ram_k_data_file                  : text open read_mode is "ram_k.txt";
+    file ram_b_data_file                  : text open read_mode is "ram_b_k256x8.txt";
+    file ram_k_data_file                  : text open read_mode is "ram_k256x8.txt";
     variable ram_b_line, ram_k_line       : line;
     variable ram_b_datain                 : bit_vector(c_b_width-1 downto 0);
     variable ram_k_datain                 : bit_vector(c_k_width-1 downto 0);
