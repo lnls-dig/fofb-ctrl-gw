@@ -56,10 +56,8 @@ entity fofb_matmul_top is
     -- Reset
     rst_n_i                      : in std_logic;
 
-    -- Data valid input
-    valid_i                      : in std_logic;
-
     -- DCC interface
+    dcc_valid_i                  : in std_logic;
     dcc_coeff_x_i                : in signed(g_a_width-1 downto 0);
     dcc_coeff_y_i                : in signed(g_a_width-1 downto 0);
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
@@ -89,6 +87,8 @@ architecture behave of fofb_matmul_top is
   signal dcc_coeff_y_s           : signed(g_a_width-1 downto 0);
   signal coeff_x_reg_s           : signed(g_a_width-1 downto 0);
   signal coeff_y_reg_s           : signed(g_a_width-1 downto 0);
+
+  signal ram_coeff_dat_s         : std_logic_vector(g_b_width-1 downto 0);
 
   signal dcc_addr_reg_s          : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
 
@@ -128,9 +128,10 @@ begin
       dcc_coeff_y_s                <= coeff_y_reg_s;
 
       dcc_addr_reg_s               <= dcc_addr_i;
+      ram_coeff_dat_s              <= ram_coeff_dat_i;
 
       -- Valid bit delayed to align with Coeffs from DPRAM
-      v_reg_s                      <= valid_i;
+      v_reg_s                      <= dcc_valid_i;
       v_i_s                        <= v_reg_s;
     end if;
   end process matmul_top;
@@ -284,7 +285,7 @@ begin
         bwea_i                     => (others => '1'),
         wea_i                      => wea_x_s(i),
         aa_i                       => std_logic_vector(aa_x_s),
-        da_i                       => ram_coeff_dat_i,
+        da_i                       => ram_coeff_dat_s,
         qa_o                       => qa_x_s,
 
         -- Port B (read)
@@ -327,7 +328,7 @@ begin
         bwea_i                     => (others => '1'),
         wea_i                      => wea_y_s(i),
         aa_i                       => std_logic_vector(aa_y_s),
-        da_i                       => ram_coeff_dat_i,
+        da_i                       => ram_coeff_dat_s,
         qa_o                       => qa_y_s,
 
         -- Port B (read)

@@ -59,7 +59,7 @@ begin
       port map (
         clk_i              => clk_s,
         rst_n_i            => rst_s,
-        valid_i            => v_i_s,
+        dcc_valid_i        => v_i_s,
         dcc_coeff_x_i      => x_s,
         dcc_coeff_y_i      => y_s,
         dcc_addr_i         => k_s,

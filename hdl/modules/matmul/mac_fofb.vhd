@@ -78,7 +78,6 @@ architecture behave of mac_fofb is
 
   signal clr_s, v_i_s, v_o_s            : std_logic                              := '0';
   signal a_s                            : signed(g_a_width-1 downto 0)           := (others => '0');
-  signal coeff_b_dat_s                  : signed(g_b_width-1 downto 0)           := (others => '0');
   signal cnt                            : integer                                := 0;
 
 begin
@@ -90,7 +89,7 @@ begin
       clear_acc_i     => clr_s,
       valid_i         => v_i_s,
       a_i             => a_s,
-      b_i             => coeff_b_dat_s,
+      b_i             => coeff_b_dat_i,
       c_o             => c_o,
       valid_o         => v_o_s
     );
@@ -100,7 +99,6 @@ begin
     if (rising_edge(clk_i)) then
       if rst_n_i = '0' then
         a_s           <= (others => '0');
-        coeff_b_dat_s <= (others => '0');
         clr_s         <= '0';
         cnt           <=  0;
         valid_end_o   <= '0';
@@ -111,10 +109,6 @@ begin
         a_s           <= coeff_a_dat_i;
         v_i_s         <= valid_i;
         valid_debug_o <= v_o_s;
-
-        if v_i_s = '1' then
-          coeff_b_dat_s <= coeff_b_dat_i;
-        end if;
 
         if v_o_s = '1' then
           if (cnt < g_mac_size-1) then

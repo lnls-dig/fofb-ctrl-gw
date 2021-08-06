@@ -117,10 +117,8 @@ package mult_pkg is
       -- Reset
       rst_n_i                             : in std_logic;
 
-      -- Data valid input
-      valid_i                             : in std_logic;
-
       -- DCC interface
+      dcc_valid_i                         : in std_logic;
       dcc_coeff_x_i                       : in signed(g_a_width-1 downto 0);
       dcc_coeff_y_i                       : in signed(g_a_width-1 downto 0);
       dcc_addr_i                          : in std_logic_vector(g_k_width-1 downto 0);
