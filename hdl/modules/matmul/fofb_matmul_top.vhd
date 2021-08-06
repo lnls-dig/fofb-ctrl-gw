@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-30-07  1.0      melissa.aguiar        Created
+-- 2021-06-08  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -83,19 +83,16 @@ end fofb_matmul_top;
 
 architecture behave of fofb_matmul_top is
 
-  signal dcc_coeff_x_s           : signed(g_a_width-1 downto 0);
-  signal dcc_coeff_y_s           : signed(g_a_width-1 downto 0);
-  signal coeff_x_reg_s           : signed(g_a_width-1 downto 0);
-  signal coeff_y_reg_s           : signed(g_a_width-1 downto 0);
-
-  signal ram_coeff_dat_s         : std_logic_vector(g_b_width-1 downto 0);
-
+  signal dcc_coeff_x_s           : signed(g_a_width-1 downto 0)               := (others => '0');
+  signal dcc_coeff_y_s           : signed(g_a_width-1 downto 0)               := (others => '0');
+  signal coeff_x_reg_s           : signed(g_a_width-1 downto 0)               := (others => '0');
+  signal coeff_y_reg_s           : signed(g_a_width-1 downto 0)               := (others => '0');
+  signal ram_coeff_dat_s         : std_logic_vector(g_b_width-1 downto 0)     := (others => '0');
   signal dcc_addr_reg_s          : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
-
   signal v_i_s, v_reg_s          : std_logic := '0';
 
   -- DPRAM-X port A (write)
-  signal wea_x_s                 : std_logic_vector(g_mat_size-1 downto 0);
+  signal wea_x_s                 : std_logic_vector(g_mat_size-1 downto 0)    := (others => '0');
   signal aa_x_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
   signal qa_x_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
 
@@ -106,7 +103,7 @@ architecture behave of fofb_matmul_top is
   signal ram_coeff_x_s           : t_array_logic(g_mat_size-1 downto 0);
 
   -- DPRAM-Y port A (write)
-  signal wea_y_s                 : std_logic_vector(g_mat_size-1 downto 0);
+  signal wea_y_s                 : std_logic_vector(g_mat_size-1 downto 0)    := (others => '0');
   signal aa_y_s                  : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
   signal qa_y_s                  : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
 
@@ -121,9 +118,20 @@ begin
   matmul_top : process(clk_i)
   begin
     if (rising_edge(clk_i)) then
+      if rst_n_i = '0' then
+        coeff_x_reg_s                <= (others => '0');
+        dcc_coeff_x_s                <= (others => '0');
+        coeff_y_reg_s                <= (others => '0');
+        dcc_coeff_y_s                <= (others => '0');
+        dcc_addr_reg_s               <= (others => '0');
+        ram_coeff_dat_s              <= (others => '0');
+        v_reg_s                      <= '0';
+        v_i_s                        <= '0';
+      end if;
       -- Coeffs from DCC delayed to align with Coeffs from DPRAM
       coeff_x_reg_s                <= dcc_coeff_x_i;
       dcc_coeff_x_s                <= coeff_x_reg_s;
+
       coeff_y_reg_s                <= dcc_coeff_y_i;
       dcc_coeff_y_s                <= coeff_y_reg_s;
 

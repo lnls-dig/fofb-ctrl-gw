@@ -85,6 +85,8 @@ begin
       elsif (clear_acc_i = '1') then
         -- Clear data from accumulator
         adder_out_s   <= (others => '0');
+        adder_reg1_s  <= (others => '0');
+        adder_reg2_s  <= (others => '0');
 
       else
         -- Pipeline stage 1: Store the inputs in a register

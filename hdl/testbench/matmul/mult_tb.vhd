@@ -44,6 +44,7 @@ architecture behave of mult_tb is
   signal clk_s        : std_logic                                  := '0';
   signal rst_s        : std_logic                                  := '0';
   signal v_i_s        : std_logic                                  := '0';
+  signal clear_acc_s  : std_logic                                  := '0';
   signal v_o_s        : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal v_end_s      : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_tr     : std_logic                                  := '0';
@@ -84,7 +85,7 @@ begin
   begin
   if rst_s = '0' then
     wait for 700*clk_period;
-    rst_s <= '1';
+    rst_s    <= '1';
   end if;
   if rst_s = '1' then
     valid_tr <= '1';
@@ -115,9 +116,9 @@ begin
           read(k_line, k_datain);
 
           -- Pass the variable to a signal
-          x_s <= to_signed(a_datain, x_s'length);
-          y_s <= to_signed(a_datain, y_s'length);
-          k_s <= to_stdlogicvector(k_datain);
+          x_s   <= to_signed(a_datain, x_s'length);
+          y_s   <= to_signed(a_datain, y_s'length);
+          k_s   <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit
           v_i_s <= '1';
@@ -149,8 +150,8 @@ begin
           read(ram_k_line, ram_k_datain);
 
           -- Pass the variable to a signal
-          ram_data_s <= to_stdlogicvector(ram_b_datain);
-          ram_k_s    <= to_stdlogicvector(ram_k_datain);
+          ram_data_s  <= to_stdlogicvector(ram_b_datain);
+          ram_k_s     <= to_stdlogicvector(ram_k_datain);
         else
           ram_write_s <= '0';
         end if;
