@@ -33,7 +33,7 @@ end mult_tb;
 
 architecture behave of mult_tb is
 
-  constant clk_period : time                                       := 0.25 ms;
+  constant clk_period : time                                       := 15 ns;
 
   constant c_a_width  : natural                                    := 32;
   constant c_k_width  : natural                                    := 11;
