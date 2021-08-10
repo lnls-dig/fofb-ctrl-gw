@@ -1,0 +1,22 @@
+memory-map:
+  bus: wb-32-be
+  name: matmul_cheby
+  description: interface to memory
+  children:
+  - reg:
+      name: ram_coeff_dat
+      width: 32
+      access: rw
+  - reg:
+      name: ram_coeff_addr
+      width: 32
+      access: rw
+  - reg:
+      name: ram
+      width: 32
+      access: rw
+      children:
+        - field:
+            name: write_enable
+            range: 0
+
