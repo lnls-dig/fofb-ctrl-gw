@@ -92,6 +92,19 @@ begin
         valid_reg4_s  <= '0';
         valid_reg5_s  <= '0';
 
+        mult_dsp1_s   <= (others => '0');
+        mult_dsp2_s   <= (others => '0');
+        mult_dsp3_s   <= (others => '0');
+        mult_dsp4_s   <= (others => '0');
+        mult_dsp5_s   <= (others => '0');
+        mult_dsp6_s   <= (others => '0');
+        valid_dsp1_s  <= '0';
+        valid_dsp2_s  <= '0';
+        valid_dsp3_s  <= '0';
+        valid_dsp4_s  <= '0';
+        valid_dsp5_s  <= '0';
+        valid_dsp6_s  <= '0';
+
       elsif (clear_acc_i = '1') then
         -- Clear data from accumulator
         adder_out_s   <= (others => '0');
