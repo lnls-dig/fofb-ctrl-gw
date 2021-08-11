@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-14-07  1.0      melissa.aguiar        Created
+-- 2021-11-08  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -54,17 +54,27 @@ entity matmul is
 end matmul;
 
 architecture behave of matmul is
+
   -- Registers for input values
   signal a_reg_s                                  : signed(g_a_width-1 downto 0)                 := (others =>'0');
   signal b_reg_s                                  : signed(g_b_width-1 downto 0)                 := (others =>'0');
+
   -- Registers for intermediate values
   signal mult_reg_s                               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
   signal adder_out_s, adder_reg1_s, adder_reg2_s  : signed(2*g_c_width+g_extra_width-1 downto 0) := (others =>'0');
+
   -- Registers for bit valid
   signal valid_reg1_s, valid_reg2_s, valid_reg3_s : std_logic                                    := '0';
   signal valid_reg4_s, valid_reg5_s               : std_logic                                    := '0';
 
+  -- Registers for the correct DSP48 inference
+  signal mult_dsp1_s, mult_dsp2_s, mult_dsp3_s    : signed(2*g_c_width-1 downto 0)               := (others =>'0');
+  signal mult_dsp4_s, mult_dsp5_s, mult_dsp6_s    : signed(2*g_c_width-1 downto 0)               := (others =>'0');
+  signal valid_dsp1_s, valid_dsp2_s, valid_dsp3_s : std_logic                                    := '0';
+  signal valid_dsp4_s, valid_dsp5_s, valid_dsp6_s : std_logic                                    := '0';
+
 begin
+
   MAC : process (clk_i)
   begin
     if (rising_edge(clk_i)) then
@@ -89,33 +99,53 @@ begin
         adder_reg2_s  <= (others => '0');
 
       else
-        -- Pipeline stage 1: Store the inputs in a register
+        -- Store the inputs in a register
         a_reg_s       <= a_i;
         b_reg_s       <= b_i;
-        -- Store the valid bit from stage 1 in a register
+
+        -- Store the valid bit in a register
         valid_reg1_s  <= valid_i;
 
-        -- Pipeline stage 2: Store multiplication result in a register
-        mult_reg_s    <= a_reg_s * b_reg_s;
-        -- Store the valid bit from stage 2 in a register
-        valid_reg2_s  <= valid_reg1_s;
+        -- Store multiplication result in a register (it's necessary to use 6 pipeline stages)
+        mult_dsp1_s   <= a_reg_s * b_reg_s;
+        mult_dsp2_s   <= mult_dsp1_s;
+        mult_dsp3_s   <= mult_dsp2_s;
+        mult_dsp4_s   <= mult_dsp3_s;
+        mult_dsp5_s   <= mult_dsp4_s;
+        mult_dsp6_s   <= mult_dsp5_s;
 
-        -- Pipeline stage 3: Store accumulation result in a register
+        mult_reg_s    <= mult_dsp6_s;
+
+        -- Store the valid bit in a register for the 6 pipeline stages
+        valid_dsp1_s  <= valid_reg1_s;
+        valid_dsp2_s  <= valid_dsp1_s;
+        valid_dsp3_s  <= valid_dsp2_s;
+        valid_dsp4_s  <= valid_dsp3_s;
+        valid_dsp5_s  <= valid_dsp4_s;
+        valid_dsp6_s  <= valid_dsp5_s;
+
+        valid_reg2_s  <= valid_dsp6_s;
+
         if (valid_reg2_s = '1') then
+        -- Store accumulation result in a register
           adder_out_s <= adder_out_s + mult_reg_s;
         end if;
-        -- Store the valid bit from stage 3 in a register
+
+        -- Store the valid bit in a register
         valid_reg3_s  <= valid_reg2_s;
 
-        -- Pipeline stage 4: Register the accumulation to fully pipeline the DSP cascade
+        -- Register the accumulation to fully pipeline the DSP cascade
         adder_reg1_s  <= adder_out_s;
-        -- Store the valid bit from stage 4 in a register
+
+        -- Store the valid bit in a register
         valid_reg4_s  <= valid_reg3_s;
 
-        -- Pipeline stage 5: Register the accumulation to fully pipeline the DSP cascade
+        -- Register the accumulation to fully pipeline the DSP cascade
         adder_reg2_s  <= adder_reg1_s;
-        -- Store the valid bit from stage 5 in a register
+
+        -- Store the valid bit in a register
         valid_reg5_s  <= valid_reg4_s;
+
         -- Store the valid bit output
         valid_o       <= valid_reg5_s;
 
