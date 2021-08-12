@@ -1,4 +1,4 @@
--- Do not edit.  Generated on Wed Aug 11 16:35:44 2021 by mel
+-- Do not edit.  Generated on Thu Aug 12 14:42:04 2021 by mel
 -- With Cheby 1.5.dev0 and these options:
 --  --gen-hdl -i matmul_wb.cheby
 
@@ -7,7 +7,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity matmul_cheby is
+entity matmul_wb is
   port (
     rst_n_i              : in    std_logic;
     clk_i                : in    std_logic;
@@ -30,11 +30,12 @@ entity matmul_cheby is
     ram_coeff_addr_o     : out   std_logic_vector(31 downto 0);
 
     -- REG ram
-    ram_write_enable_o   : out   std_logic
+    ram_write_enable_o   : out   std_logic;
+    ram_wr_o             : out   std_logic
   );
-end matmul_cheby;
+end matmul_wb;
 
-architecture syn of matmul_cheby is
+architecture syn of matmul_wb is
   signal rd_req_int                     : std_logic;
   signal wr_req_int                     : std_logic;
   signal rd_ack_int                     : std_logic;
@@ -155,6 +156,7 @@ begin
       end if;
     end if;
   end process;
+  ram_wr_o <= ram_wack;
 
   -- Process for write requests.
   process (wr_adr_d0, wr_req_d0, ram_coeff_dat_wack, ram_coeff_addr_wack, ram_wack) begin

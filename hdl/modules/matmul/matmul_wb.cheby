@@ -1,6 +1,6 @@
 memory-map:
   bus: wb-32-be
-  name: matmul_cheby
+  name: matmul_wb
   description: interface to memory
   children:
   - reg:
@@ -15,11 +15,9 @@ memory-map:
       name: ram
       width: 32
       access: rw
+      x-hdl:
+        write-strobe: True
       children:
         - field:
             name: write_enable
             range: 0
-            x-wbgen:
-              type: MONOSTABLE
-
-
