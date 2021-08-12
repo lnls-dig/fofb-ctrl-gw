@@ -18,6 +18,10 @@ syn_properties = [
     ["steps.synth_design.args.more options", "-verbose"],
     ["steps.synth_design.args.retiming", "1"],
     ["steps.synth_design.args.assert", "1"],
+    ["steps.place_design.args.directive", "Explore"],
+    ["steps.place_design.args.more options", "-verbose"],
+    ["steps.route_design.args.directive", "Explore"],
+    ["steps.route_design.args.more options", "-verbose"],
     ["steps.write_bitstream.args.verbose", "1"]
 ]
 
@@ -40,6 +44,8 @@ xdc_files = [
     "afcv4_fmc_4sfp+_caen.xdc",
     "afcv4_rtm_lamp_ohwr.xdc",
     "afcv4_ref_fofb_ctrl.xdc",
+    "../afc_common/afc_fmc_4sfp_gts.xdc",
+    "../afc_common/afc_p2p_gts.xdc",
 ]
 
 additional_xdc = []

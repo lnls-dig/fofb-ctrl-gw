@@ -39,6 +39,8 @@ else:
 xdc_files = [
     "afc_rtm_8sfp+_ohwr.xdc",
     "afc_rtm_sfp_fofb_ctrl.xdc",
+    "../afc_common/afc_p2p_gts.xdc",
+    "../afc_common/afc_rtm_8sfp+_ohwr_gts.xdc",
 ]
 
 additional_xdc = []
