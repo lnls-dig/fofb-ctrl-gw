@@ -74,32 +74,6 @@ end test_matmul;
 
 architecture behave of test_matmul is
 
---   -- Reset
---   signal rst_n_s                 : std_logic := '0';
---
---   -- DCC interface
---   signal dcc_valid_s             : std_logic := '0';
---   signal dcc_coeff_x_s           : signed(g_a_width-1 downto 0)               := (others => '0');
---   signal dcc_coeff_y_s           : signed(g_a_width-1 downto 0)               := (others => '0');
---   signal dcc_addr_s              : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
---
---   -- RAM interface
---   signal ram_coeff_dat_s         : std_logic_vector(g_b_width-1 downto 0)     := (others => '0');
---   signal ram_addr_s              : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
---   signal ram_write_enable_s      : std_logic := '0';
---
---   -- Result output array
---   --signal c_x_s                   : t_array_signed(g_mat_size-1 downto 0);
---   --signal c_y_s                   : t_array_signed(g_mat_size-1 downto 0);
---
---   -- Valid output for debugging
---   signal valid_debug_x_s         : std_logic_vector(g_mat_size-1 downto 0)     := (others => '0');
---   signal valid_debug_y_s         : std_logic_vector(g_mat_size-1 downto 0)     := (others => '0');
---
---   -- Valid end of fofb cycle
---   signal valid_end_x_s           : std_logic_vector(g_mat_size-1 downto 0)     := (others => '0');
---   signal valid_end_y_s           : std_logic_vector(g_mat_size-1 downto 0)     := (others => '0');
-
 begin
 
   fofb_matmul_top_INST : fofb_matmul_top
