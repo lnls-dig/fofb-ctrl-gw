@@ -144,29 +144,27 @@ package mult_pkg is
 
   component matmul_wb is
     port (
-      rst_n_i              : in    std_logic;
-      clk_i                : in    std_logic;
-      wb_cyc_i             : in    std_logic;
-      wb_stb_i             : in    std_logic;
-      wb_adr_i             : in    std_logic_vector(3 downto 2);
-      wb_sel_i             : in    std_logic_vector(3 downto 0);
-      wb_we_i              : in    std_logic;
-      wb_dat_i             : in    std_logic_vector(31 downto 0);
-      wb_ack_o             : out   std_logic;
-      wb_err_o             : out   std_logic;
-      wb_rty_o             : out   std_logic;
-      wb_stall_o           : out   std_logic;
-      wb_dat_o             : out   std_logic_vector(31 downto 0);
+      rst_n_i                             : in    std_logic;
+      clk_sys_i                           : in    std_logic;
+      wb_adr_i                            : in    std_logic_vector(1 downto 0);
+      wb_dat_i                            : in    std_logic_vector(31 downto 0);
+      wb_dat_o                            : out   std_logic_vector(31 downto 0);
+      wb_cyc_i                            : in    std_logic;
+      wb_sel_i                            : in    std_logic_vector(3 downto 0);
+      wb_stb_i                            : in    std_logic;
+      wb_we_i                             : in    std_logic;
+      wb_ack_o                            : out   std_logic;
+      wb_stall_o                          : out   std_logic;
+      matmul_clk_reg_i                    : in    std_logic;
 
-      -- REG ram_coeff_dat
-      ram_coeff_dat_o      : out   std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      matmul_wb_ram_coeff_dat_o           : out   std_logic_vector(31 downto 0);
 
-      -- REG ram_coeff_addr
-      ram_coeff_addr_o     : out   std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      matmul_wb_ram_coeff_addr_o          : out   std_logic_vector(31 downto 0);
 
-      -- REG ram
-      ram_write_enable_o   : out   std_logic;
-      ram_wr_o             : out   std_logic
+      -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
+      matmul_wb_ram_write_enable_o        : out   std_logic
     );
   end component matmul_wb;
 

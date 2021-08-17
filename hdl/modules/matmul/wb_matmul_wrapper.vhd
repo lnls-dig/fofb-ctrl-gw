@@ -79,11 +79,6 @@ entity wb_matmul_wrapper is
     dcc_coeff_y_i                : in signed(g_a_width-1 downto 0);
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
-    -- RAM interface
-    --ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
-    --ram_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
-    --ram_write_enable_i           : in std_logic;
-
     -- Result output array
     c_x_o                        : out t_array_signed(g_mat_size-1 downto 0);
     c_y_o                        : out t_array_signed(g_mat_size-1 downto 0);
@@ -99,30 +94,28 @@ entity wb_matmul_wrapper is
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    sysclk_i                                   : in std_logic;
-    sysreset_n_i                               : in std_logic;
+    clk_sys_i                    : in    std_logic;
 
-    wb_cyc_i             : in    std_logic;
-    wb_stb_i             : in    std_logic;
-    wb_adr_i             : in    std_logic_vector(31 downto 0);
-    wb_sel_i             : in    std_logic_vector(3 downto 0);
-    wb_we_i              : in    std_logic;
-    wb_dat_i             : in    std_logic_vector(31 downto 0);
-    wb_ack_o             : out   std_logic;
-    wb_err_o             : out   std_logic;
-    wb_rty_o             : out   std_logic;
-    wb_stall_o           : out   std_logic;
-    wb_dat_o             : out   std_logic_vector(31 downto 0);
+    wb_adr_i                     : in    std_logic_vector(31 downto 0);
+    wb_dat_i                     : in    std_logic_vector(31 downto 0);
+    wb_dat_o                     : out   std_logic_vector(31 downto 0);
+    wb_cyc_i                     : in    std_logic;
+    wb_sel_i                     : in    std_logic_vector(3 downto 0);
+    wb_stb_i                     : in    std_logic;
+    wb_we_i                      : in    std_logic;
+    wb_ack_o                     : out   std_logic;
+    wb_stall_o                   : out   std_logic
+    --matmul_clk_reg_i             : in    std_logic;
 
-    -- REG ram_coeff_dat
-    ram_coeff_dat_o      : out   std_logic_vector(31 downto 0);
+    -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+    --matmul_wb_ram_coeff_dat_o    : out   std_logic_vector(31 downto 0);
 
-    -- REG ram_coeff_addr
-    ram_coeff_addr_o     : out   std_logic_vector(31 downto 0)
+    -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+    --matmul_wb_ram_coeff_addr_o   : out   std_logic_vector(31 downto 0)
 
-    -- REG ram
-    --ram_write_enable_o   : out   std_logic;
-    --ram_wr_o             : out   std_logic
+    -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
+    --matmul_wb_ram_write_enable_o : out   std_logic
+
   );
   end wb_matmul_wrapper;
 
@@ -208,8 +201,8 @@ begin
   gen_with_extra_wb_reg : if g_WITH_EXTRA_WB_REG generate
     cmp_register_link : xwb_register_link -- puts a register of delay between crossbars
       port map (
-        clk_sys_i                             => sysclk_i,
-        rst_n_i                               => sysreset_n_i,
+        clk_sys_i                             => clk_sys_i,
+        rst_n_i                               => rst_n_i,
         slave_i                               => wb_slave_in_reg0(0),
         slave_o                               => wb_slave_out_reg0(0),
         master_i                              => wb_slave_out(0),
@@ -225,8 +218,6 @@ begin
 
       wb_dat_o                                <= wb_slave_out_reg0(0).dat;
       wb_ack_o                                <= wb_slave_out_reg0(0).ack;
-      wb_err_o                                <= wb_slave_out_reg0(0).err;
-      wb_rty_o                                <= wb_slave_out_reg0(0).rty;
       wb_stall_o                              <= wb_slave_out_reg0(0).stall;
     end generate;
 
@@ -241,8 +232,6 @@ begin
 
     wb_dat_o                                <= wb_slave_out(0).dat;
     wb_ack_o                                <= wb_slave_out(0).ack;
-    wb_err_o                                <= wb_slave_out(0).err;
-    wb_rty_o                                <= wb_slave_out(0).rty;
     wb_stall_o                              <= wb_slave_out(0).stall;
   end generate;
 
@@ -259,8 +248,8 @@ begin
       g_slave_granularity        => g_ADDRESS_GRANULARITY
     )
     port map (
-      clk_sys_i                  => sysclk_i,
-      rst_n_i                    => sysreset_n_i,
+      clk_sys_i                  => clk_sys_i,
+      rst_n_i                    => rst_n_i,
       master_i                   => wb_slv_adp_in,
       master_o                   => wb_slv_adp_out,
       sl_adr_i                   => resized_addr,
@@ -279,28 +268,28 @@ begin
   cmp_matmul_wb: matmul_wb
     port map(
       rst_n_i                    => rst_n_i,
-      clk_i                      => clk_i,
-      wb_cyc_i                   => wb_slv_adp_out.cyc,
-      wb_stb_i                   => wb_slv_adp_out.stb,
+      clk_sys_i                  => clk_sys_i,
+
       wb_adr_i                   => wb_slv_adp_out.adr(1 downto 0),
-      wb_sel_i                   => wb_slv_adp_out.sel,
-      wb_we_i                    => wb_slv_adp_out.we,
       wb_dat_i                   => wb_slv_adp_out.dat,
-      wb_ack_o                   => wb_slv_adp_in.ack,
-      wb_err_o                   => wb_slv_adp_in.err,
-      wb_rty_o                   => wb_slv_adp_in.rty,
-      wb_stall_o                 => wb_slv_adp_in.stall,
       wb_dat_o                   => wb_slv_adp_in.dat,
+      wb_cyc_i                   => wb_slv_adp_out.cyc,
+      wb_sel_i                   => wb_slv_adp_out.sel,
+      wb_stb_i                   => wb_slv_adp_out.stb,
+      wb_we_i                    => wb_slv_adp_out.we,
+      wb_ack_o                   => wb_slv_adp_in.ack,
+      wb_stall_o                 => wb_slv_adp_in.stall,
 
-      -- REG ram_coeff_dat
-      ram_coeff_dat_o            => ram_coeff_dat_s,
+      matmul_clk_reg_i           => clk_i,
 
-      -- REG ram_coeff_addr
-      ram_coeff_addr_o           => ram_coeff_addr_s,
+      -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      matmul_wb_ram_coeff_dat_o  => ram_coeff_dat_s,
 
-      -- REG ram
-      ram_write_enable_o         => ram_write_enable_s,
-      ram_wr_o                   => ram_wr_s
+      -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      matmul_wb_ram_coeff_addr_o => ram_coeff_addr_s,
+
+      -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
+      matmul_wb_ram_write_enable_o => ram_write_enable_s
     );
 
 end architecture rtl;
