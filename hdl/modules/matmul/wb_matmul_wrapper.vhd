@@ -95,49 +95,48 @@ entity wb_matmul_wrapper is
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
     clk_sys_i                    : in    std_logic;
+    rst_sys_i                    : in    std_logic;
 
-    wb_adr_i                     : in    std_logic_vector(31 downto 0);
-    wb_dat_i                     : in    std_logic_vector(31 downto 0);
-    wb_dat_o                     : out   std_logic_vector(31 downto 0);
+    wb_adr_i                     : in    std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
+    wb_dat_i                     : in    std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0)    := (others => '0');
+    wb_dat_o                     : out   std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
     wb_cyc_i                     : in    std_logic;
-    wb_sel_i                     : in    std_logic_vector(3 downto 0);
+    wb_sel_i                     : in    std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0)  := (others => '0');
     wb_stb_i                     : in    std_logic;
     wb_we_i                      : in    std_logic;
     wb_ack_o                     : out   std_logic;
     wb_stall_o                   : out   std_logic
-    --matmul_clk_reg_i             : in    std_logic;
-
-    -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-    --matmul_wb_ram_coeff_dat_o    : out   std_logic_vector(31 downto 0);
-
-    -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-    --matmul_wb_ram_coeff_addr_o   : out   std_logic_vector(31 downto 0)
-
-    -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
-    --matmul_wb_ram_write_enable_o : out   std_logic
-
   );
   end wb_matmul_wrapper;
 
 architecture rtl of wb_matmul_wrapper is
 
+  -----------------------------
+  -- Matmul RAM signals
+  -----------------------------
   signal ram_coeff_dat_s         : std_logic_vector(31 downto 0);
   signal ram_coeff_addr_s        : std_logic_vector(31 downto 0);
   signal ram_write_enable_s      : std_logic;
   signal ram_wr_s                : std_logic;
 
   -----------------------------
+  -- General contants
+  -----------------------------
+  -- Number of bits in Wishbone register interface. Plus 2 to account for BYTE addressing
+  constant c_PERIPH_ADDR_SIZE    : natural := 2+2;
+
+  -----------------------------
   -- Wishbone slave adapter signals/structures
   -----------------------------
-  signal wb_slv_adp_out                      : t_wishbone_master_out;
-  signal wb_slv_adp_in                       : t_wishbone_master_in;
-  signal resized_addr                        : std_logic_vector(c_wishbone_address_width-1 downto 0);
+  signal wb_slv_adp_out          : t_wishbone_master_out;
+  signal wb_slv_adp_in           : t_wishbone_master_in;
+  signal resized_addr            : std_logic_vector(c_wishbone_address_width-1 downto 0);
 
   -- Extra Wishbone registering stage
-  signal wb_slave_in                         : t_wishbone_slave_in_array (0 downto 0);
-  signal wb_slave_out                        : t_wishbone_slave_out_array(0 downto 0);
-  signal wb_slave_in_reg0                    : t_wishbone_slave_in_array (0 downto 0);
-  signal wb_slave_out_reg0                   : t_wishbone_slave_out_array(0 downto 0);
+  signal wb_slave_in             : t_wishbone_slave_in_array (0 downto 0);
+  signal wb_slave_out            : t_wishbone_slave_out_array(0 downto 0);
+  signal wb_slave_in_reg0        : t_wishbone_slave_in_array (0 downto 0);
+  signal wb_slave_out_reg0       : t_wishbone_slave_out_array(0 downto 0);
 
 begin
 
@@ -202,7 +201,7 @@ begin
     cmp_register_link : xwb_register_link -- puts a register of delay between crossbars
       port map (
         clk_sys_i                             => clk_sys_i,
-        rst_n_i                               => rst_n_i,
+        rst_n_i                               => rst_sys_i,
         slave_i                               => wb_slave_in_reg0(0),
         slave_o                               => wb_slave_out_reg0(0),
         master_i                              => wb_slave_out(0),
@@ -249,7 +248,7 @@ begin
     )
     port map (
       clk_sys_i                  => clk_sys_i,
-      rst_n_i                    => rst_n_i,
+      rst_n_i                    => rst_sys_i,
       master_i                   => wb_slv_adp_in,
       master_o                   => wb_slv_adp_out,
       sl_adr_i                   => resized_addr,
@@ -264,10 +263,19 @@ begin
       sl_err_o                   => wb_slave_out(0).err,
       sl_stall_o                 => wb_slave_out(0).stall
     );
+    -- By doing this zeroing we avoid the issue related to BYTE -> WORD  conversion
+    -- slave addressing (possibly performed by the slave adapter component)
+    -- in which a bit in the MSB of the peripheral addressing part (31 - 5 in our case)
+    -- is shifted to the internal register adressing part (4 - 0 in our case).
+    -- Therefore, possibly changing the these bits!
+    resized_addr(c_PERIPH_ADDR_SIZE-1 downto 0)
+                                 <= wb_slave_in(0).adr(c_PERIPH_ADDR_SIZE-1 downto 0);
+    resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
+                                 <= (others => '0');
 
   cmp_matmul_wb: matmul_wb
     port map(
-      rst_n_i                    => rst_n_i,
+      rst_n_i                    => rst_sys_i,
       clk_sys_i                  => clk_sys_i,
 
       wb_adr_i                   => wb_slv_adp_out.adr(1 downto 0),
