@@ -125,7 +125,7 @@ set_max_delay -datapath_only -from               [get_clocks $gt_fmc_txoutclk_cl
 set_max_delay -datapath_only -from               [get_clocks fmc0_fs_clk] -to [get_clocks clk_aux]    $clk_aux_period
 
 # CDC between DCC GT and clk_pll_i (DDR core clock)
-set_max_delay -datapath_only -from               [get_clocks clk_pll_i] -to [get_clocks $gt_fmc_txoutclk_clocks]    $afc_fp2_clk1_period
+set_max_delay -datapath_only -from               [get_clocks clk_pll_i] -to [get_clocks $gt_fmc_txoutclk_clocks]    $fmc0_fs_clk_period
 
 # CDC between clk_pll_i (DDR core clock) and DCC GT
 set_max_delay -datapath_only -from               [get_clocks $gt_fmc_txoutclk_clocks] -to [get_clocks clk_pll_i]    $clk_pll_ddr_period
