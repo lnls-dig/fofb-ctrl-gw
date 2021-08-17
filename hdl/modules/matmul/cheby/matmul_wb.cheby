@@ -5,19 +5,31 @@ memory-map:
   children:
   - reg:
       name: ram_coeff_dat
+      address: 0x00000000
       width: 32
       access: rw
+      x-wbgen:
+        type: SLV
+        clock: matmul_clk_reg_i
   - reg:
       name: ram_coeff_addr
+      address: 0x00000004
       width: 32
       access: rw
+      x-wbgen:
+        type: SLV
+        clock: matmul_clk_reg_i
   - reg:
-      name: ram
+      name: ram_write
+      address: 0x00000008
       width: 32
       access: rw
       x-hdl:
         write-strobe: True
       children:
         - field:
-            name: write_enable
+            name: enable
             range: 0
+            x-wbgen:
+              type: MONOSTABLE
+              clock: matmul_clk_reg_i

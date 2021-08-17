@@ -80,9 +80,9 @@ entity wb_matmul_wrapper is
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
     -- RAM interface
-    ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
-    ram_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
-    ram_write_enable_i           : in std_logic;
+    --ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
+    --ram_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+    --ram_write_enable_i           : in std_logic;
 
     -- Result output array
     c_x_o                        : out t_array_signed(g_mat_size-1 downto 0);
@@ -118,11 +118,11 @@ entity wb_matmul_wrapper is
     ram_coeff_dat_o      : out   std_logic_vector(31 downto 0);
 
     -- REG ram_coeff_addr
-    ram_coeff_addr_o     : out   std_logic_vector(31 downto 0);
+    ram_coeff_addr_o     : out   std_logic_vector(31 downto 0)
 
     -- REG ram
-    ram_write_enable_o   : out   std_logic;
-    ram_wr_o             : out   std_logic
+    --ram_write_enable_o   : out   std_logic;
+    --ram_wr_o             : out   std_logic
   );
   end wb_matmul_wrapper;
 
