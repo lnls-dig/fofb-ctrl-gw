@@ -43,9 +43,9 @@ else:
 xdc_files = [
     "afcv4_fmc_4sfp+_caen.xdc",
     "afcv4_rtm_lamp_ohwr.xdc",
-    "afcv4_ref_fofb_ctrl.xdc",
     "../afc_common/afc_fmc_4sfp_gts.xdc",
     "../afc_common/afc_p2p_gts.xdc",
+    "afcv4_ref_fofb_ctrl.xdc",
 ]
 
 additional_xdc = []
