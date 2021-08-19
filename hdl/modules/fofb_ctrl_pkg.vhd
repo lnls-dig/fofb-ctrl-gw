@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 library work;
 use work.fofb_cc_pkg.all;
 use work.wishbone_pkg.all;
+use work.mult_pkg.all;
 
 package fofb_ctrl_pkg is
 
@@ -410,6 +411,143 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  component wb_matmul_wrapper
+  generic
+  (
+    -- Standard parameters of generic_dpram
+    g_data_width                               : natural := 32;
+    g_size                                     : natural := c_size_dpram;
+    g_with_byte_enable                         : boolean := false;
+    g_addr_conflict_resolution                 : string  := "read_first";
+    g_init_file                                : string  := "";
+    g_dual_clock                               : boolean := true;
+    g_fail_if_file_not_found                   : boolean := true;
+    -- Width for inputs x and y
+    g_a_width                                  : natural := 32;
+    -- Width for ram data
+    g_b_width                                  : natural := 32;
+    -- Width for ram addr
+    g_k_width                                  : natural := 11;
+    -- Width for output c
+    g_c_width                                  : natural := 32;
+    -- Matrix multiplication size
+    g_mat_size                                 : natural := 4;
+    -- Wishbone parameters
+    g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
+    g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
+    g_WITH_EXTRA_WB_REG                        : boolean := false
+  );
+  port
+  (
+    ---------------------------------------------------------------------------
+    -- Clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_i                                      : in std_logic;
+    rst_n_i                                    : in std_logic;
+    clk_sys_i                                  : in std_logic;
+    rst_sys_n_i                                : in std_logic;
+
+    ---------------------------------------------------------------------------
+    -- Matmul Top Level Interface Signals
+    ---------------------------------------------------------------------------
+    -- DCC interface
+    dcc_valid_i                                : in std_logic;
+    dcc_coeff_x_i                              : in signed(g_a_width-1 downto 0);
+    dcc_coeff_y_i                              : in signed(g_a_width-1 downto 0);
+    dcc_addr_i                                 : in std_logic_vector(g_k_width-1 downto 0);
+
+    -- Result output array
+    spx_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    spy_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
+
+    -- Valid output for debugging
+    spx_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
+    spy_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
+
+    -- Valid end of fofb cycle
+    spx_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
+    spy_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
+
+    ---------------------------------------------------------------------------
+    -- Wishbone Control Interface signals
+    ---------------------------------------------------------------------------
+    wb_adr_i                                   : in  std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
+    wb_dat_i                                   : in  std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0) := (others => '0');
+    wb_dat_o                                   : out std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
+    wb_cyc_i                                   : in  std_logic := '0';
+    wb_sel_i                                   : in  std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0) := (others => '0');
+    wb_stb_i                                   : in  std_logic := '0';
+    wb_we_i                                    : in  std_logic := '0';
+    wb_ack_o                                   : out std_logic;
+    wb_stall_o                                 : out std_logic
+  );
+  end component;
+
+  component xwb_matmul_wrapper
+  generic
+  (
+    -- Standard parameters of generic_dpram
+    g_data_width                               : natural := 32;
+    g_size                                     : natural := c_size_dpram;
+    g_with_byte_enable                         : boolean := false;
+    g_addr_conflict_resolution                 : string  := "read_first";
+    g_init_file                                : string  := "";
+    g_dual_clock                               : boolean := true;
+    g_fail_if_file_not_found                   : boolean := true;
+    -- Width for inputs x and y
+    g_a_width                                  : natural := 32;
+    -- Width for ram data
+    g_b_width                                  : natural := 32;
+    -- Width for ram addr
+    g_k_width                                  : natural := 11;
+    -- Width for output c
+    g_c_width                                  : natural := 32;
+    -- Matrix multiplication size
+    g_mat_size                                 : natural := 4;
+    -- Wishbone parameters
+    g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
+    g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
+    g_WITH_EXTRA_WB_REG                        : boolean := false
+  );
+  port
+  (
+    ---------------------------------------------------------------------------
+    -- Clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_i                                      : in std_logic;
+    rst_n_i                                    : in std_logic;
+    clk_sys_i                                  : in std_logic;
+    rst_sys_n_i                                : in std_logic;
+
+    ---------------------------------------------------------------------------
+    -- Matmul Top Level Interface Signals
+    ---------------------------------------------------------------------------
+    -- DCC interface
+    dcc_valid_i                                : in std_logic;
+    dcc_coeff_x_i                              : in signed(g_a_width-1 downto 0);
+    dcc_coeff_y_i                              : in signed(g_a_width-1 downto 0);
+    dcc_addr_i                                 : in std_logic_vector(g_k_width-1 downto 0);
+
+    -- Result output array
+    spx_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    spy_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
+
+    -- Valid output for debugging
+    spx_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
+    spy_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
+
+    -- Valid end of fofb cycle
+    spx_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
+    spy_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
+
+    ---------------------------------------------------------------------------
+    -- Wishbone Control Interface signals
+    ---------------------------------------------------------------------------
+    wb_slv_i                                   : in t_wishbone_slave_in;
+    wb_slv_o                                   : out t_wishbone_slave_out
+  );
+  end component;
+
   --------------------------------------------------------------------
   -- SDB Devices Structures
   --------------------------------------------------------------------
@@ -430,5 +568,22 @@ package fofb_ctrl_pkg is
     version       => x"00000001",
     date          => x"20201109",
     name          => "DLS_DCC_REGS       ")));
+
+  -- Matmul
+  constant c_xwb_matmul_regs_sdb : t_sdb_device := (
+    abi_class     => x"0000",                   -- undocumented device
+    abi_ver_major => x"01",
+    abi_ver_minor => x"00",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"4",                      -- 32-bit port granularity (0100)
+    sdb_component => (
+    addr_first    => x"0000000000000000",
+    addr_last     => x"00000000000000FF",
+    product => (
+    vendor_id     => x"1000000000000d15",       -- DLS
+    device_id     => x"49681ca6",
+    version       => x"00000001",
+    date          => x"20210819",
+    name          => "MATMUL_REGS       ")));
 
 end fofb_ctrl_pkg;

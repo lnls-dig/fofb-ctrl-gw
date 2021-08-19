@@ -59,11 +59,13 @@ entity wb_matmul_wrapper is
     g_WITH_EXTRA_WB_REG          : boolean := false
   );
   port (
-    -- Core clock
+    ---------------------------------------------------------------------------
+    -- Clock and reset interface
+    ---------------------------------------------------------------------------
     clk_i                        : in std_logic;
-
-    -- Reset
     rst_n_i                      : in std_logic;
+    clk_sys_i                    : in std_logic;
+    rst_sys_n_i                  : in std_logic;
 
     ---------------------------------------------------------------------------
     -- Matmul Top Level Interface Signals
@@ -89,18 +91,15 @@ entity wb_matmul_wrapper is
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    clk_sys_i                    : in    std_logic;
-    rst_sys_n_i                  : in    std_logic;
-
-    wb_adr_i                     : in    std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
-    wb_dat_i                     : in    std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0)    := (others => '0');
-    wb_dat_o                     : out   std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
-    wb_cyc_i                     : in    std_logic;
-    wb_sel_i                     : in    std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0)  := (others => '0');
-    wb_stb_i                     : in    std_logic;
-    wb_we_i                      : in    std_logic;
-    wb_ack_o                     : out   std_logic;
-    wb_stall_o                   : out   std_logic
+    wb_adr_i                     : in std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
+    wb_dat_i                     : in std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0) := (others => '0');
+    wb_dat_o                     : out std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
+    wb_cyc_i                     : in std_logic := '0';
+    wb_sel_i                     : in std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0) := (others => '0');
+    wb_stb_i                     : in std_logic := '0';
+    wb_we_i                      : in std_logic := '0';
+    wb_ack_o                     : out std_logic;
+    wb_stall_o                   : out std_logic
   );
   end wb_matmul_wrapper;
 
