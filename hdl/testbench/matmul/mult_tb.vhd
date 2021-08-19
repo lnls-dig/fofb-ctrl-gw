@@ -18,91 +18,90 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.math_real.all;
 
 library std;
 use std.textio.all;
 
 library work;
 use work.mult_pkg.all;
-use work.genram_pkg.all;
-use work.memory_loader_pkg.all;
 
 entity mult_tb is
 end mult_tb;
 
 architecture behave of mult_tb is
 
-  constant clk_period : time                                       := 15 ns;
+  constant clk_period                : time                                       := 6.4 ns;
 
-  constant c_a_width  : natural                                    := 32;
-  constant c_k_width  : natural                                    := 11;
-  constant c_b_width  : natural                                    := 32;
-  constant c_c_width  : natural                                    := 32;
-  constant c_mat_size : natural                                    := 4;
+  constant c_a_width                 : natural                                    := 32;
+  constant c_k_width                 : natural                                    := 11;
+  constant c_b_width                 : natural                                    := 32;
+  constant c_c_width                 : natural                                    := 32;
+  constant c_mat_size                : natural                                    := 4;
 
-  signal clk_s        : std_logic                                  := '0';
-  signal rst_s        : std_logic                                  := '0';
-  signal v_i_s        : std_logic                                  := '0';
-  signal clear_acc_s  : std_logic                                  := '0';
-  signal v_o_s        : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal v_end_s      : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal valid_tr     : std_logic                                  := '0';
-  signal ram_write_s  : std_logic                                  := '1';
-  signal x_s, y_s     : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal ram_data_s   : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
-  signal k_s, ram_k_s : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal c_x_s, c_y_s : t_array_signed(c_mat_size-1 downto 0);
+  signal clk_s                       : std_logic                                  := '0';
+  signal rst_n_s                     : std_logic                                  := '0';
+  signal valid_i_s                   : std_logic                                  := '0';
+  signal clear_acc_s                 : std_logic                                  := '0';
+  signal valid_x_o_s                 : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal valid_y_o_s                 : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal valid_endx_s                : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal valid_endy_s                : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal valid_tr                    : std_logic                                  := '0';
+  signal ram_write_s                 : std_logic                                  := '1';
+  signal x_s, y_s                    : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
+  signal k_s, ram_k_s                : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal spx_s, spy_s                : t_matmul_array_signed(c_mat_size-1 downto 0);
 
 begin
 
     fofb_matmul_top_INST : fofb_matmul_top
       port map (
-        clk_i              => clk_s,
-        rst_n_i            => rst_s,
-        dcc_valid_i        => v_i_s,
-        dcc_coeff_x_i      => x_s,
-        dcc_coeff_y_i      => y_s,
-        dcc_addr_i         => k_s,
-        ram_coeff_dat_i    => ram_data_s,
-        ram_addr_i         => ram_k_s,
-        ram_write_enable_i => ram_write_s,
-        c_x_o              => c_x_s,
-        c_y_o              => c_y_s,
-        valid_debug_x_o    => v_o_s,
-        valid_debug_y_o    => v_o_s,
-        valid_end_x_o      => v_end_s,
-        valid_end_y_o      => v_end_s
+        clk_i                        => clk_s,
+        rst_n_i                      => rst_n_s,
+        dcc_valid_i                  => valid_i_s,
+        dcc_coeff_x_i                => x_s,
+        dcc_coeff_y_i                => y_s,
+        dcc_addr_i                   => k_s,
+        ram_coeff_dat_i              => ram_data_s,
+        ram_addr_i                   => ram_k_s,
+        ram_write_enable_i           => ram_write_s,
+        spx_o                        => spx_s,
+        spy_o                        => spy_s,
+        spx_valid_debug_o            => valid_x_o_s,
+        spy_valid_debug_o            => valid_y_o_s,
+        spx_valid_end_o              => valid_endx_s,
+        spy_valid_end_o              => valid_endy_s
       );
 
   clk_process : process is
   begin
     wait for clk_period/2;
-    clk_s <= not clk_s;
+    clk_s                            <= not clk_s;
   end process clk_process;
 
   valid_tr_gen : process
   begin
-  if rst_s = '0' then
+  if rst_n_s = '0' then
     wait for 700*clk_period;
-    rst_s    <= '1';
+    rst_n_s                          <= '1';
   end if;
-  if rst_s = '1' then
-    valid_tr <= '1';
+  if rst_n_s = '1' then
+    valid_tr                         <= '1';
     wait for clk_period;
-    valid_tr <= '0';
+    valid_tr                         <= '0';
     wait for clk_period;
   else
-    valid_tr <= '0';
+    valid_tr                         <= '0';
   end if;
   end process;
 
   input_read : process(clk_s)
-  file a_data_file                      : text open read_mode is "a_k.txt";
-  file k_data_file                      : text open read_mode is "k.txt";
-  variable a_line, k_line               : line;
-  variable a_datain                     : integer;
-  variable k_datain                     : bit_vector(c_k_width-1 downto 0);
+  file a_data_file                   : text open read_mode is "a_k.txt";
+  file k_data_file                   : text open read_mode is "k.txt";
+  variable a_line, k_line            : line;
+  variable a_datain                  : integer;
+  variable k_datain                  : bit_vector(c_k_width-1 downto 0);
 
     begin
       if rising_edge(clk_s) then
@@ -116,26 +115,26 @@ begin
           read(k_line, k_datain);
 
           -- Pass the variable to a signal
-          x_s   <= to_signed(a_datain, x_s'length);
-          y_s   <= to_signed(a_datain, y_s'length);
-          k_s   <= to_stdlogicvector(k_datain);
+          x_s                        <= to_signed(a_datain, x_s'length);
+          y_s                        <= to_signed(a_datain, y_s'length);
+          k_s                        <= to_stdlogicvector(k_datain);
 
           -- Update valid input bit
-          v_i_s <= '1';
+          valid_i_s                  <= '1';
 
         else
           -- Update valid input bit
-          v_i_s <= '0';
+          valid_i_s                  <= '0';
         end if;
       end if;
   end process input_read;
 
   ram_input_read : process(clk_s)
-    file ram_b_data_file                  : text open read_mode is "ram_b_k256x8.txt";
-    file ram_k_data_file                  : text open read_mode is "ram_k256x8.txt";
-    variable ram_b_line, ram_k_line       : line;
-    variable ram_b_datain                 : bit_vector(c_b_width-1 downto 0);
-    variable ram_k_datain                 : bit_vector(c_k_width-1 downto 0);
+    file ram_b_data_file             : text open read_mode is "ram_b_k256x8.txt";
+    file ram_k_data_file             : text open read_mode is "ram_k256x8.txt";
+    variable ram_b_line, ram_k_line  : line;
+    variable ram_b_datain            : bit_vector(c_b_width-1 downto 0);
+    variable ram_k_datain            : bit_vector(c_k_width-1 downto 0);
 
     begin
       if rising_edge(clk_s) then
@@ -150,24 +149,24 @@ begin
           read(ram_k_line, ram_k_datain);
 
           -- Pass the variable to a signal
-          ram_data_s  <= to_stdlogicvector(ram_b_datain);
-          ram_k_s     <= to_stdlogicvector(ram_k_datain);
+          ram_data_s                 <= to_stdlogicvector(ram_b_datain);
+          ram_k_s                    <= to_stdlogicvector(ram_k_datain);
         else
-          ram_write_s <= '0';
+          ram_write_s                <= '0';
         end if;
       end if;
   end process ram_input_read;
 
   output_write : process(clk_s)
-    file ouput_file             : text open write_mode is "my_output.txt";
-    file c_data_file            : text open read_mode is "c_acc.txt";
-    variable o_line, c_line     : line;
-    variable dataout, c_datain  : integer;
-    variable pass_test          : std_logic := '0';
+    file ouput_file                  : text open write_mode is "my_output.txt";
+    file c_data_file                 : text open read_mode is "c_acc.txt";
+    variable o_line, c_line          : line;
+    variable dataout, c_datain       : integer;
+    variable pass_test               : std_logic := '0';
 
     begin
-      if v_o_s(0) = '1' then
-        dataout := to_integer(c_x_s(0));
+      if valid_x_o_s(0) = '1' then
+        dataout                      := to_integer(spx_s(0));
 
         if rising_edge(clk_s) then
           -- Write output to a txt file
@@ -181,9 +180,9 @@ begin
           -- Report if the test fails
           if dataout /= c_datain then
             report "FAIL";
-            pass_test := '0';
+            pass_test                := '0';
           else
-            pass_test := '1';
+            pass_test                := '1';
           end if;
         end if;
 

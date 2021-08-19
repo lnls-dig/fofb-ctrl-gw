@@ -19,16 +19,11 @@ library ieee;
 use ieee.std_logic_1164.ALL;
 use ieee.numeric_std.all;
 
-library std;
-use std.textio.all;
-
 library work;
+-- Matmul package
 use work.mult_pkg.all;
+-- RAM package
 use work.genram_pkg.all;
-use work.memory_loader_pkg.all;
-
--- DLS FOFB package
-use work.fofb_cc_pkg.all;
 -- Main Wishbone Definitions
 use work.wishbone_pkg.all;
 -- General common cores
@@ -40,10 +35,10 @@ entity wb_matmul_wrapper is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                 : natural := 32;
-    g_size                       : natural := 2048; -- 2**g_k_width
+    g_size                       : natural := c_size_dpram;
     g_with_byte_enable           : boolean := false;
     g_addr_conflict_resolution   : string  := "read_first";
-    g_init_file                  : string  := ""; --"../../testbench/matmul/coeff_bin.ram";
+    g_init_file                  : string  := "";
     g_dual_clock                 : boolean := true;
     g_fail_if_file_not_found     : boolean := true;
 
@@ -80,22 +75,22 @@ entity wb_matmul_wrapper is
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
     -- Result output array
-    c_x_o                        : out t_array_signed(g_mat_size-1 downto 0);
-    c_y_o                        : out t_array_signed(g_mat_size-1 downto 0);
+    spx_o                        : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    spy_o                        : out t_matmul_array_signed(g_mat_size-1 downto 0);
 
     -- Valid output for debugging
-    valid_debug_x_o              : out std_logic_vector(g_mat_size-1 downto 0);
-    valid_debug_y_o              : out std_logic_vector(g_mat_size-1 downto 0);
+    spx_valid_debug_o            : out std_logic_vector(g_mat_size-1 downto 0);
+    spy_valid_debug_o            : out std_logic_vector(g_mat_size-1 downto 0);
 
     -- Valid end of fofb cycle
-    valid_end_x_o                : out std_logic_vector(g_mat_size-1 downto 0);
-    valid_end_y_o                : out std_logic_vector(g_mat_size-1 downto 0);
+    spx_valid_end_o              : out std_logic_vector(g_mat_size-1 downto 0);
+    spy_valid_end_o              : out std_logic_vector(g_mat_size-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
     clk_sys_i                    : in    std_logic;
-    rst_sys_i                    : in    std_logic;
+    rst_sys_n_i                  : in    std_logic;
 
     wb_adr_i                     : in    std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
     wb_dat_i                     : in    std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0)    := (others => '0');
@@ -181,16 +176,16 @@ begin
     ram_write_enable_i           => ram_write_enable_s,
 
     -- Result output array
-    c_x_o                        => c_x_o,
-    c_y_o                        => c_y_o,
+    spx_o                        => spx_o,
+    spy_o                        => spy_o,
 
     -- Valid output for debugging
-    valid_debug_x_o              => valid_debug_x_o,
-    valid_debug_y_o              => valid_debug_y_o,
+    spx_valid_debug_o            => spx_valid_debug_o,
+    spy_valid_debug_o            => spy_valid_debug_o,
 
     -- Valid end of fofb cycle
-    valid_end_x_o                => valid_end_x_o,
-    valid_end_y_o                => valid_end_y_o
+    spx_valid_end_o              => spx_valid_end_o,
+    spy_valid_end_o              => spy_valid_end_o
     );
 
   -----------------------------
@@ -200,38 +195,38 @@ begin
   gen_with_extra_wb_reg : if g_WITH_EXTRA_WB_REG generate
     cmp_register_link : xwb_register_link -- puts a register of delay between crossbars
       port map (
-        clk_sys_i                             => clk_sys_i,
-        rst_n_i                               => rst_sys_i,
-        slave_i                               => wb_slave_in_reg0(0),
-        slave_o                               => wb_slave_out_reg0(0),
-        master_i                              => wb_slave_out(0),
-        master_o                              => wb_slave_in(0)
+        clk_sys_i                => clk_sys_i,
+        rst_n_i                  => rst_sys_n_i,
+        slave_i                  => wb_slave_in_reg0(0),
+        slave_o                  => wb_slave_out_reg0(0),
+        master_i                 => wb_slave_out(0),
+        master_o                 => wb_slave_in(0)
       );
 
-      wb_slave_in_reg0(0).adr                 <= wb_adr_i;
-      wb_slave_in_reg0(0).dat                 <= wb_dat_i;
-      wb_slave_in_reg0(0).sel                 <= wb_sel_i;
-      wb_slave_in_reg0(0).we                  <= wb_we_i;
-      wb_slave_in_reg0(0).cyc                 <= wb_cyc_i;
-      wb_slave_in_reg0(0).stb                 <= wb_stb_i;
+      wb_slave_in_reg0(0).adr    <= wb_adr_i;
+      wb_slave_in_reg0(0).dat    <= wb_dat_i;
+      wb_slave_in_reg0(0).sel    <= wb_sel_i;
+      wb_slave_in_reg0(0).we     <= wb_we_i;
+      wb_slave_in_reg0(0).cyc    <= wb_cyc_i;
+      wb_slave_in_reg0(0).stb    <= wb_stb_i;
 
-      wb_dat_o                                <= wb_slave_out_reg0(0).dat;
-      wb_ack_o                                <= wb_slave_out_reg0(0).ack;
-      wb_stall_o                              <= wb_slave_out_reg0(0).stall;
+      wb_dat_o                   <= wb_slave_out_reg0(0).dat;
+      wb_ack_o                   <= wb_slave_out_reg0(0).ack;
+      wb_stall_o                 <= wb_slave_out_reg0(0).stall;
     end generate;
 
   gen_without_extra_wb_reg : if not g_WITH_EXTRA_WB_REG generate
     -- External master connection
-    wb_slave_in(0).adr                      <= wb_adr_i;
-    wb_slave_in(0).dat                      <= wb_dat_i;
-    wb_slave_in(0).sel                      <= wb_sel_i;
-    wb_slave_in(0).we                       <= wb_we_i;
-    wb_slave_in(0).cyc                      <= wb_cyc_i;
-    wb_slave_in(0).stb                      <= wb_stb_i;
+    wb_slave_in(0).adr           <= wb_adr_i;
+    wb_slave_in(0).dat           <= wb_dat_i;
+    wb_slave_in(0).sel           <= wb_sel_i;
+    wb_slave_in(0).we            <= wb_we_i;
+    wb_slave_in(0).cyc           <= wb_cyc_i;
+    wb_slave_in(0).stb           <= wb_stb_i;
 
-    wb_dat_o                                <= wb_slave_out(0).dat;
-    wb_ack_o                                <= wb_slave_out(0).ack;
-    wb_stall_o                              <= wb_slave_out(0).stall;
+    wb_dat_o                     <= wb_slave_out(0).dat;
+    wb_ack_o                     <= wb_slave_out(0).ack;
+    wb_stall_o                   <= wb_slave_out(0).stall;
   end generate;
 
   -----------------------------
@@ -248,7 +243,7 @@ begin
     )
     port map (
       clk_sys_i                  => clk_sys_i,
-      rst_n_i                    => rst_sys_i,
+      rst_n_i                    => rst_sys_n_i,
       master_i                   => wb_slv_adp_in,
       master_o                   => wb_slv_adp_out,
       sl_adr_i                   => resized_addr,
@@ -275,7 +270,7 @@ begin
 
   cmp_matmul_wb: matmul_wb
     port map(
-      rst_n_i                    => rst_sys_i,
+      rst_n_i                    => rst_sys_n_i,
       clk_sys_i                  => clk_sys_i,
 
       wb_adr_i                   => wb_slv_adp_out.adr(1 downto 0),
@@ -297,7 +292,8 @@ begin
       matmul_wb_ram_coeff_addr_o => ram_coeff_addr_s,
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
-      matmul_wb_ram_write_enable_o => ram_write_enable_s
+      matmul_wb_ram_write_enable_o
+                                 => ram_write_enable_s
     );
 
 end architecture rtl;

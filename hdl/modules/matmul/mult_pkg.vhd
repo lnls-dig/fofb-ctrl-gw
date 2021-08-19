@@ -18,15 +18,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use IEEE.math_real.all;
-
 
 package mult_pkg is
 
   constant c_out_width  : natural := 32;
+  constant c_size_dpram : natural := 2048; -- 2**g_k_width
 
-  type t_array_signed   is array (natural range <>) of signed(c_out_width-1 downto 0);
-  type t_array_logic    is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
+  type t_matmul_array_signed   is array (natural range <>) of signed(c_out_width-1 downto 0);
+  type t_matmul_array_logic    is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
 
   component matmul is
     generic(
@@ -53,7 +52,7 @@ package mult_pkg is
       -- Result output
       c_o                                 : out signed(g_c_width-1 downto 0);
       -- Data valid output
-      valid_o                             : out std_logic
+      c_valid_o                           : out std_logic
     );
   end component matmul;
 
@@ -80,11 +79,11 @@ package mult_pkg is
       -- Input b[k]
       coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
       -- Result output
-      c_o                                 : out signed(g_c_width-1 downto 0);
+      result_o                           : out signed(g_c_width-1 downto 0);
       -- Data valid output for debugging
-      valid_debug_o                       : out std_logic;
+      result_valid_debug_o                : out std_logic;
       -- Validate the end of fofb cycle
-      valid_end_o                         : out std_logic
+      result_valid_end_o                  : out std_logic
     );
   end component mac_fofb;
 
@@ -92,10 +91,10 @@ package mult_pkg is
     generic(
       -- Standard parameters of generic_dpram
       g_data_width                        : natural := 32;
-      g_size                              : natural := 2048; -- 2**g_k_width
+      g_size                              : natural := c_size_dpram;
       g_with_byte_enable                  : boolean := false;
       g_addr_conflict_resolution          : string  := "read_first";
-      g_init_file                         : string  := ""; --"../../testbench/matmul/coeff_bin.ram";
+      g_init_file                         : string  := "";
       g_dual_clock                        : boolean := true;
       g_fail_if_file_not_found            : boolean := true;
 
@@ -129,16 +128,16 @@ package mult_pkg is
       ram_write_enable_i                  : in std_logic;
 
       -- Result output array
-      c_x_o                               : out t_array_signed(g_mat_size-1 downto 0);
-      c_y_o                               : out t_array_signed(g_mat_size-1 downto 0);
+      spx_o                               : out t_matmul_array_signed(g_mat_size-1 downto 0);
+      spy_o                               : out t_matmul_array_signed(g_mat_size-1 downto 0);
 
       -- Valid output for debugging
-      valid_debug_x_o                     : out std_logic_vector(g_mat_size-1 downto 0);
-      valid_debug_y_o                     : out std_logic_vector(g_mat_size-1 downto 0);
+      spx_valid_debug_o                   : out std_logic_vector(g_mat_size-1 downto 0);
+      spy_valid_debug_o                   : out std_logic_vector(g_mat_size-1 downto 0);
 
       -- Valid end of fofb cycle
-      valid_end_x_o                       : out std_logic_vector(g_mat_size-1 downto 0);
-      valid_end_y_o                       : out std_logic_vector(g_mat_size-1 downto 0)
+      spx_valid_end_o                     : out std_logic_vector(g_mat_size-1 downto 0);
+      spy_valid_end_o                     : out std_logic_vector(g_mat_size-1 downto 0)
     );
   end component fofb_matmul_top;
 

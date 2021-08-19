@@ -20,6 +20,7 @@ use ieee.std_logic_1164.ALL;
 use ieee.numeric_std.all;
 
 library work;
+-- Matmul package
 use work.mult_pkg.all;
 
 entity matmul is
@@ -49,7 +50,7 @@ entity matmul is
     -- Result output
     c_o                                           : out signed(g_c_width-1 downto 0);
     -- Data valid output
-    valid_o                                       : out std_logic
+    c_valid_o                                     : out std_logic
   );
 end matmul;
 
@@ -160,7 +161,7 @@ begin
         valid_reg5_s  <= valid_reg4_s;
 
         -- Store the valid bit output
-        valid_o       <= valid_reg5_s;
+        c_valid_o     <= valid_reg5_s;
 
         -- Truncate the output
         c_o           <= resize(adder_reg2_s, c_o'length);
