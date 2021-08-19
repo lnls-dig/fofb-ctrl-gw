@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
--- Title      :  Wishbone matmul wrapper
+-- Title      :  Wishbone matmul wrapper with structs
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
 -- Company    :  CNPEM LNLS-DIG
@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-13-08  1.0      melissa.aguiar        Created
+-- 2021-19-08  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;

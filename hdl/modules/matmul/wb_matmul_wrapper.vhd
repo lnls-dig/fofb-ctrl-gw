@@ -259,8 +259,8 @@ begin
     );
     -- By doing this zeroing we avoid the issue related to BYTE -> WORD  conversion
     -- slave addressing (possibly performed by the slave adapter component)
-    -- in which a bit in the MSB of the peripheral addressing part (31 - 5 in our case)
-    -- is shifted to the internal register adressing part (4 - 0 in our case).
+    -- in which a bit in the MSB of the peripheral addressing part (31 downto c_PERIPH_ADDR_SIZE in our case)
+    -- is shifted to the internal register adressing part (c_PERIPH_ADDR_SIZE-1 downto 0 in our case).
     -- Therefore, possibly changing the these bits!
     resized_addr(c_PERIPH_ADDR_SIZE-1 downto 0)
                                  <= wb_slave_in(0).adr(c_PERIPH_ADDR_SIZE-1 downto 0);

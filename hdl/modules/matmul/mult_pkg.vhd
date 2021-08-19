@@ -21,8 +21,8 @@ use ieee.numeric_std.all;
 
 package mult_pkg is
 
-  constant c_out_width  : natural := 32;
-  constant c_size_dpram : natural := 2048; -- 2**g_k_width
+  constant c_out_width                    : natural := 32;
+  constant c_size_dpram                   : natural := 2048; -- 2**g_k_width
 
   type t_matmul_array_signed   is array (natural range <>) of signed(c_out_width-1 downto 0);
   type t_matmul_array_logic    is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
@@ -79,7 +79,7 @@ package mult_pkg is
       -- Input b[k]
       coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
       -- Result output
-      result_o                           : out signed(g_c_width-1 downto 0);
+      result_o                            : out signed(g_c_width-1 downto 0);
       -- Data valid output for debugging
       result_valid_debug_o                : out std_logic;
       -- Validate the end of fofb cycle
