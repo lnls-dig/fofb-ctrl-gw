@@ -248,9 +248,6 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_RTM_8SFP_0_ID                   : natural := 0;
 
-  constant c_SLV_RTM_8SFP_CORE_IDS           : t_num_array(c_RTM_8SFP_NUM_CORES-1 downto 0) :=
-    f_gen_ramp(0, c_RTM_8SFP_NUM_CORES);
-
   -- P2P GT IDs
   constant c_NUM_P2P_GTS_FOFB                : integer := 4; -- maximum of 4 supported
 
@@ -259,9 +256,6 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_FOFB_CC_RTM_ID                  : natural := 0;
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
-
-  constant c_SLV_FOFB_CC_CORE_IDS            : t_num_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
-    f_gen_ramp(0, c_NUM_FOFC_CC_CORES);
 
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
@@ -1054,8 +1048,8 @@ begin
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    wb_slv_i                                  => user_wb_out(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_RTM_ID)),
-    wb_slv_o                                  => user_wb_in(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_RTM_ID)),
+    wb_slv_i                                  => user_wb_out(c_FOFB_CC_RTM_ID),
+    wb_slv_o                                  => user_wb_in(c_FOFB_CC_RTM_ID),
 
     ---------------------------------------------------------------------------
     -- fast acquisition data interface
@@ -1197,8 +1191,8 @@ begin
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    wb_slv_i                                  => user_wb_out(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_P2P_ID)),
-    wb_slv_o                                  => user_wb_in(c_SLV_FOFB_CC_CORE_IDS(c_FOFB_CC_P2P_ID)),
+    wb_slv_i                                  => user_wb_out(c_FOFB_CC_P2P_ID),
+    wb_slv_o                                  => user_wb_in(c_FOFB_CC_P2P_ID),
 
     ---------------------------------------------------------------------------
     -- fast acquisition data interface
