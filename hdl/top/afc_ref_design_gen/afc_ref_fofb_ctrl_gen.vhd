@@ -342,7 +342,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
   constant c_MAX_LANE_COUNT                  : integer := 8;
-  constant c_USE_CHIPSCOPE                   : boolean := true;
+  constant c_USE_CHIPSCOPE                   : boolean := false;
 
   constant c_AFC_SI57x_I2C_FREQ              : integer := 400000;
   constant c_AFC_SI57x_INIT_OSC              : boolean := true;
