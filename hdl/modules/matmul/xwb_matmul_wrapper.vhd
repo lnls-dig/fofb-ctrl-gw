@@ -98,7 +98,9 @@ entity xwb_matmul_wrapper is
 
 architecture rtl of xwb_matmul_wrapper is
 
-  cmp_wb_fofb_ctrl_wrapper : wb_fofb_ctrl_wrapper
+begin
+
+  cmp_wb_matmul_wrapper : wb_matmul_wrapper
   generic map(
     -- Standard parameters of generic_dpram
     g_data_width                 => g_data_width,
@@ -123,44 +125,44 @@ architecture rtl of xwb_matmul_wrapper is
     -- Wishbone parameters
     g_INTERFACE_MODE             => g_INTERFACE_MODE,
     g_ADDRESS_GRANULARITY        => g_ADDRESS_GRANULARITY,
-    g_WITH_EXTRA_WB_REG          => g_WITH_EXTRA_WB_REG,
-  );
+    g_WITH_EXTRA_WB_REG          => g_WITH_EXTRA_WB_REG
+  )
   port map(
     ---------------------------------------------------------------------------
     -- Clock and reset interface
     ---------------------------------------------------------------------------
-    clk_i                        => clk_i
-    rst_n_i                      => rst_n_i
-    clk_sys_i                    => clk_sys_i
-    rst_sys_n_i                  => rst_sys_n_i
+    clk_i                        => clk_i,
+    rst_n_i                      => rst_n_i,
+    clk_sys_i                    => clk_sys_i,
+    rst_sys_n_i                  => rst_sys_n_i,
 
     ---------------------------------------------------------------------------
     -- Matmul Top Level Interface Signals
     ---------------------------------------------------------------------------
     -- DCC interface
-    dcc_valid_i                  => dcc_valid_i
-    dcc_coeff_x_i                => dcc_coeff_x_i
-    dcc_coeff_y_i                => dcc_coeff_y_i
-    dcc_addr_i                   => dcc_addr_i
+    dcc_valid_i                  => dcc_valid_i,
+    dcc_coeff_x_i                => dcc_coeff_x_i,
+    dcc_coeff_y_i                => dcc_coeff_y_i,
+    dcc_addr_i                   => dcc_addr_i,
 
     -- Result output array
-    spx_o                        => spx_o
-    spy_o                        => spy_o
+    spx_o                        => spx_o,
+    spy_o                        => spy_o,
 
     -- Valid output for debugging
-    spx_valid_debug_o            => spx_valid_debug_o
-    spy_valid_debug_o            => spy_valid_debug_o
+    spx_valid_debug_o            => spx_valid_debug_o,
+    spy_valid_debug_o            => spy_valid_debug_o,
 
     -- Valid end of fofb cycle
-    spx_valid_end_o              => spx_valid_end_o
-    spy_valid_end_o              => spy_valid_end_o
+    spx_valid_end_o              => spx_valid_end_o,
+    spy_valid_end_o              => spy_valid_end_o,
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
     wb_adr_i                     => wb_slv_i.adr,
     wb_dat_i                     => wb_slv_i.dat,
-    wb_dat_o                     => wb_slv_o.dat
+    wb_dat_o                     => wb_slv_o.dat,
     wb_cyc_i                     => wb_slv_i.cyc,
     wb_sel_i                     => wb_slv_i.sel,
     wb_stb_i                     => wb_slv_i.stb,
