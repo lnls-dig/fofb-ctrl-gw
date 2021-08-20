@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-19-08  1.0      melissa.aguiar        Created
+-- 2021-08-19  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -163,11 +163,13 @@ begin
     wb_adr_i                     => wb_slv_i.adr,
     wb_dat_i                     => wb_slv_i.dat,
     wb_dat_o                     => wb_slv_o.dat,
-    wb_cyc_i                     => wb_slv_i.cyc,
     wb_sel_i                     => wb_slv_i.sel,
-    wb_stb_i                     => wb_slv_i.stb,
     wb_we_i                      => wb_slv_i.we,
+    wb_cyc_i                     => wb_slv_i.cyc,
+    wb_stb_i                     => wb_slv_i.stb,
     wb_ack_o                     => wb_slv_o.ack,
+    wb_err_o                     => wb_slv_o.err,
+    wb_rty_o                     => wb_slv_o.rty,
     wb_stall_o                   => wb_slv_o.stall
   );
 

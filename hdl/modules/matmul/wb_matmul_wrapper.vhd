@@ -12,7 +12,7 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2021-13-08  1.0      melissa.aguiar        Created
+-- 2021-08-13  1.0      melissa.aguiar        Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -91,14 +91,16 @@ entity wb_matmul_wrapper is
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    wb_adr_i                     : in std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
-    wb_dat_i                     : in std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0) := (others => '0');
+    wb_adr_i                     : in  std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
+    wb_dat_i                     : in  std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0) := (others => '0');
     wb_dat_o                     : out std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
-    wb_cyc_i                     : in std_logic := '0';
-    wb_sel_i                     : in std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0) := (others => '0');
-    wb_stb_i                     : in std_logic := '0';
-    wb_we_i                      : in std_logic := '0';
+    wb_sel_i                     : in  std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0) := (others => '0');
+    wb_we_i                      : in  std_logic := '0';
+    wb_cyc_i                     : in  std_logic := '0';
+    wb_stb_i                     : in  std_logic := '0';
     wb_ack_o                     : out std_logic;
+    wb_err_o                     : out std_logic;
+    wb_rty_o                     : out std_logic;
     wb_stall_o                   : out std_logic
   );
   end wb_matmul_wrapper;
@@ -211,6 +213,8 @@ begin
 
       wb_dat_o                   <= wb_slave_out_reg0(0).dat;
       wb_ack_o                   <= wb_slave_out_reg0(0).ack;
+      wb_err_o                   <= wb_slave_out_reg0(0).err;
+      wb_rty_o                   <= wb_slave_out_reg0(0).rty;
       wb_stall_o                 <= wb_slave_out_reg0(0).stall;
     end generate;
 
@@ -225,6 +229,8 @@ begin
 
     wb_dat_o                     <= wb_slave_out(0).dat;
     wb_ack_o                     <= wb_slave_out(0).ack;
+    wb_err_o                     <= wb_slave_out(0).err;
+    wb_rty_o                     <= wb_slave_out(0).rty;
     wb_stall_o                   <= wb_slave_out(0).stall;
   end generate;
 
