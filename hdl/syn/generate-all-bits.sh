@@ -6,5 +6,5 @@ for target in  \
     afcv4_ref_design \
     ; do
     TOP=$(pwd)
-    cd ${target} && hdlmake makefile && make clean && ./build_bitstream_local.sh ; cd ${TOP};
+    cd ${target} && hdlmake makefile && make clean && rm -rf *.sim && ./build_bitstream_local.sh ; cd ${TOP};
 done
