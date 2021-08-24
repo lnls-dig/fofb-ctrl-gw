@@ -56,9 +56,9 @@ end mac_fofb;
 
 architecture behave of mac_fofb is
 
-  signal valid_i_s, valid_o_s, clear_s  : std_logic                    := '0';
-  signal a_s                            : signed(g_a_width-1 downto 0) := (others => '0');
-  signal cnt                            : integer                      := 0;
+  signal valid_i_s, valid_o_s, clear_s  : std_logic                     := '0';
+  signal a_s                            : signed(g_a_width-1 downto 0)  := (others => '0');
+  signal cnt                            : integer range 0 to g_mac_size := 0;
 
 begin
 

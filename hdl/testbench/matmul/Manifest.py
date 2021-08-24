@@ -4,7 +4,7 @@ sim_top = "mult_tb"
 target = "xilinx"
 syn_device = "XC7"
 
-sim_post_cmd = "ghdl -r mult_tb --stop-time=50us --vcd=mult_tb.vcd && gtkwave mult_tb.vcd"
+sim_post_cmd = "ghdl -r mult_tb --stop-time=200us --vcd=mult_tb.vcd && gtkwave mult_tb.vcd"
 
 files = [
     "mult_tb.vhd", 

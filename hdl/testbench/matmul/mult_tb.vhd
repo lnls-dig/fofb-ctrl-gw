@@ -31,6 +31,7 @@ end mult_tb;
 architecture behave of mult_tb is
 
   constant clk_period                : time                                       := 6.4 ns;
+  constant fofb_ctrl_period          : time                                       := 40 us;
 
   constant c_a_width                 : natural                                    := 32;
   constant c_k_width                 : natural                                    := 11;
@@ -40,8 +41,9 @@ architecture behave of mult_tb is
 
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
+  signal fofb_ctrl_s                 : std_logic                                  := '0';
+  signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
-  signal clear_acc_s                 : std_logic                                  := '0';
   signal valid_x_o_s                 : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_y_o_s                 : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_endx_s                : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
@@ -53,6 +55,7 @@ architecture behave of mult_tb is
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal k_s, ram_k_s                : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal spx_s, spy_s                : t_matmul_array_signed(c_mat_size-1 downto 0);
+  signal cnt                         : integer range 0 to 100                     := 0;
 
 begin
 
@@ -81,6 +84,21 @@ begin
     clk_s                            <= not clk_s;
   end process clk_process;
 
+  fofb_ctrl_process : process is
+  begin
+    wait for fofb_ctrl_period/2;
+      fofb_ctrl_s                    <= not fofb_ctrl_s;
+  end process fofb_ctrl_process;
+
+  valid_fofb_ctrl_process : process is
+    begin
+    wait for fofb_ctrl_period/2;
+      valid_fofb_ctrl_s              <= '1';
+    wait for 2.0576 us;
+      valid_fofb_ctrl_s              <= '0';
+      wait for 17.9424 us;
+  end process valid_fofb_ctrl_process;
+
   valid_tr_gen : process
   begin
   if rst_n_s = '0' then
@@ -106,7 +124,7 @@ begin
 
   begin
     if rising_edge(clk_s) then
-      if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' then
+    if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' then
         -- Reading input a[k] from a txt file
         readline(a_data_file, a_line);
         read(a_line, a_datain);
@@ -116,26 +134,26 @@ begin
         read(k_line, k_datain);
 
         -- Pass the variable to a signal
-        x_s                        <= to_signed(a_datain, x_s'length);
-        y_s                        <= to_signed(a_datain, y_s'length);
-        k_s                        <= to_stdlogicvector(k_datain);
+        x_s                          <= to_signed(a_datain, x_s'length);
+        y_s                          <= to_signed(a_datain, y_s'length);
+        k_s                          <= to_stdlogicvector(k_datain);
 
         -- Update valid input bit
-        valid_i_s                  <= '1';
+        valid_i_s                    <= '1';
 
       else
         -- Update valid input bit
-        valid_i_s                  <= '0';
+        valid_i_s                    <= '0';
       end if;
     end if;
   end process input_read;
 
   ram_input_read : process(clk_s)
-  file ram_b_data_file             : text open read_mode is "ram_b_k256x8.txt";
-  file ram_k_data_file             : text open read_mode is "ram_k256x8.txt";
-  variable ram_b_line, ram_k_line  : line;
-  variable ram_b_datain            : bit_vector(c_b_width-1 downto 0);
-  variable ram_k_datain            : bit_vector(c_k_width-1 downto 0);
+  file ram_b_data_file               : text open read_mode is "ram_b_k256x8.txt";
+  file ram_k_data_file               : text open read_mode is "ram_k256x8.txt";
+  variable ram_b_line, ram_k_line    : line;
+  variable ram_b_datain              : bit_vector(c_b_width-1 downto 0);
+  variable ram_k_datain              : bit_vector(c_k_width-1 downto 0);
 
   begin
     if rising_edge(clk_s) then
@@ -161,15 +179,15 @@ begin
   end process ram_input_read;
 
   output_write : process(clk_s)
-  file ouput_file                  : text open write_mode is "my_output.txt";
-  file c_data_file                 : text open read_mode is "c_acc.txt";
-  variable o_line, c_line          : line;
-  variable dataout, c_datain       : integer;
-  variable pass_test               : std_logic := '0';
+  file ouput_file                    : text open write_mode is "my_output.txt";
+  file c_data_file                   : text open read_mode is "c_acc.txt";
+  variable o_line, c_line            : line;
+  variable dataout, c_datain         : integer;
+  variable pass_test                 : std_logic := '0';
 
   begin
     if valid_x_o_s(0) = '1' then
-      dataout                      := to_integer(spx_s(0));
+      dataout                        := to_integer(spx_s(0));
 
       if rising_edge(clk_s) then
         -- Write output to a txt file
@@ -183,11 +201,11 @@ begin
         -- Report if the test fails
         if dataout /= c_datain then
           report "FAIL";
-          pass_test                := '0';
+          pass_test                  := '0';
         else
-          pass_test                := '1';
+          pass_test                  := '1';
         end if;
-      end if;
+       end if;
 
       if endfile(c_data_file) and pass_test = '1' then
         report "SUCESS";
