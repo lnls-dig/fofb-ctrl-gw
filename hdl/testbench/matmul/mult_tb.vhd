@@ -41,28 +41,27 @@ architecture behave of mult_tb is
 
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
+  signal clear_s, clear_reg_s        : std_logic                                  := '0';
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
-  signal valid_x_o_s                 : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal valid_y_o_s                 : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal valid_endx_s                : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal valid_endy_s                : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal valid_x_o_s                 : std_logic                                  := '0';
+  signal valid_y_o_s                 : std_logic                                  := '0';
   signal valid_tr                    : std_logic                                  := '0';
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
   signal x_s, y_s                    : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal k_s, ram_k_s                : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal spx_s, spy_s                : t_matmul_array_signed(c_mat_size-1 downto 0);
-  signal cnt                         : integer range 0 to 100                     := 0;
+  signal spx_s, spy_s                : signed(c_b_width-1 downto 0);
 
 begin
 
-    fofb_matmul_top_INST : fofb_matmul_top
+    fofb_processing_INST : fofb_processing
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,
+        clear_i                      => clear_s,
         dcc_valid_i                  => valid_i_s,
         dcc_coeff_x_i                => x_s,
         dcc_coeff_y_i                => y_s,
@@ -73,9 +72,7 @@ begin
         spx_o                        => spx_s,
         spy_o                        => spy_s,
         spx_valid_debug_o            => valid_x_o_s,
-        spy_valid_debug_o            => valid_y_o_s,
-        spx_valid_end_o              => valid_endx_s,
-        spy_valid_end_o              => valid_endy_s
+        spy_valid_debug_o            => valid_y_o_s
       );
 
   clk_process : process is
@@ -87,33 +84,34 @@ begin
   fofb_ctrl_process : process is
   begin
     wait for fofb_ctrl_period/2;
-      fofb_ctrl_s                    <= not fofb_ctrl_s;
+    fofb_ctrl_s                      <= not fofb_ctrl_s;
   end process fofb_ctrl_process;
 
   valid_fofb_ctrl_process : process is
-    begin
+  begin
     wait for fofb_ctrl_period/2;
-      valid_fofb_ctrl_s              <= '1';
+    valid_fofb_ctrl_s                <= '1';
     wait for 2.0576 us;
-      valid_fofb_ctrl_s              <= '0';
-      wait for 17.9424 us;
+    valid_fofb_ctrl_s                <= '0';
+    wait for 17.9424 us;
   end process valid_fofb_ctrl_process;
 
-  valid_tr_gen : process
+  valid_tr_gen : process is
   begin
-  if rst_n_s = '0' then
-    wait for 2*clk_period;
-    rst_n_s                          <= '1';
-  end if;
-  if rst_n_s = '1' then
-    valid_tr                         <= '1';
-    wait for clk_period;
-    valid_tr                         <= '0';
-    wait for clk_period;
-  else
-    valid_tr                         <= '0';
-  end if;
-  end process;
+    if rst_n_s = '0' then
+      wait for clk_period;
+      rst_n_s                        <= '1';
+    end if;
+
+    if rst_n_s = '1' then
+      valid_tr                       <= '1';
+      wait for clk_period;
+      valid_tr                       <= '0';
+      wait for clk_period;
+    else
+      valid_tr                       <= '0';
+    end if;
+  end process valid_tr_gen;
 
   input_read : process(clk_s)
   file a_data_file                   : text open read_mode is "a_k.txt";
@@ -124,7 +122,7 @@ begin
 
   begin
     if rising_edge(clk_s) then
-    if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' then
+      if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' then
         -- Reading input a[k] from a txt file
         readline(a_data_file, a_line);
         read(a_line, a_datain);
@@ -186,8 +184,8 @@ begin
   variable pass_test                 : std_logic := '0';
 
   begin
-    if valid_x_o_s(0) = '1' then
-      dataout                        := to_integer(spx_s(0));
+    if valid_x_o_s = '1' then
+      dataout                        := to_integer(spx_s);
 
       if rising_edge(clk_s) then
         -- Write output to a txt file

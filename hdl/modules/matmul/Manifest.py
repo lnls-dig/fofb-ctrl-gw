@@ -1,5 +1,5 @@
-files = ["fofb_matmul_top.vhd",
-	"mac_fofb.vhd",
+files = ["fofb_processing.vhd",
+	"matmul_fofb.vhd",
 	"matmul.vhd",
 	"mult_pkg.vhd",
 	"cheby/matmul_wb.vhd",

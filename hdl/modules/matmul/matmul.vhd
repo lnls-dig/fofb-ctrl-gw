@@ -2,8 +2,8 @@
 -- Title      :  Matrix multiplication
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
--- Company    : CNPEM LNLS-DIG
--- Platform   : FPGA-generic
+-- Company    :  CNPEM LNLS-DIG
+-- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
 -- Description:  Matrix multiplication module for the Fast Orbit Feedback
 -------------------------------------------------------------------------------
@@ -141,7 +141,7 @@ begin
         valid_reg2_s  <= valid_dsp6_s;
 
         if (valid_reg2_s = '1') then
-        -- Store accumulation result in a register
+          -- Store accumulation result in a register
           adder_out_s <= adder_out_s + mult_reg_s;
         end if;
 

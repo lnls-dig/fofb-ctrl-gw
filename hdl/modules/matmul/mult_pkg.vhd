@@ -56,38 +56,39 @@ package mult_pkg is
     );
   end component matmul;
 
-  component mac_fofb is
+  component matmul_fofb is
     generic(
-      -- Width for input a[k]
+      -- Width for inputs x and y
       g_a_width                           : natural := 32;
-      -- Width for input b[k]
+      -- Width for ram input
       g_b_width                           : natural := 32;
       -- Width for output c
-      g_c_width                           : natural := 32;
-      -- Number of products
-      g_mac_size                          : natural := 160
+      g_c_width                           : natural := 32
     );
     port (
       -- Core clock
       clk_i                               : in std_logic;
       -- Reset
       rst_n_i                             : in std_logic;
-      -- Data valid input
-      valid_i                             : in std_logic;
-      -- Input a[k]
-      coeff_a_dat_i                       : in signed(g_a_width-1 downto 0);
-      -- Input b[k]
-      coeff_b_dat_i                       : in signed(g_b_width-1 downto 0);
+      -- Clear
+      clear_i                             : in std_logic;
+      -- DCC interface
+      dcc_valid_i                         : in std_logic;
+      dcc_coeff_x_i                       : in signed(g_a_width-1 downto 0);
+      dcc_coeff_y_i                       : in signed(g_a_width-1 downto 0);
+      -- RAM interface
+      ram_coeff_x_i                       : in std_logic_vector(g_b_width-1 downto 0);
+      ram_coeff_y_i                       : in std_logic_vector(g_b_width-1 downto 0);
       -- Result output
-      result_o                            : out signed(g_c_width-1 downto 0);
-      -- Data valid output for debugging
-      result_valid_debug_o                : out std_logic;
-      -- Validate the end of fofb cycle
-      result_valid_end_o                  : out std_logic
+      result_x_o                          : out signed(g_c_width-1 downto 0);
+      result_y_o                          : out signed(g_c_width-1 downto 0);
+      -- Data valid output
+      result_valid_x_o                    : out std_logic;
+      result_valid_y_o                    : out std_logic
     );
-  end component mac_fofb;
+  end component matmul_fofb;
 
-  component fofb_matmul_top is
+  component fofb_processing is
     generic(
       -- Standard parameters of generic_dpram
       g_data_width                        : natural := 32;
@@ -105,9 +106,7 @@ package mult_pkg is
       -- Width for ram addr
       g_k_width                           : natural := 11;
       -- Width for output c
-      g_c_width                           : natural := 32;
-      -- Matrix multiplication size
-      g_mat_size                          : natural := 4
+      g_c_width                           : natural := 32
     );
     port (
       -- Core clock
@@ -115,6 +114,9 @@ package mult_pkg is
 
       -- Reset
       rst_n_i                             : in std_logic;
+
+      -- Clear
+      clear_i                             : in std_logic;
 
       -- DCC interface
       dcc_valid_i                         : in std_logic;
@@ -128,18 +130,14 @@ package mult_pkg is
       ram_write_enable_i                  : in std_logic;
 
       -- Result output array
-      spx_o                               : out t_matmul_array_signed(g_mat_size-1 downto 0);
-      spy_o                               : out t_matmul_array_signed(g_mat_size-1 downto 0);
+      spx_o                               : out signed(g_a_width-1 downto 0);
+      spy_o                               : out signed(g_a_width-1 downto 0);
 
       -- Valid output for debugging
-      spx_valid_debug_o                   : out std_logic_vector(g_mat_size-1 downto 0);
-      spy_valid_debug_o                   : out std_logic_vector(g_mat_size-1 downto 0);
-
-      -- Valid end of fofb cycle
-      spx_valid_end_o                     : out std_logic_vector(g_mat_size-1 downto 0);
-      spy_valid_end_o                     : out std_logic_vector(g_mat_size-1 downto 0)
+      spx_valid_debug_o                   : out std_logic;
+      spy_valid_debug_o                   : out std_logic
     );
-  end component fofb_matmul_top;
+  end component fofb_processing;
 
   component matmul_wb is
     port (
