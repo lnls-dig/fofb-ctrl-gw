@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------------
--- Title      :  FOFB processing lane
+-- Title      :  FOFB processing channel
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
 -- Company    :  CNPEM LNLS-DIG
 -- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
--- Description:  Processing lane for the Fast Orbit Feedback
+-- Description:  Processing channel for the Fast Orbit Feedback
 -------------------------------------------------------------------------------
 -- Copyright (c) 2020 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
@@ -23,8 +23,17 @@ library work;
 -- Dot product package
 use work.dot_prod_pkg.all;
 
-entity fofb_processing_lane is
+entity fofb_processing_channel is
   generic(
+    -- Standard parameters of generic_dpram
+    g_data_width                   : natural := 32;
+    g_size                         : natural := c_size_dpram;
+    g_with_byte_enable             : boolean := false;
+    g_addr_conflict_resolution     : string  := "read_first";
+    g_init_file                    : string  := "";
+    g_dual_clock                   : boolean := true;
+    g_fail_if_file_not_found       : boolean := true;
+
     -- Width for DCC input
     g_a_width                      : natural := 32;
 
@@ -34,7 +43,7 @@ entity fofb_processing_lane is
     -- Width for RAM addr
     g_k_width                      : natural := 11;
 
-    -- Width for output c
+    -- Width for output
     g_c_width                      : natural := 32
   );
   port (
@@ -59,18 +68,18 @@ entity fofb_processing_lane is
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out signed(g_a_width-1 downto 0);
+    sp_o                           : out signed(g_c_width-1 downto 0);
 
     -- Valid output
     sp_valid_o                     : out std_logic
   );
-  end fofb_processing_lane;
+  end fofb_processing_channel;
 
-architecture behave of fofb_processing_lane is
+architecture behave of fofb_processing_channel is
 
 begin
 
-  dot_prod_coeff_interface : dot_prod_coeff
+  dot_prod_coeff_vec_interface : dot_prod_coeff_vec
     port map (
       clk_i                        => clk_i,
       rst_n_i                      => rst_n_i,

@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 library work;
 use work.fofb_cc_pkg.all;
 use work.wishbone_pkg.all;
-use work.mult_pkg.all;
+use work.dot_prod_pkg.all;
 
 package fofb_ctrl_pkg is
 
@@ -411,7 +411,7 @@ package fofb_ctrl_pkg is
   );
   end component;
 
-  component wb_matmul_wrapper
+  component wb_fofb_processing_wrapper
   generic
   (
     -- Standard parameters of generic_dpram
@@ -430,8 +430,6 @@ package fofb_ctrl_pkg is
     g_k_width                                  : natural := 11;
     -- Width for output c
     g_c_width                                  : natural := 32;
-    -- Matrix multiplication size
-    g_mat_size                                 : natural := 4;
     -- Wishbone parameters
     g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
     g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
@@ -440,33 +438,27 @@ package fofb_ctrl_pkg is
   port
   (
     ---------------------------------------------------------------------------
-    -- Clock and reset interface
+    -- Clock,reset and clear interface
     ---------------------------------------------------------------------------
     clk_i                                      : in std_logic;
     rst_n_i                                    : in std_logic;
+    clear_i                                    : in std_logic;
     clk_sys_i                                  : in std_logic;
     rst_sys_n_i                                : in std_logic;
 
     ---------------------------------------------------------------------------
-    -- Matmul Top Level Interface Signals
+    -- FOFB Processing Interface signals
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                                : in std_logic;
-    dcc_coeff_x_i                              : in signed(g_a_width-1 downto 0);
-    dcc_coeff_y_i                              : in signed(g_a_width-1 downto 0);
+    dcc_coeff_i                                : in signed(g_a_width-1 downto 0);
     dcc_addr_i                                 : in std_logic_vector(g_k_width-1 downto 0);
 
     -- Result output array
-    spx_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
-    spy_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    sp_o                                       : out signed(g_c_width-1 downto 0);
 
     -- Valid output for debugging
-    spx_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
-
-    -- Valid end of fofb cycle
-    spx_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
+    sp_valid_o                                 : out std_logic;
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -485,7 +477,7 @@ package fofb_ctrl_pkg is
   );
   end component;
 
-  component xwb_matmul_wrapper
+  component xwb_fofb_processing_wrapper
   generic
   (
     -- Standard parameters of generic_dpram
@@ -504,8 +496,6 @@ package fofb_ctrl_pkg is
     g_k_width                                  : natural := 11;
     -- Width for output c
     g_c_width                                  : natural := 32;
-    -- Matrix multiplication size
-    g_mat_size                                 : natural := 4;
     -- Wishbone parameters
     g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
     g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
@@ -514,33 +504,27 @@ package fofb_ctrl_pkg is
   port
   (
     ---------------------------------------------------------------------------
-    -- Clock and reset interface
+    -- Clock,reset and clear interface
     ---------------------------------------------------------------------------
     clk_i                                      : in std_logic;
     rst_n_i                                    : in std_logic;
+    clear_i                                    : in std_logic;
     clk_sys_i                                  : in std_logic;
     rst_sys_n_i                                : in std_logic;
 
     ---------------------------------------------------------------------------
-    -- Matmul Top Level Interface Signals
+    -- FOFB Processing Interface signals
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                                : in std_logic;
-    dcc_coeff_x_i                              : in signed(g_a_width-1 downto 0);
-    dcc_coeff_y_i                              : in signed(g_a_width-1 downto 0);
+    dcc_coeff_i                                : in signed(g_a_width-1 downto 0);
     dcc_addr_i                                 : in std_logic_vector(g_k_width-1 downto 0);
 
     -- Result output array
-    spx_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
-    spy_o                                      : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    sp_o                                       : out signed(g_c_width-1 downto 0);
 
     -- Valid output for debugging
-    spx_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_debug_o                          : out std_logic_vector(g_mat_size-1 downto 0);
-
-    -- Valid end of fofb cycle
-    spx_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_end_o                            : out std_logic_vector(g_mat_size-1 downto 0);
+    sp_valid_o                                 : out std_logic;
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -571,8 +555,8 @@ package fofb_ctrl_pkg is
     date          => x"20201109",
     name          => "DLS_DCC_REGS       ")));
 
-  -- Matmul
-  constant c_xwb_matmul_regs_sdb : t_sdb_device := (
+  -- FOFB Processing
+  constant c_xwb_fofb_processing_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
     abi_ver_major => x"01",
     abi_ver_minor => x"00",

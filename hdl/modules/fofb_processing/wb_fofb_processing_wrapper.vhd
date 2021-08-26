@@ -20,8 +20,8 @@ use ieee.std_logic_1164.ALL;
 use ieee.numeric_std.all;
 
 library work;
--- Matmul package
-use work.mult_pkg.all;
+-- Dot product package
+use work.dot_prod_pkg.all;
 -- RAM package
 use work.genram_pkg.all;
 -- Main Wishbone Definitions
@@ -31,7 +31,7 @@ use work.gencores_pkg.all;
 -- FOFB CTRL package
 use work.fofb_ctrl_pkg.all;
 
-entity wb_matmul_wrapper is
+entity wb_fofb_processing_wrapper is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                 : natural := 32;
@@ -60,33 +60,27 @@ entity wb_matmul_wrapper is
   );
   port (
     ---------------------------------------------------------------------------
-    -- Clock and reset interface
+    -- Clock,reset and clear interface
     ---------------------------------------------------------------------------
     clk_i                        : in std_logic;
     rst_n_i                      : in std_logic;
+    clear_i                      : in std_logic;
     clk_sys_i                    : in std_logic;
     rst_sys_n_i                  : in std_logic;
 
     ---------------------------------------------------------------------------
-    -- Matmul Top Level Interface Signals
+    -- FOFB Processing Interface signals
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                  : in std_logic;
-    dcc_coeff_x_i                : in signed(g_a_width-1 downto 0);
-    dcc_coeff_y_i                : in signed(g_a_width-1 downto 0);
+    dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
     -- Result output array
-    spx_o                        : out t_matmul_array_signed(g_mat_size-1 downto 0);
-    spy_o                        : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    sp_o                         : out signed(g_c_width-1 downto 0);
 
     -- Valid output for debugging
-    spx_valid_debug_o            : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_debug_o            : out std_logic_vector(g_mat_size-1 downto 0);
-
-    -- Valid end of fofb cycle
-    spx_valid_end_o              : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_end_o              : out std_logic_vector(g_mat_size-1 downto 0);
+    sp_valid_o                   : out std_logic;
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -103,12 +97,12 @@ entity wb_matmul_wrapper is
     wb_rty_o                     : out std_logic;
     wb_stall_o                   : out std_logic
   );
-  end wb_matmul_wrapper;
+  end wb_fofb_processing_wrapper;
 
-architecture rtl of wb_matmul_wrapper is
+architecture rtl of wb_fofb_processing_wrapper is
 
   -----------------------------
-  -- Matmul RAM signals
+  -- RAM signals
   -----------------------------
   signal ram_coeff_dat_s         : std_logic_vector(31 downto 0);
   signal ram_coeff_addr_s        : std_logic_vector(31 downto 0);
@@ -136,7 +130,7 @@ architecture rtl of wb_matmul_wrapper is
 
 begin
 
-  cmp_fofb_matmul_top: fofb_matmul_top
+  cmp_fofb_processing_interface: fofb_processing
     generic map(
     -- Standard parameters of generic_dpram
     g_data_width                 => g_data_width,
@@ -154,9 +148,7 @@ begin
     -- Width for ram addr
     g_k_width                    => g_k_width,
     -- Width for output c
-    g_c_width                    => g_c_width,
-    -- Matrix multiplication size
-    g_mat_size                   => g_mat_size
+    g_c_width                    => g_c_width
     )
     port map(
     -- Core clock
@@ -165,10 +157,12 @@ begin
     -- Reset
     rst_n_i                      => rst_n_i,
 
+    -- Clear
+    clear_i                      => clear_i,
+
     -- DCC interface
     dcc_valid_i                  => dcc_valid_i,
-    dcc_coeff_x_i                => dcc_coeff_x_i,
-    dcc_coeff_y_i                => dcc_coeff_y_i,
+    dcc_coeff_i                  => dcc_coeff_i,
     dcc_addr_i                   => dcc_addr_i,
 
     -- RAM interface
@@ -177,16 +171,10 @@ begin
     ram_write_enable_i           => ram_write_enable_s,
 
     -- Result output array
-    spx_o                        => spx_o,
-    spy_o                        => spy_o,
+    sp_o                         => sp_o,
 
     -- Valid output for debugging
-    spx_valid_debug_o            => spx_valid_debug_o,
-    spy_valid_debug_o            => spy_valid_debug_o,
-
-    -- Valid end of fofb cycle
-    spx_valid_end_o              => spx_valid_end_o,
-    spy_valid_end_o              => spy_valid_end_o
+    sp_valid_o                   => sp_valid_o
     );
 
   -----------------------------
@@ -273,7 +261,7 @@ begin
     resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
                                  <= (others => '0');
 
-  cmp_matmul_wb: matmul_wb
+  cmp_dot_prod_wb: dot_prod_wb
     port map(
       rst_n_i                    => rst_sys_n_i,
       clk_sys_i                  => clk_sys_i,
@@ -288,16 +276,18 @@ begin
       wb_ack_o                   => wb_slv_adp_in.ack,
       wb_stall_o                 => wb_slv_adp_in.stall,
 
-      matmul_clk_reg_i           => clk_i,
+      dot_prod_clk_reg_i         => clk_i,
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      matmul_wb_ram_coeff_dat_o  => ram_coeff_dat_s,
+      dot_prod_wb_ram_coeff_dat_o
+                                 => ram_coeff_dat_s,
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      matmul_wb_ram_coeff_addr_o => ram_coeff_addr_s,
+      dot_prod_wb_ram_coeff_addr_o
+                                 => ram_coeff_addr_s,
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
-      matmul_wb_ram_write_enable_o
+      dot_prod_wb_ram_write_enable_o
                                  => ram_write_enable_s
     );
 

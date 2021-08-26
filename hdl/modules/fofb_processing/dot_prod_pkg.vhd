@@ -65,7 +65,7 @@ package dot_prod_pkg is
     );
   end component dot_prod;
 
-  component dot_prod_coeff is
+  component dot_prod_coeff_vec is
     generic(
       -- Standard parameters of generic_dpram
       g_data_width                 : natural := 32;
@@ -85,7 +85,7 @@ package dot_prod_pkg is
       -- Width for RAM addr
       g_k_width                    : natural := 11;
 
-      -- Width for output c
+      -- Width for output
       g_c_width                    : natural := 32
     );
     port (
@@ -109,15 +109,24 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
-      sp_o                         : out signed(g_a_width-1 downto 0);
+      sp_o                         : out signed(g_c_width-1 downto 0);
 
       -- Valid output
       sp_valid_o                   : out std_logic
     );
-  end component dot_prod_coeff;
+  end component dot_prod_coeff_vec;
 
-  component fofb_processing_lane is
+  component fofb_processing_channel is
     generic(
+      -- Standard parameters of generic_dpram
+      g_data_width                 : natural := 32;
+      g_size                       : natural := c_size_dpram;
+      g_with_byte_enable           : boolean := false;
+      g_addr_conflict_resolution   : string  := "read_first";
+      g_init_file                  : string  := "";
+      g_dual_clock                 : boolean := true;
+      g_fail_if_file_not_found     : boolean := true;
+
       -- Width for DCC input
       g_a_width                    : natural := 32;
 
@@ -127,7 +136,7 @@ package dot_prod_pkg is
       -- Width for RAM addr
       g_k_width                    : natural := 11;
 
-      -- Width for output c
+      -- Width for output
       g_c_width                    : natural := 32
     );
     port (
@@ -152,14 +161,68 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
-      sp_o                         : out signed(g_a_width-1 downto 0);
+      sp_o                         : out signed(g_c_width-1 downto 0);
 
       -- Valid output
       sp_valid_o                   : out std_logic
     );
-  end component fofb_processing_lane;
+  end component fofb_processing_channel;
 
-  component matmul_wb is
+  component fofb_processing is
+    generic(
+      -- Standard parameters of generic_dpram
+      g_data_width                 : natural := 32;
+      g_size                       : natural := c_size_dpram;
+      g_with_byte_enable           : boolean := false;
+      g_addr_conflict_resolution   : string  := "read_first";
+      g_init_file                  : string  := "";
+      g_dual_clock                 : boolean := true;
+      g_fail_if_file_not_found     : boolean := true;
+
+      -- Width for DCC input
+      g_a_width                    : natural := 32;
+
+      -- Width for RAM data
+      g_b_width                    : natural := 32;
+
+      -- Width for RAM addr
+      g_k_width                    : natural := 11;
+
+      -- Width for output
+      g_c_width                    : natural := 32
+    );
+    port (
+      ---------------------------------------------------------------------------
+      -- FOFB processing channel interface
+      ---------------------------------------------------------------------------
+      -- Clock core
+      clk_i                        : in std_logic;
+
+      -- Reset
+      rst_n_i                      : in std_logic;
+
+      -- Clear
+      clear_i                      : in std_logic;
+
+      -- DCC interface
+      dcc_valid_i                  : in std_logic;
+      dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
+      dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+
+      -- RAM interface
+      ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
+      ram_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+      ram_write_enable_i           : in std_logic;
+
+      -- Result output array
+      sp_o                         : out signed(g_c_width-1 downto 0);
+
+      -- Valid output
+      sp_valid_o                   : out std_logic
+    );
+  end component fofb_processing;
+
+  component dot_prod_wb is
     port (
       rst_n_i                      : in    std_logic;
       clk_sys_i                    : in    std_logic;
@@ -172,17 +235,18 @@ package dot_prod_pkg is
       wb_we_i                      : in    std_logic;
       wb_ack_o                     : out   std_logic;
       wb_stall_o                   : out   std_logic;
-      matmul_clk_reg_i             : in    std_logic;
+      dot_prod_clk_reg_i           : in    std_logic;
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      matmul_wb_ram_coeff_dat_o    : out   std_logic_vector(31 downto 0);
+      dot_prod_wb_ram_coeff_dat_o  : out   std_logic_vector(31 downto 0);
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      matmul_wb_ram_coeff_addr_o   : out   std_logic_vector(31 downto 0);
+      dot_prod_wb_ram_coeff_addr_o : out   std_logic_vector(31 downto 0);
 
       -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
-      matmul_wb_ram_write_enable_o : out   std_logic
+      dot_prod_wb_ram_write_enable_o
+                                   : out   std_logic
     );
-  end component matmul_wb;
+  end component dot_prod_wb;
 
 end package dot_prod_pkg;

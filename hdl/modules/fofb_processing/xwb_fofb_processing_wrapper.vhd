@@ -20,8 +20,8 @@ use ieee.std_logic_1164.ALL;
 use ieee.numeric_std.all;
 
 library work;
--- Matmul package
-use work.mult_pkg.all;
+-- Dot product package
+use work.dot_prod_pkg.all;
 -- RAM package
 use work.genram_pkg.all;
 -- Main Wishbone Definitions
@@ -31,7 +31,7 @@ use work.gencores_pkg.all;
 -- FOFB CTRL package
 use work.fofb_ctrl_pkg.all;
 
-entity xwb_matmul_wrapper is
+entity xwb_fofb_processing_wrapper is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                 : natural := 32;
@@ -50,8 +50,6 @@ entity xwb_matmul_wrapper is
     g_k_width                    : natural := 11;
     -- Width for output c
     g_c_width                    : natural := 32;
-    -- Matrix multiplication size
-    g_mat_size                   : natural := 4;
 
     -- Wishbone parameters
     g_INTERFACE_MODE             : t_wishbone_interface_mode      := CLASSIC;
@@ -60,33 +58,27 @@ entity xwb_matmul_wrapper is
   );
   port (
     ---------------------------------------------------------------------------
-    -- Clock and reset interface
+    -- Clock,reset and clear interface
     ---------------------------------------------------------------------------
     clk_i                        : in std_logic;
     rst_n_i                      : in std_logic;
+    clear_i                      : in std_logic;
     clk_sys_i                    : in std_logic;
     rst_sys_n_i                  : in std_logic;
 
     ---------------------------------------------------------------------------
-    -- Matmul Top Level Interface Signals
+    -- FOFB Processing Interface signals
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                  : in std_logic;
-    dcc_coeff_x_i                : in signed(g_a_width-1 downto 0);
-    dcc_coeff_y_i                : in signed(g_a_width-1 downto 0);
+    dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
     -- Result output array
-    spx_o                        : out t_matmul_array_signed(g_mat_size-1 downto 0);
-    spy_o                        : out t_matmul_array_signed(g_mat_size-1 downto 0);
+    sp_o                         : out signed(g_c_width-1 downto 0);
 
     -- Valid output for debugging
-    spx_valid_debug_o            : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_debug_o            : out std_logic_vector(g_mat_size-1 downto 0);
-
-    -- Valid end of fofb cycle
-    spx_valid_end_o              : out std_logic_vector(g_mat_size-1 downto 0);
-    spy_valid_end_o              : out std_logic_vector(g_mat_size-1 downto 0);
+    sp_valid_o                   : out std_logic;
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -94,13 +86,13 @@ entity xwb_matmul_wrapper is
     wb_slv_i                     : in t_wishbone_slave_in;
     wb_slv_o                     : out t_wishbone_slave_out
   );
-  end xwb_matmul_wrapper;
+  end xwb_fofb_processing_wrapper;
 
-architecture rtl of xwb_matmul_wrapper is
+architecture rtl of xwb_fofb_processing_wrapper is
 
 begin
 
-  cmp_wb_matmul_wrapper : wb_matmul_wrapper
+  cmp_wb_fofb_processing_wrapper : wb_fofb_processing_wrapper
   generic map(
     -- Standard parameters of generic_dpram
     g_data_width                 => g_data_width,
@@ -119,8 +111,6 @@ begin
     g_k_width                    => g_k_width,
     -- Width for output c
     g_c_width                    => g_c_width,
-    -- Matrix multiplication size
-    g_mat_size                   => g_mat_size,
 
     -- Wishbone parameters
     g_INTERFACE_MODE             => g_INTERFACE_MODE,
@@ -133,6 +123,7 @@ begin
     ---------------------------------------------------------------------------
     clk_i                        => clk_i,
     rst_n_i                      => rst_n_i,
+    clear_i                      => clear_i,
     clk_sys_i                    => clk_sys_i,
     rst_sys_n_i                  => rst_sys_n_i,
 
@@ -141,21 +132,14 @@ begin
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                  => dcc_valid_i,
-    dcc_coeff_x_i                => dcc_coeff_x_i,
-    dcc_coeff_y_i                => dcc_coeff_y_i,
+    dcc_coeff_i                  => dcc_coeff_i,
     dcc_addr_i                   => dcc_addr_i,
 
     -- Result output array
-    spx_o                        => spx_o,
-    spy_o                        => spy_o,
+    sp_o                         => sp_o,
 
     -- Valid output for debugging
-    spx_valid_debug_o            => spx_valid_debug_o,
-    spy_valid_debug_o            => spy_valid_debug_o,
-
-    -- Valid end of fofb cycle
-    spx_valid_end_o              => spx_valid_end_o,
-    spy_valid_end_o              => spy_valid_end_o,
+    sp_valid_o                   => sp_valid_o,
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals

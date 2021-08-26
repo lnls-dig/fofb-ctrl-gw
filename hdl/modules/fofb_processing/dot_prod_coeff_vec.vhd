@@ -25,7 +25,7 @@ use work.dot_prod_pkg.all;
 -- RAM package
 use work.genram_pkg.all;
 
-entity dot_prod_coeff is
+entity dot_prod_coeff_vec is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                   : natural := 32;
@@ -45,7 +45,7 @@ entity dot_prod_coeff is
     -- Width for RAM addr
     g_k_width                      : natural := 11;
 
-    -- Width for output c
+    -- Width for output
     g_c_width                      : natural := 32
   );
   port (
@@ -69,14 +69,14 @@ entity dot_prod_coeff is
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out signed(g_a_width-1 downto 0);
+    sp_o                           : out signed(g_c_width-1 downto 0);
 
     -- Valid output
     sp_valid_o                     : out std_logic
   );
-  end dot_prod_coeff;
+  end dot_prod_coeff_vec;
 
-architecture behave of dot_prod_coeff is
+architecture behave of dot_prod_coeff_vec is
 
   signal dcc_coeff_s               : signed(g_a_width-1 downto 0)               := (others => '0');
   signal dcc_coeff_reg_s           : signed(g_a_width-1 downto 0)               := (others => '0');

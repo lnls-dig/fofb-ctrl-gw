@@ -1,9 +1,10 @@
-files = ["fofb_processing_lane.vhd",
-	"dot_prod_coeff.vhd",
+files = ["fofb_processing.vhd",
+	"fofb_processing_channel.vhd",
+	"dot_prod_coeff_vec.vhd",
 	"dot_prod.vhd",
 	"dot_prod_pkg.vhd",
-	"cheby/matmul_wb.vhd",
-	"wb_matmul_wrapper.vhd",
-	"xwb_matmul_wrapper.vhd"
+	"cheby/dot_prod_wb.vhd",
+	"wb_fofb_processing_wrapper.vhd",
+	"xwb_fofb_processing_wrapper.vhd"
 ];
 

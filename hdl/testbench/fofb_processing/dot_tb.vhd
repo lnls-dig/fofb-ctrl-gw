@@ -52,11 +52,11 @@ architecture behave of dot_tb is
   signal dcc_coeff_s                 : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal dcc_addr_s, ram_addr_s      : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal sp_s                        : signed(c_b_width-1 downto 0);
+  signal sp_s                        : signed(c_c_width-1 downto 0);
 
 begin
 
-    fofb_processing_lane_interface : fofb_processing_lane
+    fofb_processing_interface : fofb_processing
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,
