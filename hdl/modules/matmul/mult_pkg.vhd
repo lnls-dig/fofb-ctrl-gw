@@ -68,20 +68,26 @@ package mult_pkg is
     port (
       -- Core clock
       clk_i                               : in std_logic;
+
       -- Reset
       rst_n_i                             : in std_logic;
+
       -- Clear
       clear_i                             : in std_logic;
+
       -- DCC interface
       dcc_valid_i                         : in std_logic;
       dcc_coeff_x_i                       : in signed(g_a_width-1 downto 0);
       dcc_coeff_y_i                       : in signed(g_a_width-1 downto 0);
+
       -- RAM interface
       ram_coeff_x_i                       : in std_logic_vector(g_b_width-1 downto 0);
       ram_coeff_y_i                       : in std_logic_vector(g_b_width-1 downto 0);
+
       -- Result output
       result_x_o                          : out signed(g_c_width-1 downto 0);
       result_y_o                          : out signed(g_c_width-1 downto 0);
+
       -- Data valid output
       result_valid_x_o                    : out std_logic;
       result_valid_y_o                    : out std_logic

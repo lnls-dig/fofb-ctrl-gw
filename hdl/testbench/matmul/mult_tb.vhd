@@ -41,7 +41,7 @@ architecture behave of mult_tb is
 
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
-  signal clear_s, clear_reg_s        : std_logic                                  := '0';
+  signal clear_s                     : std_logic                                  := '0';
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
@@ -50,9 +50,10 @@ architecture behave of mult_tb is
   signal valid_tr                    : std_logic                                  := '0';
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
-  signal x_s, y_s                    : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal dcc_coeff_x_s               : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal dcc_coeff_y_s               : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
-  signal k_s, ram_k_s                : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal dcc_addr_s, ram_addr_s      : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal spx_s, spy_s                : signed(c_b_width-1 downto 0);
 
 begin
@@ -63,11 +64,11 @@ begin
         rst_n_i                      => rst_n_s,
         clear_i                      => clear_s,
         dcc_valid_i                  => valid_i_s,
-        dcc_coeff_x_i                => x_s,
-        dcc_coeff_y_i                => y_s,
-        dcc_addr_i                   => k_s,
+        dcc_coeff_x_i                => dcc_coeff_x_s,
+        dcc_coeff_y_i                => dcc_coeff_y_s,
+        dcc_addr_i                   => dcc_addr_s,
         ram_coeff_dat_i              => ram_data_s,
-        ram_addr_i                   => ram_k_s,
+        ram_addr_i                   => ram_addr_s,
         ram_write_enable_i           => ram_write_s,
         spx_o                        => spx_s,
         spy_o                        => spy_s,
@@ -91,10 +92,19 @@ begin
   begin
     wait for fofb_ctrl_period/2;
     valid_fofb_ctrl_s                <= '1';
-    wait for 2.0576 us;
+    wait for 2.0576 us; -- time necessary for 160 input elements
     valid_fofb_ctrl_s                <= '0';
     wait for 17.9424 us;
   end process valid_fofb_ctrl_process;
+
+  clear_process : process is
+  begin
+    wait for fofb_ctrl_period/2; -- clear accumulator and registers to start the fofb cycle
+    clear_s                          <= '1';
+    wait for clk_period;
+    clear_s                          <= '0';
+    wait for fofb_ctrl_period/2-clk_period;
+  end process clear_process;
 
   valid_tr_gen : process is
   begin
@@ -122,7 +132,7 @@ begin
 
   begin
     if rising_edge(clk_s) then
-      if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' then
+      if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' and clear_s = '0' then
         -- Reading input a[k] from a txt file
         readline(a_data_file, a_line);
         read(a_line, a_datain);
@@ -132,9 +142,9 @@ begin
         read(k_line, k_datain);
 
         -- Pass the variable to a signal
-        x_s                          <= to_signed(a_datain, x_s'length);
-        y_s                          <= to_signed(a_datain, y_s'length);
-        k_s                          <= to_stdlogicvector(k_datain);
+        dcc_coeff_x_s                <= to_signed(a_datain, dcc_coeff_x_s'length);
+        dcc_coeff_y_s                <= to_signed(a_datain, dcc_coeff_y_s'length);
+        dcc_addr_s                   <= to_stdlogicvector(k_datain);
 
         -- Update valid input bit
         valid_i_s                    <= '1';
@@ -167,7 +177,7 @@ begin
 
           -- Pass the variable to a signal
           ram_data_s                 <= to_stdlogicvector(ram_b_datain);
-          ram_k_s                    <= to_stdlogicvector(ram_k_datain);
+          ram_addr_s                 <= to_stdlogicvector(ram_k_datain);
         else
           ram_write_s                <= '0';
           ram_finish_s               <= '1';
