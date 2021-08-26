@@ -56,7 +56,7 @@ architecture behave of dot_tb is
 
 begin
 
-    dot_prod_coeff_interface : dot_prod_coeff
+    fofb_processing_lane_interface : fofb_processing_lane
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,

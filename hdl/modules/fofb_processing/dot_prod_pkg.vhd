@@ -116,6 +116,49 @@ package dot_prod_pkg is
     );
   end component dot_prod_coeff;
 
+  component fofb_processing_lane is
+    generic(
+      -- Width for DCC input
+      g_a_width                    : natural := 32;
+
+      -- Width for RAM data
+      g_b_width                    : natural := 32;
+
+      -- Width for RAM addr
+      g_k_width                    : natural := 11;
+
+      -- Width for output c
+      g_c_width                    : natural := 32
+    );
+    port (
+      ---------------------------------------------------------------------------
+      -- Clock, reset and clear interface
+      ---------------------------------------------------------------------------
+      clk_i                        : in std_logic;
+      rst_n_i                      : in std_logic;
+      clear_i                      : in std_logic;
+
+      ---------------------------------------------------------------------------
+      -- Dot product Interface Signals
+      ---------------------------------------------------------------------------
+      -- DCC interface
+      dcc_valid_i                  : in std_logic;
+      dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
+      dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+
+      -- RAM interface
+      ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
+      ram_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+      ram_write_enable_i           : in std_logic;
+
+      -- Result output array
+      sp_o                         : out signed(g_a_width-1 downto 0);
+
+      -- Valid output
+      sp_valid_o                   : out std_logic
+    );
+  end component fofb_processing_lane;
+
   component matmul_wb is
     port (
       rst_n_i                      : in    std_logic;
