@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------------
--- Title      :  Matrix multiplication testbench
+-- Title      :  Dot product testbench
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
 -- Company    :  CNPEM LNLS-DIG
 -- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
--- Description:  Testbench for the matrix multiplication top level
+-- Description:  Testbench for the dot product top level
 -------------------------------------------------------------------------------
 -- Copyright (c) 2020 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
@@ -23,12 +23,12 @@ library std;
 use std.textio.all;
 
 library work;
-use work.mult_pkg.all;
+use work.dot_prod_pkg.all;
 
-entity mult_tb is
-end mult_tb;
+entity dot_tb is
+end dot_tb;
 
-architecture behave of mult_tb is
+architecture behave of dot_tb is
 
   constant clk_period                : time                                       := 6.4 ns;
   constant fofb_ctrl_period          : time                                       := 40 us;
@@ -45,35 +45,30 @@ architecture behave of mult_tb is
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
-  signal valid_x_o_s                 : std_logic                                  := '0';
-  signal valid_y_o_s                 : std_logic                                  := '0';
+  signal valid_o_s                   : std_logic                                  := '0';
   signal valid_tr                    : std_logic                                  := '0';
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
-  signal dcc_coeff_x_s               : signed(c_a_width-1 downto 0)               := (others => '0');
-  signal dcc_coeff_y_s               : signed(c_a_width-1 downto 0)               := (others => '0');
+  signal dcc_coeff_s                 : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal dcc_addr_s, ram_addr_s      : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal spx_s, spy_s                : signed(c_b_width-1 downto 0);
+  signal sp_s                        : signed(c_b_width-1 downto 0);
 
 begin
 
-    fofb_processing_INST : fofb_processing
+    dot_prod_coeff_interface : dot_prod_coeff
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,
         clear_i                      => clear_s,
         dcc_valid_i                  => valid_i_s,
-        dcc_coeff_x_i                => dcc_coeff_x_s,
-        dcc_coeff_y_i                => dcc_coeff_y_s,
+        dcc_coeff_i                  => dcc_coeff_s,
         dcc_addr_i                   => dcc_addr_s,
         ram_coeff_dat_i              => ram_data_s,
         ram_addr_i                   => ram_addr_s,
         ram_write_enable_i           => ram_write_s,
-        spx_o                        => spx_s,
-        spy_o                        => spy_s,
-        spx_valid_debug_o            => valid_x_o_s,
-        spy_valid_debug_o            => valid_y_o_s
+        sp_o                         => sp_s,
+        sp_valid_o                   => valid_o_s
       );
 
   clk_process : process is
@@ -89,24 +84,26 @@ begin
   end process fofb_ctrl_process;
 
   valid_fofb_ctrl_process : process is
+  -- time necessary for testing the product with 160 input elements
   begin
     wait for fofb_ctrl_period/2;
     valid_fofb_ctrl_s                <= '1';
-    wait for 2.0576 us; -- time necessary for 160 input elements
+    wait for 2.0576 us;
     valid_fofb_ctrl_s                <= '0';
     wait for 17.9424 us;
   end process valid_fofb_ctrl_process;
 
   clear_process : process is
+  -- clear accumulator and registers to start the fofb cycle
   begin
-    wait for fofb_ctrl_period/2; -- clear accumulator and registers to start the fofb cycle
+    wait for fofb_ctrl_period/2;
     clear_s                          <= '1';
     wait for clk_period;
     clear_s                          <= '0';
     wait for fofb_ctrl_period/2-clk_period;
   end process clear_process;
 
-  valid_tr_gen : process is
+  valid_tr_gen_process : process is
   begin
     if rst_n_s = '0' then
       wait for clk_period;
@@ -121,14 +118,14 @@ begin
     else
       valid_tr                       <= '0';
     end if;
-  end process valid_tr_gen;
+  end process valid_tr_gen_process;
 
-  input_read : process(clk_s)
-  file a_data_file                   : text open read_mode is "a_k.txt";
-  file k_data_file                   : text open read_mode is "k.txt";
-  variable a_line, k_line            : line;
-  variable a_datain                  : integer;
-  variable k_datain                  : bit_vector(c_k_width-1 downto 0);
+  input_read_process : process(clk_s)
+    file a_data_file                 : text open read_mode is "a_k.txt";
+    file k_data_file                 : text open read_mode is "k.txt";
+    variable a_line, k_line          : line;
+    variable a_datain                : integer;
+    variable k_datain                : bit_vector(c_k_width-1 downto 0);
 
   begin
     if rising_edge(clk_s) then
@@ -142,8 +139,7 @@ begin
         read(k_line, k_datain);
 
         -- Pass the variable to a signal
-        dcc_coeff_x_s                <= to_signed(a_datain, dcc_coeff_x_s'length);
-        dcc_coeff_y_s                <= to_signed(a_datain, dcc_coeff_y_s'length);
+        dcc_coeff_s                  <= to_signed(a_datain, dcc_coeff_s'length);
         dcc_addr_s                   <= to_stdlogicvector(k_datain);
 
         -- Update valid input bit
@@ -154,14 +150,14 @@ begin
         valid_i_s                    <= '0';
       end if;
     end if;
-  end process input_read;
+  end process input_read_process;
 
-  ram_input_read : process(clk_s)
-  file ram_b_data_file               : text open read_mode is "ram_b_k256x8.txt";
-  file ram_k_data_file               : text open read_mode is "ram_k256x8.txt";
-  variable ram_b_line, ram_k_line    : line;
-  variable ram_b_datain              : bit_vector(c_b_width-1 downto 0);
-  variable ram_k_datain              : bit_vector(c_k_width-1 downto 0);
+  ram_input_read_process : process(clk_s)
+    file ram_b_data_file             : text open read_mode is "ram_b_k256x8.txt";
+    file ram_k_data_file             : text open read_mode is "ram_k256x8.txt";
+    variable ram_b_line, ram_k_line  : line;
+    variable ram_b_datain            : bit_vector(c_b_width-1 downto 0);
+    variable ram_k_datain            : bit_vector(c_k_width-1 downto 0);
 
   begin
     if rising_edge(clk_s) then
@@ -184,18 +180,18 @@ begin
         end if;
       end if;
     end if;
-  end process ram_input_read;
+  end process ram_input_read_process;
 
-  output_write : process(clk_s)
-  file ouput_file                    : text open write_mode is "my_output.txt";
-  file c_data_file                   : text open read_mode is "c_acc.txt";
-  variable o_line, c_line            : line;
-  variable dataout, c_datain         : integer;
-  variable pass_test                 : std_logic := '0';
+  output_write_process : process(clk_s)
+    file ouput_file                    : text open write_mode is "my_output.txt";
+    file c_data_file                   : text open read_mode is "c_acc.txt";
+    variable o_line, c_line            : line;
+    variable dataout, c_datain         : integer;
+    variable pass_test                 : std_logic := '0';
 
   begin
-    if valid_x_o_s = '1' then
-      dataout                        := to_integer(spx_s);
+    if valid_o_s = '1' then
+      dataout                        := to_integer(sp_s);
 
       if rising_edge(clk_s) then
         -- Write output to a txt file
@@ -219,5 +215,6 @@ begin
         report "SUCESS";
       end if;
     end if;
-  end process output_write;
+  end process output_write_process;
+
 end architecture behave;
