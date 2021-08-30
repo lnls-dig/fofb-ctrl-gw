@@ -24,8 +24,8 @@ package dot_prod_pkg is
   constant c_out_width             : natural := 32;
   constant c_size_dpram            : natural := 2048; -- 2**g_k_width
 
-  type t_matmul_array_signed is array (natural range <>) of signed(c_out_width-1 downto 0);
-  type t_matmul_array_logic  is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
+  type t_dot_prod_array_signed is array (natural range <>) of signed(c_out_width-1 downto 0);
+  type t_dot_prod_array_logic  is array (natural range <>) of std_logic_vector(c_out_width-1 downto 0);
 
   component dot_prod is
     generic(
@@ -189,7 +189,10 @@ package dot_prod_pkg is
       g_k_width                    : natural := 11;
 
       -- Width for output
-      g_c_width                    : natural := 32
+      g_c_width                    : natural := 32;
+      
+      -- Number of channels
+      g_mat_size                     : natural := 8
     );
     port (
       ---------------------------------------------------------------------------
@@ -215,10 +218,10 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
-      sp_o                         : out signed(g_c_width-1 downto 0);
+      sp_o                         : out t_dot_prod_array_signed(g_mat_size-1 downto 0);
 
       -- Valid output
-      sp_valid_o                   : out std_logic
+      sp_valid_o                   : out std_logic_vector(g_mat_size-1 downto 0)
     );
   end component fofb_processing;
 

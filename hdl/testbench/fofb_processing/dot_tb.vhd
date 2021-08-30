@@ -37,7 +37,7 @@ architecture behave of dot_tb is
   constant c_k_width                 : natural                                    := 11;
   constant c_b_width                 : natural                                    := 32;
   constant c_c_width                 : natural                                    := 32;
-  constant c_mat_size                : natural                                    := 4;
+  constant c_mat_size                : natural                                    := 8;
 
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
@@ -45,14 +45,14 @@ architecture behave of dot_tb is
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
-  signal valid_o_s                   : std_logic                                  := '0';
   signal valid_tr                    : std_logic                                  := '0';
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
   signal dcc_coeff_s                 : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal dcc_addr_s, ram_addr_s      : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal sp_s                        : signed(c_c_width-1 downto 0);
+  signal valid_o_s                   : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal sp_s                        : t_dot_prod_array_signed(c_mat_size-1 downto 0);
 
 begin
 
@@ -190,8 +190,8 @@ begin
     variable pass_test                 : std_logic := '0';
 
   begin
-    if valid_o_s = '1' then
-      dataout                        := to_integer(sp_s);
+    if valid_o_s(0) = '1' then
+      dataout                        := to_integer(sp_s(0));
 
       if rising_edge(clk_s) then
         -- Write output to a txt file

@@ -44,7 +44,10 @@ entity fofb_processing is
     g_k_width                      : natural := 11;
 
     -- Width for output
-    g_c_width                      : natural := 32
+    g_c_width                      : natural := 32;
+    
+    -- Number of channels
+    g_mat_size                     : natural := 8
   );
   port (
     ---------------------------------------------------------------------------
@@ -70,30 +73,49 @@ entity fofb_processing is
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out signed(g_c_width-1 downto 0);
+    sp_o                           : out t_dot_prod_array_signed(g_mat_size-1 downto 0);
 
     -- Valid output
-    sp_valid_o                     : out std_logic
+    sp_valid_o                     : out std_logic_vector(g_mat_size-1 downto 0)
   );
   end fofb_processing;
 
 architecture behave of fofb_processing is
-
+  signal aa_s                      : std_logic_vector(g_k_width-1 downto 0)  := (others => '0');
+  signal wea_s                     : std_logic_vector(g_mat_size-1 downto 0) := (others => '0');
 begin
+  
+  ram_write : process(clk_i)
+  begin
+    if (rising_edge(clk_i)) then
+      aa_s(g_k_width-4 downto 0) <= ram_addr_i(g_k_width-4 downto 0);
 
-  fofb_processing_channel_interface : fofb_processing_channel
-    port map (
-      clk_i                        => clk_i,
-      rst_n_i                      => rst_n_i,
-      clear_i                      => clear_i,
-      dcc_valid_i                  => dcc_valid_i,
-      dcc_coeff_i                  => dcc_coeff_i,
-      dcc_addr_i                   => dcc_addr_i,
-      ram_coeff_dat_i              => ram_coeff_dat_i,
-      ram_addr_i                   => ram_addr_i,
-      ram_write_enable_i           => ram_write_enable_i,
-      sp_o                         => sp_o,
-      sp_valid_o                   => sp_valid_o
-    );
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "000" then wea_s(0) <= ram_write_enable_i; else wea_s(0) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "001" then wea_s(1) <= ram_write_enable_i; else wea_s(1) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "010" then wea_s(2) <= ram_write_enable_i; else wea_s(2) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "011" then wea_s(3) <= ram_write_enable_i; else wea_s(3) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "100" then wea_s(4) <= ram_write_enable_i; else wea_s(4) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "101" then wea_s(5) <= ram_write_enable_i; else wea_s(5) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "110" then wea_s(6) <= ram_write_enable_i; else wea_s(6) <= '0'; end if;
+      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "111" then wea_s(7) <= ram_write_enable_i; else wea_s(7) <= '0'; end if;
+    end if;
+  end process ram_write;
+  
+  gen_channels : for i in 0 to g_mat_size-1 generate
+    fofb_processing_channel_interface : fofb_processing_channel
+      port map (
+        clk_i                        => clk_i,
+        rst_n_i                      => rst_n_i,
+        clear_i                      => clear_i,
+        dcc_valid_i                  => dcc_valid_i,
+        dcc_coeff_i                  => dcc_coeff_i,
+        dcc_addr_i                   => dcc_addr_i,
+        ram_coeff_dat_i              => ram_coeff_dat_i,
+        ram_addr_i                   => aa_s,
+        ram_write_enable_i           => wea_s(i),
+        sp_o                         => sp_o(i),
+        sp_valid_o                   => sp_valid_o(i)
+      );
+    end generate;
 
 end architecture behave;

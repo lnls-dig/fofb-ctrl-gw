@@ -51,7 +51,7 @@ entity wb_fofb_processing is
     -- Width for output c
     g_c_width                    : natural := 32;
     -- Matrix multiplication size
-    g_mat_size                   : natural := 4;
+    g_mat_size                   : natural := 8;
 
     -- Wishbone parameters
     g_INTERFACE_MODE             : t_wishbone_interface_mode      := CLASSIC;
@@ -77,10 +77,10 @@ entity wb_fofb_processing is
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
 
     -- Result output array
-    sp_o                         : out signed(g_c_width-1 downto 0);
+    sp_o                         : out t_dot_prod_array_signed(g_mat_size-1 downto 0);
 
     -- Valid output for debugging
-    sp_valid_o                   : out std_logic;
+    sp_valid_o                   : out std_logic_vector(g_mat_size-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals

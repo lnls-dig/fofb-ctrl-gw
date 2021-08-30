@@ -121,19 +121,6 @@ begin
     end if;
     end process dot_product_process;
 
-  ram_write_process : process(clk_i)
-  begin
-    if (rising_edge(clk_i)) then
-      aa_s(g_k_width-4 downto 0)   <= ram_addr_i(g_k_width-4 downto 0);
-
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "000" then
-        wea_s                      <= ram_write_enable_i;
-      else
-        wea_s                      <= '0';
-      end if;
-    end if;
-  end process ram_write_process;
-
   cmp_ram_interface : generic_dpram
     generic map (
       g_data_width                 => g_data_width,
@@ -151,8 +138,8 @@ begin
       -- Port A (write)
       clka_i                       => clk_i,
       bwea_i                       => (others => '1'),
-      wea_i                        => wea_s,
-      aa_i                         => aa_s,
+      wea_i                        => ram_write_enable_i,
+      aa_i                         => ram_addr_i,
       da_i                         => ram_coeff_dat_s,
       qa_o                         => qa_s,
 
