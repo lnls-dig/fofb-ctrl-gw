@@ -411,7 +411,7 @@ package fofb_ctrl_pkg is
   );
   end component;
 
-  component wb_fofb_processing_wrapper
+  component wb_fofb_processing
   generic
   (
     -- Standard parameters of generic_dpram
@@ -477,7 +477,7 @@ package fofb_ctrl_pkg is
   );
   end component;
 
-  component xwb_fofb_processing_wrapper
+  component xwb_fofb_processing
   generic
   (
     -- Standard parameters of generic_dpram

@@ -31,7 +31,7 @@ use work.gencores_pkg.all;
 -- FOFB CTRL package
 use work.fofb_ctrl_pkg.all;
 
-entity wb_fofb_processing_wrapper is
+entity wb_fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                 : natural := 32;
@@ -97,9 +97,9 @@ entity wb_fofb_processing_wrapper is
     wb_rty_o                     : out std_logic;
     wb_stall_o                   : out std_logic
   );
-  end wb_fofb_processing_wrapper;
+  end wb_fofb_processing;
 
-architecture rtl of wb_fofb_processing_wrapper is
+architecture rtl of wb_fofb_processing is
 
   -----------------------------
   -- RAM signals

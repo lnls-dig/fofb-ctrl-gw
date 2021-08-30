@@ -31,7 +31,7 @@ use work.gencores_pkg.all;
 -- FOFB CTRL package
 use work.fofb_ctrl_pkg.all;
 
-entity xwb_fofb_processing_wrapper is
+entity xwb_fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
     g_data_width                 : natural := 32;
@@ -86,13 +86,13 @@ entity xwb_fofb_processing_wrapper is
     wb_slv_i                     : in t_wishbone_slave_in;
     wb_slv_o                     : out t_wishbone_slave_out
   );
-  end xwb_fofb_processing_wrapper;
+  end xwb_fofb_processing;
 
-architecture rtl of xwb_fofb_processing_wrapper is
+architecture rtl of xwb_fofb_processing is
 
 begin
 
-  cmp_wb_fofb_processing_wrapper : wb_fofb_processing_wrapper
+  cmp_wb_fofb_processing : wb_fofb_processing
   generic map(
     -- Standard parameters of generic_dpram
     g_data_width                 => g_data_width,
