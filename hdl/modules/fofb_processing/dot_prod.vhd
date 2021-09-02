@@ -31,7 +31,7 @@ entity dot_prod is
     -- Width for input b[k]
     g_b_width                      : natural := 32;
 
-    -- Width for output c
+    -- Width for output
     g_c_width                      : natural := 32;
 
     -- Extra bits for accumulator
@@ -50,6 +50,9 @@ entity dot_prod is
     -- Data valid input
     valid_i                        : in std_logic;
 
+    -- Time frame end
+		time_frame_end_i				  		 : in std_logic;
+
     -- Input a[k]
     a_i                            : in signed(g_a_width-1 downto 0);
 
@@ -57,10 +60,12 @@ entity dot_prod is
     b_i                            : in signed(g_b_width-1 downto 0);
 
     -- Result output
-    c_o                            : out signed(g_c_width-1 downto 0);
+    result_o                       : out signed(g_c_width-1 downto 0);
+    result_debug_o                 : out signed(g_c_width-1 downto 0);
 
-    -- Data valid output
-    c_valid_o                      : out std_logic
+		-- Data valid output
+    result_valid_end_o    				 : out std_logic;
+    result_valid_debug_o  				 : out std_logic
   );
 end dot_prod;
 
@@ -183,10 +188,18 @@ begin
         valid_reg5_s               <= valid_reg4_s;
 
         -- Store the valid bit output
-        c_valid_o                  <= valid_reg5_s;
+        result_valid_debug_o       <= valid_reg5_s;
 
         -- Truncate the output
-        c_o                        <= resize(adder_reg2_s, c_o'length);
+        result_debug_o						 <= resize(adder_reg2_s, result_debug_o'length);
+
+				-- End of the FOFB cycle
+        if (time_frame_end_i = '1') then
+        	result_o                 <= resize(adder_reg2_s, result_o'length);
+        	result_valid_end_o			 <= '1';
+				else
+					result_valid_end_o  		 <= '0';
+        end if;
       end if; -- Reset
     end if; -- Clock
   end process MAC;

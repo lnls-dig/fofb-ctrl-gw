@@ -48,10 +48,10 @@ entity wb_fofb_processing is
     g_b_width                    : natural := 32;
     -- Width for ram addr
     g_k_width                    : natural := 11;
-    -- Width for output c
+    -- Width for output
     g_c_width                    : natural := 32;
-    -- Matrix multiplication size
-    g_mat_size                   : natural := 8;
+    -- Number of channels
+    g_channels                   : natural := 8;
 
     -- Wishbone parameters
     g_INTERFACE_MODE             : t_wishbone_interface_mode      := CLASSIC;
@@ -60,11 +60,10 @@ entity wb_fofb_processing is
   );
   port (
     ---------------------------------------------------------------------------
-    -- Clock,reset and clear interface
+    -- Clock and reset interface
     ---------------------------------------------------------------------------
     clk_i                        : in std_logic;
     rst_n_i                      : in std_logic;
-    clear_i                      : in std_logic;
     clk_sys_i                    : in std_logic;
     rst_sys_n_i                  : in std_logic;
 
@@ -75,12 +74,16 @@ entity wb_fofb_processing is
     dcc_valid_i                  : in std_logic;
     dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_time_frame_start_i	  	 : in std_logic;
+    dcc_time_frame_end_i				 : in std_logic;
 
     -- Result output array
-    sp_o                         : out t_dot_prod_array_signed(g_mat_size-1 downto 0);
+		sp_o                         : out t_dot_prod_array_signed(g_channels-1 downto 0);
+		sp_debug_o                   : out t_dot_prod_array_signed(g_channels-1 downto 0);
 
-    -- Valid output for debugging
-    sp_valid_o                   : out std_logic_vector(g_mat_size-1 downto 0);
+		-- Valid output
+	  sp_valid_o                   : out std_logic_vector(g_channels-1 downto 0);
+		sp_valid_debug_o             : out std_logic_vector(g_channels-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -148,7 +151,9 @@ begin
     -- Width for ram addr
     g_k_width                    => g_k_width,
     -- Width for output c
-    g_c_width                    => g_c_width
+    g_c_width                    => g_c_width,
+    -- Number of channels
+    g_channels                   => 8
     )
     port map(
     -- Core clock
@@ -157,13 +162,12 @@ begin
     -- Reset
     rst_n_i                      => rst_n_i,
 
-    -- Clear
-    clear_i                      => clear_i,
-
     -- DCC interface
     dcc_valid_i                  => dcc_valid_i,
     dcc_coeff_i                  => dcc_coeff_i,
     dcc_addr_i                   => dcc_addr_i,
+    dcc_time_frame_start_i       => dcc_time_frame_start_i,
+		dcc_time_frame_end_i				 => dcc_time_frame_end_i,
 
     -- RAM interface
     ram_coeff_dat_i              => ram_coeff_dat_s,
@@ -172,9 +176,11 @@ begin
 
     -- Result output array
     sp_o                         => sp_o,
+    sp_debug_o                   => sp_debug_o,
 
     -- Valid output for debugging
-    sp_valid_o                   => sp_valid_o
+    sp_valid_o                   => sp_valid_o,
+    sp_valid_debug_o             => sp_valid_debug_o
     );
 
   -----------------------------

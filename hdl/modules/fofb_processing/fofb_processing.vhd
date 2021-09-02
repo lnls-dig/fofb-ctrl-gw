@@ -45,13 +45,13 @@ entity fofb_processing is
 
     -- Width for output
     g_c_width                      : natural := 32;
-    
+
     -- Number of channels
-    g_mat_size                     : natural := 8
+    g_channels                     : natural := 8
   );
   port (
     ---------------------------------------------------------------------------
-    -- FOFB processing channel interface
+    -- FOFB processing interface
     ---------------------------------------------------------------------------
     -- Clock core
     clk_i                          : in std_logic;
@@ -59,13 +59,12 @@ entity fofb_processing is
     -- Reset
     rst_n_i                        : in std_logic;
 
-    -- Clear
-    clear_i                        : in std_logic;
-
     -- DCC interface
     dcc_valid_i                    : in std_logic;
     dcc_coeff_i                    : in signed(g_a_width-1 downto 0);
     dcc_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_time_frame_start_i				 : in std_logic;
+    dcc_time_frame_end_i					 : in std_logic;
 
     -- RAM interface
     ram_coeff_dat_i                : in std_logic_vector(g_b_width-1 downto 0);
@@ -73,22 +72,30 @@ entity fofb_processing is
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out t_dot_prod_array_signed(g_mat_size-1 downto 0);
+    sp_o                           : out t_dot_prod_array_signed(g_channels-1 downto 0);
+    sp_debug_o                     : out t_dot_prod_array_signed(g_channels-1 downto 0);
 
     -- Valid output
-    sp_valid_o                     : out std_logic_vector(g_mat_size-1 downto 0)
+    sp_valid_o                     : out std_logic_vector(g_channels-1 downto 0);
+    sp_valid_debug_o               : out std_logic_vector(g_channels-1 downto 0)
   );
   end fofb_processing;
 
 architecture behave of fofb_processing is
   signal aa_s                      : std_logic_vector(g_k_width-1 downto 0)  := (others => '0');
-  signal wea_s                     : std_logic_vector(g_mat_size-1 downto 0) := (others => '0');
+  signal wea_s                     : std_logic_vector(g_channels-1 downto 0) := (others => '0');
 begin
-  
+
   ram_write : process(clk_i)
   begin
     if (rising_edge(clk_i)) then
-      aa_s(g_k_width-4 downto 0) <= ram_addr_i(g_k_width-4 downto 0);
+
+    	if dcc_time_frame_start_i = '1' then
+    		aa_s										 	 <= (others => '0');
+    		wea_s										   <= (others => '0');
+    	end if;
+
+      aa_s(g_k_width-4 downto 0)   <= ram_addr_i(g_k_width-4 downto 0);
 
       if ram_addr_i(g_k_width-1 downto g_k_width-3) = "000" then wea_s(0) <= ram_write_enable_i; else wea_s(0) <= '0'; end if;
       if ram_addr_i(g_k_width-1 downto g_k_width-3) = "001" then wea_s(1) <= ram_write_enable_i; else wea_s(1) <= '0'; end if;
@@ -100,21 +107,24 @@ begin
       if ram_addr_i(g_k_width-1 downto g_k_width-3) = "111" then wea_s(7) <= ram_write_enable_i; else wea_s(7) <= '0'; end if;
     end if;
   end process ram_write;
-  
-  gen_channels : for i in 0 to g_mat_size-1 generate
+
+  gen_channels : for i in 0 to g_channels-1 generate
     fofb_processing_channel_interface : fofb_processing_channel
       port map (
         clk_i                        => clk_i,
         rst_n_i                      => rst_n_i,
-        clear_i                      => clear_i,
         dcc_valid_i                  => dcc_valid_i,
         dcc_coeff_i                  => dcc_coeff_i,
         dcc_addr_i                   => dcc_addr_i,
+        dcc_time_frame_start_i			 => dcc_time_frame_start_i,
+    		dcc_time_frame_end_i				 => dcc_time_frame_end_i,
         ram_coeff_dat_i              => ram_coeff_dat_i,
         ram_addr_i                   => aa_s,
         ram_write_enable_i           => wea_s(i),
         sp_o                         => sp_o(i),
-        sp_valid_o                   => sp_valid_o(i)
+        sp_debug_o                   => sp_debug_o(i),
+        sp_valid_o                   => sp_valid_o(i),
+        sp_valid_debug_o             => sp_valid_debug_o(i)
       );
     end generate;
 

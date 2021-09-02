@@ -55,13 +55,12 @@ entity dot_prod_coeff_vec is
     -- Reset
     rst_n_i                        : in std_logic;
 
-    -- Clear
-    clear_i                        : in std_logic;
-
     -- DCC interface
     dcc_valid_i                    : in std_logic;
     dcc_coeff_i                    : in signed(g_a_width-1 downto 0);
     dcc_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_time_frame_start_i				 : in std_logic;
+    dcc_time_frame_end_i					 : in std_logic;
 
     -- RAM interface
     ram_coeff_dat_i                : in std_logic_vector(g_b_width-1 downto 0);
@@ -70,9 +69,11 @@ entity dot_prod_coeff_vec is
 
     -- Result output array
     sp_o                           : out signed(g_c_width-1 downto 0);
+    sp_debug_o                     : out signed(g_c_width-1 downto 0);
 
     -- Valid output
-    sp_valid_o                     : out std_logic
+    sp_valid_o                     : out std_logic;
+    sp_valid_debug_o               : out std_logic
   );
   end dot_prod_coeff_vec;
 
@@ -156,12 +157,15 @@ begin
     port map (
       clk_i                        => clk_i,
       rst_n_i                      => rst_n_i,
-      clear_acc_i                  => clear_i,
+      clear_acc_i                  => dcc_time_frame_start_i,
       valid_i                      => valid_i_s,
+      time_frame_end_i						 => dcc_time_frame_end_i,
       a_i                          => dcc_coeff_s,
       b_i                          => signed(ram_coeff_s),
-      c_o                          => sp_o,
-      c_valid_o                    => sp_valid_o
+      result_o                     => sp_o,
+      result_debug_o               => sp_debug_o,
+      result_valid_end_o           => sp_valid_o,
+      result_valid_debug_o         => sp_valid_debug_o
     );
 
 end architecture behave;

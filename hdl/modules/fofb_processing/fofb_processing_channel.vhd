@@ -48,19 +48,20 @@ entity fofb_processing_channel is
   );
   port (
     ---------------------------------------------------------------------------
-    -- Clock, reset and clear interface
+    -- Clock and reset interface
     ---------------------------------------------------------------------------
     clk_i                          : in std_logic;
     rst_n_i                        : in std_logic;
-    clear_i                        : in std_logic;
 
     ---------------------------------------------------------------------------
-    -- Dot product Interface Signals
+    -- Dot product interface signals
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                    : in std_logic;
     dcc_coeff_i                    : in signed(g_a_width-1 downto 0);
     dcc_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_time_frame_start_i				 : in std_logic;
+    dcc_time_frame_end_i					 : in std_logic;
 
     -- RAM interface
     ram_coeff_dat_i                : in std_logic_vector(g_b_width-1 downto 0);
@@ -69,9 +70,11 @@ entity fofb_processing_channel is
 
     -- Result output array
     sp_o                           : out signed(g_c_width-1 downto 0);
+    sp_debug_o                     : out signed(g_c_width-1 downto 0);
 
     -- Valid output
-    sp_valid_o                     : out std_logic
+    sp_valid_o                     : out std_logic;
+    sp_valid_debug_o               : out std_logic
   );
   end fofb_processing_channel;
 
@@ -83,15 +86,18 @@ begin
     port map (
       clk_i                        => clk_i,
       rst_n_i                      => rst_n_i,
-      clear_i                      => clear_i,
       dcc_valid_i                  => dcc_valid_i,
       dcc_coeff_i                  => dcc_coeff_i,
       dcc_addr_i                   => dcc_addr_i,
+      dcc_time_frame_start_i			 => dcc_time_frame_start_i,
+    	dcc_time_frame_end_i				 => dcc_time_frame_end_i,
       ram_coeff_dat_i              => ram_coeff_dat_i,
       ram_addr_i                   => ram_addr_i,
       ram_write_enable_i           => ram_write_enable_i,
       sp_o                         => sp_o,
-      sp_valid_o                   => sp_valid_o
+      sp_debug_o									 => sp_debug_o,
+      sp_valid_o                   => sp_valid_o,
+      sp_valid_debug_o             => sp_valid_debug_o
     );
 
 end architecture behave;

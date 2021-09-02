@@ -41,7 +41,8 @@ architecture behave of dot_tb is
 
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
-  signal clear_s                     : std_logic                                  := '0';
+  signal dcc_time_frame_start_s      : std_logic                                  := '0';
+  signal dcc_time_frame_end_s    	   : std_logic                                  := '0';
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
@@ -52,7 +53,9 @@ architecture behave of dot_tb is
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal dcc_addr_s, ram_addr_s      : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal valid_o_s                   : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
+  signal valid_debug_s               : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal sp_s                        : t_dot_prod_array_signed(c_mat_size-1 downto 0);
+  signal sp_debug_s                  : t_dot_prod_array_signed(c_mat_size-1 downto 0);
 
 begin
 
@@ -60,15 +63,18 @@ begin
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,
-        clear_i                      => clear_s,
         dcc_valid_i                  => valid_i_s,
         dcc_coeff_i                  => dcc_coeff_s,
         dcc_addr_i                   => dcc_addr_s,
+        dcc_time_frame_start_i       => dcc_time_frame_start_s,
+        dcc_time_frame_end_i				 => dcc_time_frame_end_s,
         ram_coeff_dat_i              => ram_data_s,
         ram_addr_i                   => ram_addr_s,
         ram_write_enable_i           => ram_write_s,
         sp_o                         => sp_s,
-        sp_valid_o                   => valid_o_s
+        sp_debug_o                   => sp_debug_s,
+        sp_valid_o                   => valid_o_s,
+        sp_valid_debug_o             => valid_debug_s
       );
 
   clk_process : process is
@@ -93,15 +99,25 @@ begin
     wait for 17.9424 us;
   end process valid_fofb_ctrl_process;
 
-  clear_process : process is
+  time_frame_start_process : process is
   -- clear accumulator and registers to start the fofb cycle
   begin
     wait for fofb_ctrl_period/2;
-    clear_s                          <= '1';
+    dcc_time_frame_start_s           <= '1';
     wait for clk_period;
-    clear_s                          <= '0';
+    dcc_time_frame_start_s           <= '0';
     wait for fofb_ctrl_period/2-clk_period;
-  end process clear_process;
+  end process time_frame_start_process;
+
+  time_frame_end_process : process is
+  -- validate te output
+  begin
+    wait for fofb_ctrl_period;
+    dcc_time_frame_end_s 	           <= '1';
+    wait for clk_period;
+    dcc_time_frame_end_s  	         <= '0';
+    wait for fofb_ctrl_period-clk_period;
+  end process time_frame_end_process;
 
   valid_tr_gen_process : process is
   begin
@@ -129,7 +145,7 @@ begin
 
   begin
     if rising_edge(clk_s) then
-      if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' and clear_s = '0' then
+      if not endfile(a_data_file) and valid_tr = '1' and ram_finish_s = '1' and valid_fofb_ctrl_s = '1' and dcc_time_frame_start_s = '0' then
         -- Reading input a[k] from a txt file
         readline(a_data_file, a_line);
         read(a_line, a_datain);
@@ -183,15 +199,15 @@ begin
   end process ram_input_read_process;
 
   output_write_process : process(clk_s)
-    file ouput_file                    : text open write_mode is "my_output.txt";
-    file c_data_file                   : text open read_mode is "c_acc.txt";
-    variable o_line, c_line            : line;
-    variable dataout, c_datain         : integer;
-    variable pass_test                 : std_logic := '0';
+    file ouput_file                  : text open write_mode is "my_output.txt";
+    file c_data_file                 : text open read_mode is "c_acc.txt";
+    variable o_line, c_line          : line;
+    variable dataout, c_datain       : integer;
+    variable pass_test               : std_logic := '0';
 
   begin
-    if valid_o_s(0) = '1' then
-      dataout                        := to_integer(sp_s(0));
+    if valid_debug_s(0) = '1' then
+      dataout                        := to_integer(sp_debug_s(0));
 
       if rising_edge(clk_s) then
         -- Write output to a txt file

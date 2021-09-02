@@ -35,7 +35,7 @@ package dot_prod_pkg is
       -- Width for input b[k]
       g_b_width                    : natural := 32;
 
-      -- Width for output c
+      -- Width for output
       g_c_width                    : natural := 32
     );
     port(
@@ -51,6 +51,9 @@ package dot_prod_pkg is
       -- Data valid input
       valid_i                      : in std_logic;
 
+      -- Time frame end
+      time_frame_end_i						 : in std_logic;
+
       -- Input a[k]
       a_i                          : in signed(g_a_width-1 downto 0);
 
@@ -58,10 +61,12 @@ package dot_prod_pkg is
       b_i                          : in signed(g_b_width-1 downto 0);
 
       -- Result output
-      c_o                          : out signed(g_c_width-1 downto 0);
+    	result_o                     : out signed(g_c_width-1 downto 0);
+    	result_debug_o               : out signed(g_c_width-1 downto 0);
 
-      -- Data valid output
-      c_valid_o                    : out std_logic
+			-- Data valid output
+    	result_valid_end_o    		   : out std_logic;
+    	result_valid_debug_o  			 : out std_logic
     );
   end component dot_prod;
 
@@ -95,13 +100,12 @@ package dot_prod_pkg is
       -- Reset
       rst_n_i                      : in std_logic;
 
-      -- Clear
-      clear_i                      : in std_logic;
-
       -- DCC interface
       dcc_valid_i                  : in std_logic;
       dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
       dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+      dcc_time_frame_start_i			 : in std_logic;
+    	dcc_time_frame_end_i				 : in std_logic;
 
       -- RAM interface
       ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
@@ -109,10 +113,12 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
-      sp_o                         : out signed(g_c_width-1 downto 0);
+    	sp_o                         : out signed(g_c_width-1 downto 0);
+    	sp_debug_o                   : out signed(g_c_width-1 downto 0);
 
-      -- Valid output
-      sp_valid_o                   : out std_logic
+    	-- Valid output
+    	sp_valid_o                   : out std_logic;
+    	sp_valid_debug_o             : out std_logic
     );
   end component dot_prod_coeff_vec;
 
@@ -141,11 +147,10 @@ package dot_prod_pkg is
     );
     port (
       ---------------------------------------------------------------------------
-      -- Clock, reset and clear interface
+      -- Clock and reset interface
       ---------------------------------------------------------------------------
       clk_i                        : in std_logic;
       rst_n_i                      : in std_logic;
-      clear_i                      : in std_logic;
 
       ---------------------------------------------------------------------------
       -- Dot product Interface Signals
@@ -154,6 +159,8 @@ package dot_prod_pkg is
       dcc_valid_i                  : in std_logic;
       dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
       dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+      dcc_time_frame_start_i			 : in std_logic;
+    	dcc_time_frame_end_i				 : in std_logic;
 
       -- RAM interface
       ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
@@ -161,10 +168,12 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
-      sp_o                         : out signed(g_c_width-1 downto 0);
+    	sp_o                         : out signed(g_c_width-1 downto 0);
+    	sp_debug_o                   : out signed(g_c_width-1 downto 0);
 
-      -- Valid output
-      sp_valid_o                   : out std_logic
+    	-- Valid output
+    	sp_valid_o                   : out std_logic;
+    	sp_valid_debug_o             : out std_logic
     );
   end component fofb_processing_channel;
 
@@ -190,9 +199,9 @@ package dot_prod_pkg is
 
       -- Width for output
       g_c_width                    : natural := 32;
-      
+
       -- Number of channels
-      g_mat_size                     : natural := 8
+      g_channels   	               : natural := 8
     );
     port (
       ---------------------------------------------------------------------------
@@ -204,13 +213,12 @@ package dot_prod_pkg is
       -- Reset
       rst_n_i                      : in std_logic;
 
-      -- Clear
-      clear_i                      : in std_logic;
-
       -- DCC interface
       dcc_valid_i                  : in std_logic;
       dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
       dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+      dcc_time_frame_start_i       : in std_logic;
+      dcc_time_frame_end_i    	   : in std_logic;
 
       -- RAM interface
       ram_coeff_dat_i              : in std_logic_vector(g_b_width-1 downto 0);
@@ -218,10 +226,12 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
-      sp_o                         : out t_dot_prod_array_signed(g_mat_size-1 downto 0);
+    	sp_o                           : out t_dot_prod_array_signed(g_channels-1 downto 0);
+    	sp_debug_o                     : out t_dot_prod_array_signed(g_channels-1 downto 0);
 
-      -- Valid output
-      sp_valid_o                   : out std_logic_vector(g_mat_size-1 downto 0)
+    	-- Valid output
+    	sp_valid_o                     : out std_logic_vector(g_channels-1 downto 0);
+    	sp_valid_debug_o               : out std_logic_vector(g_channels-1 downto 0)
     );
   end component fofb_processing;
 
