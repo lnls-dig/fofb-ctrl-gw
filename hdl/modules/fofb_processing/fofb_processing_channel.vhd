@@ -69,7 +69,7 @@ entity fofb_processing_channel is
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out signed(g_c_width-1 downto 0);
+		sp_o                           : out signed(g_c_width-1 downto 0);
     sp_debug_o                     : out signed(g_c_width-1 downto 0);
 
     -- Valid output

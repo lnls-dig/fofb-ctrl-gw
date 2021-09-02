@@ -66,7 +66,7 @@ begin
         dcc_valid_i                  => valid_i_s,
         dcc_coeff_i                  => dcc_coeff_s,
         dcc_addr_i                   => dcc_addr_s,
-        dcc_time_frame_start_i       => dcc_time_frame_start_s,
+        dcc_time_frame_start_i			 => dcc_time_frame_start_s,
         dcc_time_frame_end_i				 => dcc_time_frame_end_s,
         ram_coeff_dat_i              => ram_data_s,
         ram_addr_i                   => ram_addr_s,

@@ -500,7 +500,7 @@ package fofb_ctrl_pkg is
     g_b_width                                  : natural := 32;
     -- Width for ram addr
     g_k_width                                  : natural := 11;
-    -- Width for output c
+    -- Width for output
     g_c_width                                  : natural := 32;
     -- Number of channels
     g_channels                                 : natural := 8;

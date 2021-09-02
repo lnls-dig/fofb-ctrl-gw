@@ -82,7 +82,7 @@ entity wb_fofb_processing is
 		sp_debug_o                   : out t_dot_prod_array_signed(g_channels-1 downto 0);
 
 		-- Valid output
-	  sp_valid_o                   : out std_logic_vector(g_channels-1 downto 0);
+		sp_valid_o                   : out std_logic_vector(g_channels-1 downto 0);
 		sp_valid_debug_o             : out std_logic_vector(g_channels-1 downto 0);
 
     ---------------------------------------------------------------------------
