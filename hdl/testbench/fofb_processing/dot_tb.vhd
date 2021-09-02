@@ -42,7 +42,7 @@ architecture behave of dot_tb is
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
   signal dcc_time_frame_start_s      : std_logic                                  := '0';
-  signal dcc_time_frame_end_s    	   : std_logic                                  := '0';
+  signal dcc_time_frame_end_s    .    : std_logic                                  := '0';
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_i_s                   : std_logic                                  := '0';
@@ -66,8 +66,8 @@ begin
         dcc_valid_i                  => valid_i_s,
         dcc_coeff_i                  => dcc_coeff_s,
         dcc_addr_i                   => dcc_addr_s,
-        dcc_time_frame_start_i			 => dcc_time_frame_start_s,
-        dcc_time_frame_end_i				 => dcc_time_frame_end_s,
+        dcc_time_frame_start_i. . .  => dcc_time_frame_start_s,
+        dcc_time_frame_end_i. . . .  => dcc_time_frame_end_s,
         ram_coeff_dat_i              => ram_data_s,
         ram_addr_i                   => ram_addr_s,
         ram_write_enable_i           => ram_write_s,
@@ -113,9 +113,9 @@ begin
   -- validate te output
   begin
     wait for fofb_ctrl_period;
-		dcc_time_frame_end_s	           <= '1';
+. . dcc_time_frame_end_s.            <= '1';
     wait for clk_period;
-		dcc_time_frame_end_s					   <= '0';
+. . dcc_time_frame_end_s. . . . .    <= '0';
     wait for fofb_ctrl_period-clk_period;
   end process time_frame_end_process;
 
