@@ -78,12 +78,12 @@ entity wb_fofb_processing is
     dcc_time_frame_end_i				 : in std_logic;
 
     -- Result output array
-		sp_o												 : out t_dot_prod_array_signed(g_channels-1 downto 0);
-		sp_debug_o	                 : out t_dot_prod_array_signed(g_channels-1 downto 0);
+    sp_o                         : out t_dot_prod_array_signed(g_channels-1 downto 0);
+    sp_debug_o                   : out t_dot_prod_array_signed(g_channels-1 downto 0);
 
-		-- Valid output
-		sp_valid_o									 : out std_logic_vector(g_channels-1 downto 0);
-		sp_valid_debug_o						 : out std_logic_vector(g_channels-1 downto 0);
+    -- Valid output
+    sp_valid_o                   : out std_logic_vector(g_channels-1 downto 0);
+    sp_valid_debug_o             : out std_logic_vector(g_channels-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -167,7 +167,7 @@ begin
     dcc_coeff_i                  => dcc_coeff_i,
     dcc_addr_i                   => dcc_addr_i,
     dcc_time_frame_start_i       => dcc_time_frame_start_i,
-		dcc_time_frame_end_i				 => dcc_time_frame_end_i,
+    dcc_time_frame_end_i         => dcc_time_frame_end_i,
 
     -- RAM interface
     ram_coeff_dat_i              => ram_coeff_dat_s,

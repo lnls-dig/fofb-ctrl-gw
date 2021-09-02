@@ -51,7 +51,7 @@ entity dot_prod is
     valid_i                        : in std_logic;
 
     -- Time frame end
-    time_frame_end_i		       		 : in std_logic;
+    time_frame_end_i               : in std_logic;
 
     -- Input a[k]
     a_i                            : in signed(g_a_width-1 downto 0);
@@ -65,7 +65,7 @@ entity dot_prod is
 
 	-- Data valid output
     result_valid_end_o						 : out std_logic;
-    result_valid_debug_o	         : out std_logic
+    result_valid_debug_o           : out std_logic
   );
 end dot_prod;
 
@@ -195,10 +195,10 @@ begin
 
 				-- End of the FOFB cycle
         if (time_frame_end_i = '1') then
-        	result_o                 <= resize(adder_reg2_s, result_o'length);
-        	result_valid_end_o       <= '1';
-				else
-					result_valid_end_o       <= '0';
+          result_o                 <= resize(adder_reg2_s, result_o'length);
+          result_valid_end_o       <= '1';
+        else
+          result_valid_end_o       <= '0';
         end if;
       end if; -- Reset
     end if; -- Clock

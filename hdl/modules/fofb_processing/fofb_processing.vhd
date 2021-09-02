@@ -90,10 +90,10 @@ begin
   begin
     if (rising_edge(clk_i)) then
 
-    	if dcc_time_frame_start_i = '1' then
-				aa_s											 <= (others => '0');
-				wea_s											 <= (others => '0');
-    	end if;
+      if dcc_time_frame_start_i = '1' then
+        aa_s                       <= (others => '0');
+        wea_s                      <= (others => '0');
+      end if;
 
       aa_s(g_k_width-4 downto 0)   <= ram_addr_i(g_k_width-4 downto 0);
 
@@ -117,7 +117,7 @@ begin
         dcc_coeff_i                => dcc_coeff_i,
         dcc_addr_i                 => dcc_addr_i,
         dcc_time_frame_start_i	   => dcc_time_frame_start_i,
-			  dcc_time_frame_end_i			 => dcc_time_frame_end_i,
+        dcc_time_frame_end_i       => dcc_time_frame_end_i,
         ram_coeff_dat_i            => ram_coeff_dat_i,
         ram_addr_i                 => aa_s,
         ram_write_enable_i         => wea_s(i),
