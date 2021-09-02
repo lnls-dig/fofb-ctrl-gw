@@ -74,8 +74,8 @@ entity wb_fofb_processing is
     dcc_valid_i                  : in std_logic;
     dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
     dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
-    dcc_time_frame_start_i	  	 : in std_logic;
-    dcc_time_frame_end_i				 : in std_logic;
+    dcc_time_frame_start_i       : in std_logic;
+    dcc_time_frame_end_i         : in std_logic;
 
     -- Result output array
     sp_o                         : out t_dot_prod_array_signed(g_channels-1 downto 0);

@@ -88,7 +88,7 @@ begin
       rst_n_i                      => rst_n_i,
       dcc_valid_i                  => dcc_valid_i,
       dcc_coeff_i                  => dcc_coeff_i,
-      dcc_addr_i									 => dcc_addr_i,
+      dcc_addr_i                   => dcc_addr_i,
       dcc_time_frame_start_i       => dcc_time_frame_start_i,
       dcc_time_frame_end_i         => dcc_time_frame_end_i,
       ram_coeff_dat_i              => ram_coeff_dat_i,
