@@ -138,6 +138,8 @@ begin
     dcc_valid_i                  => dcc_valid_i,
     dcc_coeff_i                  => dcc_coeff_i,
     dcc_addr_i                   => dcc_addr_i,
+    dcc_time_frame_start_i       => dcc_time_frame_start_i,
+    dcc_time_frame_end_i         => dcc_time_frame_end_i,
 
     -- Result output array
     sp_o                         => sp_o,
