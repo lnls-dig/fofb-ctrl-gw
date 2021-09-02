@@ -60,8 +60,8 @@ entity fofb_processing_channel is
     dcc_valid_i                    : in std_logic;
     dcc_coeff_i                    : in signed(g_a_width-1 downto 0);
     dcc_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
-    dcc_time_frame_start_i				 : in std_logic;
-    dcc_time_frame_end_i					 : in std_logic;
+		dcc_time_frame_start_i				 : in std_logic;
+		dcc_time_frame_end_i					 : in std_logic;
 
     -- RAM interface
     ram_coeff_dat_i                : in std_logic_vector(g_b_width-1 downto 0);
@@ -88,14 +88,14 @@ begin
       rst_n_i                      => rst_n_i,
       dcc_valid_i                  => dcc_valid_i,
       dcc_coeff_i                  => dcc_coeff_i,
-      dcc_addr_i                   => dcc_addr_i,
-      dcc_time_frame_start_i			 => dcc_time_frame_start_i,
-    	dcc_time_frame_end_i				 => dcc_time_frame_end_i,
+			dcc_addr_i									 => dcc_addr_i,
+			dcc_time_frame_start_i			 => dcc_time_frame_start_i,
+			dcc_time_frame_end_i				 => dcc_time_frame_end_i,
       ram_coeff_dat_i              => ram_coeff_dat_i,
       ram_addr_i                   => ram_addr_i,
       ram_write_enable_i           => ram_write_enable_i,
       sp_o                         => sp_o,
-      sp_debug_o									 => sp_debug_o,
+			sp_debug_o									 => sp_debug_o,
       sp_valid_o                   => sp_valid_o,
       sp_valid_debug_o             => sp_valid_debug_o
     );

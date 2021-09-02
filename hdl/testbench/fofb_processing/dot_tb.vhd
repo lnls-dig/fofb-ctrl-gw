@@ -113,9 +113,9 @@ begin
   -- validate te output
   begin
     wait for fofb_ctrl_period;
-    dcc_time_frame_end_s 	           <= '1';
+		dcc_time_frame_end_s	           <= '1';
     wait for clk_period;
-    dcc_time_frame_end_s  	         <= '0';
+		dcc_time_frame_end_s					   <= '0';
     wait for fofb_ctrl_period-clk_period;
   end process time_frame_end_process;
 
