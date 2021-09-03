@@ -61,9 +61,7 @@ entity fofb_processing is
     rst_n_i                        : in std_logic;
 
     -- DCC interface
-    dcc_valid_i                    : in std_logic;
-    dcc_coeff_i                    : in signed(g_A_WIDTH-1 downto 0);
-    dcc_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
+    dcc_fod_i                      : in t_dot_prod_array_record_fod(g_CHANNELS-1 downto 0);
     dcc_time_frame_start_i         : in std_logic;
     dcc_time_frame_end_i           : in std_logic;
 
@@ -114,9 +112,9 @@ begin
       port map (
         clk_i                      => clk_i,
         rst_n_i                    => rst_n_i,
-        dcc_valid_i                => dcc_valid_i,
-        dcc_coeff_i                => dcc_coeff_i,
-        dcc_addr_i                 => dcc_addr_i,
+        dcc_valid_i                => dcc_fod_i(i).valid,
+        dcc_data_i                 => signed(dcc_fod_i(i).data),
+        dcc_addr_i                 => dcc_fod_i(i).addr,
         dcc_time_frame_start_i	   => dcc_time_frame_start_i,
         dcc_time_frame_end_i       => dcc_time_frame_end_i,
         ram_coeff_dat_i            => ram_coeff_dat_i,

@@ -57,7 +57,7 @@ entity dot_prod_coeff_vec is
 
     -- DCC interface
     dcc_valid_i                    : in std_logic;
-    dcc_coeff_i                    : in signed(g_A_WIDTH-1 downto 0);
+    dcc_data_i                     : in signed(g_A_WIDTH-1 downto 0);
     dcc_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     dcc_time_frame_start_i         : in std_logic;
     dcc_time_frame_end_i           : in std_logic;
@@ -79,8 +79,8 @@ entity dot_prod_coeff_vec is
 
 architecture behave of dot_prod_coeff_vec is
 
-  signal dcc_coeff_s               : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
-  signal dcc_coeff_reg_s           : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
+  signal dcc_data_s                : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
+  signal dcc_data_reg_s            : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
   signal ram_coeff_dat_s           : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
   signal dcc_addr_reg_s            : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
   signal valid_i_s, valid_reg_s    : std_logic := '0';
@@ -102,16 +102,16 @@ begin
   begin
     if (rising_edge(clk_i)) then
       if rst_n_i = '0' then
-        dcc_coeff_reg_s            <= (others => '0');
-        dcc_coeff_s                <= (others => '0');
+        dcc_data_reg_s             <= (others => '0');
+        dcc_data_s                 <= (others => '0');
         dcc_addr_reg_s             <= (others => '0');
         ram_coeff_dat_s            <= (others => '0');
         valid_reg_s                <= '0';
         valid_i_s                  <= '0';
       end if;
       -- Coeffs from DCC delayed to align with coeffs from DPRAM
-      dcc_coeff_reg_s              <= dcc_coeff_i;
-      dcc_coeff_s                  <= dcc_coeff_reg_s;
+      dcc_data_reg_s               <= dcc_data_i;
+      dcc_data_s                   <= dcc_data_reg_s;
 
       dcc_addr_reg_s               <= dcc_addr_i;
       ram_coeff_dat_s              <= ram_coeff_dat_i;
@@ -160,7 +160,7 @@ begin
       clear_acc_i                  => dcc_time_frame_start_i,
       valid_i                      => valid_i_s,
       time_frame_end_i             => dcc_time_frame_end_i,
-      a_i                          => dcc_coeff_s,
+      a_i                          => dcc_data_s,
       b_i                          => signed(ram_coeff_s),
       result_o                     => sp_o,
       result_debug_o               => sp_debug_o,

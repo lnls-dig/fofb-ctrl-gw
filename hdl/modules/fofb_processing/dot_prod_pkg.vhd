@@ -51,6 +51,16 @@ package dot_prod_pkg is
     -- Output array
     type t_dot_prod_array_signed is array (natural range <>) of signed(c_C_WIDTH-1 downto 0);
 
+    -- Input record
+    type t_dot_prod_record_fod is record
+      valid                        : std_logic;                                -- data valid
+      data                         : std_logic_vector(c_A_WIDTH-1 downto 0);   -- (2*c_A_WIDTH-1 downto 0); -- coeffs x and y
+      addr                         : std_logic_vector(c_K_WIDTH-1 downto 0);   -- addr
+    end record t_dot_prod_record_fod;
+
+    -- Input array of record
+    type t_dot_prod_array_record_fod is array (natural range <>) of t_dot_prod_record_fod;
+
   component dot_prod is
     generic(
       -- Width for input a[k]
@@ -129,7 +139,7 @@ package dot_prod_pkg is
 
       -- DCC interface
       dcc_valid_i                  : in std_logic;
-      dcc_coeff_i                  : in signed(g_A_WIDTH-1 downto 0);
+      dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
       dcc_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
       dcc_time_frame_start_i       : in std_logic;
       dcc_time_frame_end_i         : in std_logic;
@@ -184,7 +194,7 @@ package dot_prod_pkg is
       ---------------------------------------------------------------------------
       -- DCC interface
       dcc_valid_i                  : in std_logic;
-      dcc_coeff_i                  : in signed(g_A_WIDTH-1 downto 0);
+      dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
       dcc_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
       dcc_time_frame_start_i       : in std_logic;
       dcc_time_frame_end_i         : in std_logic;
@@ -241,9 +251,7 @@ package dot_prod_pkg is
       rst_n_i                      : in std_logic;
 
       -- DCC interface
-      dcc_valid_i                  : in std_logic;
-      dcc_coeff_i                  : in signed(g_A_WIDTH-1 downto 0);
-      dcc_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
+      dcc_fod_i                    : in t_dot_prod_array_record_fod;
       dcc_time_frame_start_i       : in std_logic;
       dcc_time_frame_end_i    	   : in std_logic;
 

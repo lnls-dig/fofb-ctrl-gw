@@ -45,17 +45,22 @@ architecture behave of dot_tb is
   signal dcc_time_frame_end_s        : std_logic                                  := '0';
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
-  signal valid_i_s                   : std_logic                                  := '0';
   signal valid_tr                    : std_logic                                  := '0';
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
-  signal dcc_coeff_s                 : signed(c_a_width-1 downto 0)               := (others => '0');
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
-  signal dcc_addr_s, ram_addr_s      : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal ram_addr_s                  : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
   signal valid_o_s                   : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal valid_debug_s               : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
   signal sp_s                        : t_dot_prod_array_signed(c_mat_size-1 downto 0);
   signal sp_debug_s                  : t_dot_prod_array_signed(c_mat_size-1 downto 0);
+
+  constant c_dcc_fod_s               : t_dot_prod_record_fod := (valid => '0',
+                                                                 data  => (others => '0'),
+                                                                 addr  => (others => '0'));
+
+  signal dcc_fod_s                   : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
+
 
 begin
 
@@ -63,9 +68,7 @@ begin
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,
-        dcc_valid_i                  => valid_i_s,
-        dcc_coeff_i                  => dcc_coeff_s,
-        dcc_addr_i                   => dcc_addr_s,
+        dcc_fod_i                    => dcc_fod_s,
         dcc_time_frame_start_i       => dcc_time_frame_start_s,
         dcc_time_frame_end_i         => dcc_time_frame_end_s,
         ram_coeff_dat_i              => ram_data_s,
@@ -155,15 +158,15 @@ begin
         read(k_line, k_datain);
 
         -- Pass the variable to a signal
-        dcc_coeff_s                  <= to_signed(a_datain, dcc_coeff_s'length);
-        dcc_addr_s                   <= to_stdlogicvector(k_datain);
+        dcc_fod_s(0).data            <= std_logic_vector(to_signed(a_datain, dcc_fod_s(0).data'length));
+        dcc_fod_s(0).addr            <= to_stdlogicvector(k_datain);
 
         -- Update valid input bit
-        valid_i_s                    <= '1';
+        dcc_fod_s(0).valid           <= '1';
 
       else
         -- Update valid input bit
-        valid_i_s                    <= '0';
+        dcc_fod_s(0).valid           <= '0';
       end if;
     end if;
   end process input_read_process;
