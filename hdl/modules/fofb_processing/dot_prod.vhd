@@ -26,16 +26,16 @@ use work.dot_prod_pkg.all;
 entity dot_prod is
   generic(
     -- Width for input a[k]
-    g_a_width                      : natural := 32;
+    g_A_WIDTH                      : natural := c_A_WIDTH;
 
     -- Width for input b[k]
-    g_b_width                      : natural := 32;
+    g_B_WIDTH                      : natural := c_B_WIDTH;
 
     -- Width for output
-    g_c_width                      : natural := 32;
+    g_C_WIDTH                      : natural := c_C_WIDTH;
 
     -- Extra bits for accumulator
-    g_extra_width                  : natural := 4
+    g_EXTRA_WIDTH                  : natural := c_EXTRA_WIDTH
   );
   port (
     -- Core clock
@@ -54,14 +54,14 @@ entity dot_prod is
     time_frame_end_i               : in std_logic;
 
     -- Input a[k]
-    a_i                            : in signed(g_a_width-1 downto 0);
+    a_i                            : in signed(g_A_WIDTH-1 downto 0);
 
     -- Input b[k]
-    b_i                            : in signed(g_b_width-1 downto 0);
+    b_i                            : in signed(g_B_WIDTH-1 downto 0);
 
     -- Result output
-    result_o                       : out signed(g_c_width-1 downto 0);
-    result_debug_o                 : out signed(g_c_width-1 downto 0);
+    result_o                       : out signed(g_C_WIDTH-1 downto 0);
+    result_debug_o                 : out signed(g_C_WIDTH-1 downto 0);
 
 	-- Data valid output
     result_valid_end_o						 : out std_logic;
@@ -72,14 +72,14 @@ end dot_prod;
 architecture behave of dot_prod is
 
   -- Registers for input values
-  signal a_reg_s                   : signed(g_a_width-1 downto 0)                 := (others =>'0');
-  signal b_reg_s                   : signed(g_b_width-1 downto 0)                 := (others =>'0');
+  signal a_reg_s                   : signed(g_A_WIDTH-1 downto 0)                 := (others =>'0');
+  signal b_reg_s                   : signed(g_B_WIDTH-1 downto 0)                 := (others =>'0');
 
   -- Registers for intermediate values
-  signal mult_reg_s                : signed(2*g_c_width-1 downto 0)               := (others =>'0');
-  signal adder_out_s               : signed(2*g_c_width+g_extra_width-1 downto 0) := (others =>'0');
-  signal adder_reg1_s              : signed(2*g_c_width+g_extra_width-1 downto 0) := (others =>'0');
-  signal adder_reg2_s              : signed(2*g_c_width+g_extra_width-1 downto 0) := (others =>'0');
+  signal mult_reg_s                : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
+  signal adder_out_s               : signed(2*g_A_WIDTH+g_EXTRA_WIDTH-1 downto 0) := (others =>'0');
+  signal adder_reg1_s              : signed(2*g_A_WIDTH+g_EXTRA_WIDTH-1 downto 0) := (others =>'0');
+  signal adder_reg2_s              : signed(2*g_A_WIDTH+g_EXTRA_WIDTH-1 downto 0) := (others =>'0');
 
   -- Registers for bit valid
   signal valid_reg1_s              : std_logic                                    := '0';
@@ -89,12 +89,12 @@ architecture behave of dot_prod is
   signal valid_reg5_s              : std_logic                                    := '0';
 
   -- Registers for the correct DSP48 inference
-  signal mult_dsp1_s               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
-  signal mult_dsp2_s               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
-  signal mult_dsp3_s               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
-  signal mult_dsp4_s               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
-  signal mult_dsp5_s               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
-  signal mult_dsp6_s               : signed(2*g_c_width-1 downto 0)               := (others =>'0');
+  signal mult_dsp1_s               : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
+  signal mult_dsp2_s               : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
+  signal mult_dsp3_s               : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
+  signal mult_dsp4_s               : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
+  signal mult_dsp5_s               : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
+  signal mult_dsp6_s               : signed(2*g_A_WIDTH-1 downto 0)               := (others =>'0');
   signal valid_dsp1_s              : std_logic                                    := '0';
   signal valid_dsp2_s              : std_logic                                    := '0';
   signal valid_dsp3_s              : std_logic                                    := '0';

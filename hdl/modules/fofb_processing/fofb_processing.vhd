@@ -22,32 +22,33 @@ use ieee.numeric_std.all;
 library work;
 -- Dot product package
 use work.dot_prod_pkg.all;
+use work.genram_pkg.all;
 
 entity fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
-    g_data_width                   : natural := 32;
-    g_size                         : natural := c_size_dpram;
-    g_with_byte_enable             : boolean := false;
-    g_addr_conflict_resolution     : string  := "read_first";
-    g_init_file                    : string  := "";
-    g_dual_clock                   : boolean := true;
-    g_fail_if_file_not_found       : boolean := true;
+    g_DATA_WIDTH                   : natural := c_DATA_WIDTH;
+    g_SIZE                         : natural := c_SIZE;
+    g_WITH_BYTE_ENABLE             : boolean := c_WITH_BYTE_ENABLE;
+    g_ADDR_CONFLICT_RESOLUTION     : string  := c_ADDR_CONFLICT_RESOLUTION;
+    g_INIT_FILE                    : string  := c_INIT_FILE;
+    g_DUAL_CLOCK                   : boolean := c_DUAL_CLOCK;
+    g_FAIL_IF_FILE_NOT_FOUND       : boolean := c_FAIL_IF_FILE_NOT_FOUND;
 
     -- Width for DCC input
-    g_a_width                      : natural := 32;
+    g_A_WIDTH                      : natural := c_A_WIDTH;
 
-    -- Width for RAM data
-    g_b_width                      : natural := 32;
+    -- Width for RAM coeff
+    g_B_WIDTH                      : natural := c_B_WIDTH;
 
     -- Width for RAM addr
-    g_k_width                      : natural := 11;
+    g_K_WIDTH                      : natural := c_K_WIDTH;
 
     -- Width for output
-    g_c_width                      : natural := 32;
+    g_C_WIDTH                      : natural := c_C_WIDTH;
 
     -- Number of channels
-    g_channels                     : natural := 8
+    g_CHANNELS                     : natural := c_CHANNELS
   );
   port (
     ---------------------------------------------------------------------------
@@ -61,29 +62,29 @@ entity fofb_processing is
 
     -- DCC interface
     dcc_valid_i                    : in std_logic;
-    dcc_coeff_i                    : in signed(g_a_width-1 downto 0);
-    dcc_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_coeff_i                    : in signed(g_A_WIDTH-1 downto 0);
+    dcc_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     dcc_time_frame_start_i         : in std_logic;
     dcc_time_frame_end_i           : in std_logic;
 
     -- RAM interface
-    ram_coeff_dat_i                : in std_logic_vector(g_b_width-1 downto 0);
-    ram_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
+    ram_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out t_dot_prod_array_signed(g_channels-1 downto 0);
-    sp_debug_o                     : out t_dot_prod_array_signed(g_channels-1 downto 0);
+    sp_o                           : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
+    sp_debug_o                     : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
 
     -- Valid output
-    sp_valid_o                     : out std_logic_vector(g_channels-1 downto 0);
-    sp_valid_debug_o               : out std_logic_vector(g_channels-1 downto 0)
+    sp_valid_o                     : out std_logic_vector(g_CHANNELS-1 downto 0);
+    sp_valid_debug_o               : out std_logic_vector(g_CHANNELS-1 downto 0)
   );
   end fofb_processing;
 
 architecture behave of fofb_processing is
-  signal aa_s                      : std_logic_vector(g_k_width-1 downto 0)  := (others => '0');
-  signal wea_s                     : std_logic_vector(g_channels-1 downto 0) := (others => '0');
+  signal aa_s                      : std_logic_vector(g_K_WIDTH-1 downto 0)  := (others => '0');
+  signal wea_s                     : std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
 begin
 
   ram_write : process(clk_i)
@@ -93,22 +94,22 @@ begin
       if dcc_time_frame_start_i = '1' then
         aa_s                       <= (others => '0');
         wea_s                      <= (others => '0');
-      end if;
+      else
+        aa_s(g_K_WIDTH-f_log2_size(g_CHANNELS)-1 downto 0)
+                                   <= ram_addr_i(g_K_WIDTH-f_log2_size(g_CHANNELS)-1 downto 0);
 
-      aa_s(g_k_width-4 downto 0)   <= ram_addr_i(g_k_width-4 downto 0);
-
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "000" then wea_s(0) <= ram_write_enable_i; else wea_s(0) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "001" then wea_s(1) <= ram_write_enable_i; else wea_s(1) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "010" then wea_s(2) <= ram_write_enable_i; else wea_s(2) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "011" then wea_s(3) <= ram_write_enable_i; else wea_s(3) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "100" then wea_s(4) <= ram_write_enable_i; else wea_s(4) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "101" then wea_s(5) <= ram_write_enable_i; else wea_s(5) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "110" then wea_s(6) <= ram_write_enable_i; else wea_s(6) <= '0'; end if;
-      if ram_addr_i(g_k_width-1 downto g_k_width-3) = "111" then wea_s(7) <= ram_write_enable_i; else wea_s(7) <= '0'; end if;
-    end if;
+        for i in 0 to g_CHANNELS-1 loop
+          if ram_addr_i(g_K_WIDTH-1 downto g_K_WIDTH-f_log2_size(g_CHANNELS)) = std_logic_vector(to_unsigned(i, f_log2_size(g_CHANNELS))) then
+            wea_s(i)               <= ram_write_enable_i;
+          else
+            wea_s(i)               <= '0';
+          end if;
+        end loop;
+      end if; -- Clear
+    end if; -- Clock
   end process ram_write;
 
-  gen_channels : for i in 0 to g_channels-1 generate
+  gen_channels : for i in 0 to g_CHANNELS-1 generate
     fofb_processing_channel_interface : fofb_processing_channel
       port map (
         clk_i                      => clk_i,

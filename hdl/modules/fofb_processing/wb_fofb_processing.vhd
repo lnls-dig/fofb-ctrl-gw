@@ -34,24 +34,28 @@ use work.fofb_ctrl_pkg.all;
 entity wb_fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
-    g_data_width                 : natural := 32;
-    g_size                       : natural := c_size_dpram;
-    g_with_byte_enable           : boolean := false;
-    g_addr_conflict_resolution   : string  := "read_first";
-    g_init_file                  : string  := "";
-    g_dual_clock                 : boolean := true;
-    g_fail_if_file_not_found     : boolean := true;
+    g_DATA_WIDTH                 : natural := c_DATA_WIDTH;
+    g_SIZE                       : natural := c_SIZE;
+    g_WITH_BYTE_ENABLE           : boolean := c_WITH_BYTE_ENABLE;
+    g_ADDR_CONFLICT_RESOLUTION   : string  := c_ADDR_CONFLICT_RESOLUTION;
+    g_INIT_FILE                  : string  := c_INIT_FILE;
+    g_DUAL_CLOCK                 : boolean := c_DUAL_CLOCK;
+    g_FAIL_IF_FILE_NOT_FOUND     : boolean := c_FAIL_IF_FILE_NOT_FOUND;
 
-    -- Width for inputs x and y
-    g_a_width                    : natural := 32;
-    -- Width for ram data
-    g_b_width                    : natural := 32;
-    -- Width for ram addr
-    g_k_width                    : natural := 11;
+    -- Width for DCC input
+    g_A_WIDTH                    : natural := c_A_WIDTH;
+
+    -- Width for RAM coeff
+    g_B_WIDTH                    : natural := c_B_WIDTH;
+
+    -- Width for RAM addr
+    g_K_WIDTH                    : natural := c_K_WIDTH;
+
     -- Width for output
-    g_c_width                    : natural := 32;
+    g_C_WIDTH                    : natural := c_C_WIDTH;
+
     -- Number of channels
-    g_channels                   : natural := 8;
+    g_CHANNELS                   : natural := c_CHANNELS;
 
     -- Wishbone parameters
     g_INTERFACE_MODE             : t_wishbone_interface_mode      := CLASSIC;
@@ -72,18 +76,18 @@ entity wb_fofb_processing is
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_valid_i                  : in std_logic;
-    dcc_coeff_i                  : in signed(g_a_width-1 downto 0);
-    dcc_addr_i                   : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_coeff_i                  : in signed(g_A_WIDTH-1 downto 0);
+    dcc_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
     dcc_time_frame_start_i       : in std_logic;
     dcc_time_frame_end_i         : in std_logic;
 
     -- Result output array
-    sp_o                         : out t_dot_prod_array_signed(g_channels-1 downto 0);
-    sp_debug_o                   : out t_dot_prod_array_signed(g_channels-1 downto 0);
+    sp_o                         : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
+    sp_debug_o                   : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
 
     -- Valid output
-    sp_valid_o                   : out std_logic_vector(g_channels-1 downto 0);
-    sp_valid_debug_o             : out std_logic_vector(g_channels-1 downto 0);
+    sp_valid_o                   : out std_logic_vector(g_CHANNELS-1 downto 0);
+    sp_valid_debug_o             : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -136,24 +140,24 @@ begin
   cmp_fofb_processing_interface: fofb_processing
     generic map(
     -- Standard parameters of generic_dpram
-    g_data_width                 => g_data_width,
-    g_size                       => g_size,
-    g_with_byte_enable           => g_with_byte_enable,
-    g_addr_conflict_resolution   => g_addr_conflict_resolution,
-    g_init_file                  => g_init_file,
-    g_dual_clock                 => g_dual_clock,
-    g_fail_if_file_not_found     => g_fail_if_file_not_found,
+    g_DATA_WIDTH                 => g_DATA_WIDTH,
+    g_SIZE                       => g_SIZE,
+    g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
+    g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
+    g_INIT_FILE                  => g_INIT_FILE,
+    g_DUAL_CLOCK                 => g_DUAL_CLOCK,
+    g_FAIL_IF_FILE_NOT_FOUND     => g_FAIL_IF_FILE_NOT_FOUND,
 
     -- Width for inputs x and y
-    g_a_width                    => g_a_width,
+    g_A_WIDTH                    => g_A_WIDTH,
     -- Width for ram data
-    g_b_width                    => g_b_width,
+    g_B_WIDTH                    => g_B_WIDTH,
     -- Width for ram addr
-    g_k_width                    => g_k_width,
+    g_K_WIDTH                    => g_K_WIDTH,
     -- Width for output c
-    g_c_width                    => g_c_width,
+    g_C_WIDTH                    => g_C_WIDTH,
     -- Number of channels
-    g_channels                   => 8
+    g_CHANNELS                   => c_CHANNELS
     )
     port map(
     -- Core clock
@@ -171,7 +175,7 @@ begin
 
     -- RAM interface
     ram_coeff_dat_i              => ram_coeff_dat_s,
-    ram_addr_i                   => ram_coeff_addr_s(g_k_width-1 downto 0),
+    ram_addr_i                   => ram_coeff_addr_s(g_K_WIDTH-1 downto 0),
     ram_write_enable_i           => ram_write_enable_s,
 
     -- Result output array

@@ -36,7 +36,7 @@ architecture behave of dot_tb is
   constant c_a_width                 : natural                                    := 32;
   constant c_k_width                 : natural                                    := 11;
   constant c_b_width                 : natural                                    := 32;
-  constant c_c_width                 : natural                                    := 32;
+  constant c_c_width                 : natural                                    := 16;
   constant c_mat_size                : natural                                    := 8;
 
   signal clk_s                       : std_logic                                  := '0';

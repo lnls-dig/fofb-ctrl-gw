@@ -28,25 +28,25 @@ use work.genram_pkg.all;
 entity dot_prod_coeff_vec is
   generic(
     -- Standard parameters of generic_dpram
-    g_data_width                   : natural := 32;
-    g_size                         : natural := c_size_dpram;
-    g_with_byte_enable             : boolean := false;
-    g_addr_conflict_resolution     : string  := "read_first";
-    g_init_file                    : string  := "";
-    g_dual_clock                   : boolean := true;
-    g_fail_if_file_not_found       : boolean := true;
+    g_DATA_WIDTH                   : natural := c_DATA_WIDTH;
+    g_SIZE                         : natural := c_SIZE;
+    g_WITH_BYTE_ENABLE             : boolean := c_WITH_BYTE_ENABLE;
+    g_ADDR_CONFLICT_RESOLUTION     : string  := c_ADDR_CONFLICT_RESOLUTION;
+    g_INIT_FILE                    : string  := c_INIT_FILE;
+    g_DUAL_CLOCK                   : boolean := c_DUAL_CLOCK;
+    g_FAIL_IF_FILE_NOT_FOUND       : boolean := c_FAIL_IF_FILE_NOT_FOUND;
 
     -- Width for DCC input
-    g_a_width                      : natural := 32;
+    g_A_WIDTH                      : natural := c_A_WIDTH;
 
-    -- Width for RAM data
-    g_b_width                      : natural := 32;
+    -- Width for RAM coeff
+    g_B_WIDTH                      : natural := c_B_WIDTH;
 
     -- Width for RAM addr
-    g_k_width                      : natural := 11;
+    g_K_WIDTH                      : natural := c_K_WIDTH;
 
     -- Width for output
-    g_c_width                      : natural := 32
+    g_C_WIDTH                      : natural := c_C_WIDTH
   );
   port (
     -- Core clock
@@ -57,19 +57,19 @@ entity dot_prod_coeff_vec is
 
     -- DCC interface
     dcc_valid_i                    : in std_logic;
-    dcc_coeff_i                    : in signed(g_a_width-1 downto 0);
-    dcc_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    dcc_coeff_i                    : in signed(g_A_WIDTH-1 downto 0);
+    dcc_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     dcc_time_frame_start_i         : in std_logic;
     dcc_time_frame_end_i           : in std_logic;
 
     -- RAM interface
-    ram_coeff_dat_i                : in std_logic_vector(g_b_width-1 downto 0);
-    ram_addr_i                     : in std_logic_vector(g_k_width-1 downto 0);
+    ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
+    ram_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
-    sp_o                           : out signed(g_c_width-1 downto 0);
-    sp_debug_o                     : out signed(g_c_width-1 downto 0);
+    sp_o                           : out signed(g_C_WIDTH-1 downto 0);
+    sp_debug_o                     : out signed(g_C_WIDTH-1 downto 0);
 
     -- Valid output
     sp_valid_o                     : out std_logic;
@@ -79,22 +79,22 @@ entity dot_prod_coeff_vec is
 
 architecture behave of dot_prod_coeff_vec is
 
-  signal dcc_coeff_s               : signed(g_a_width-1 downto 0)               := (others => '0');
-  signal dcc_coeff_reg_s           : signed(g_a_width-1 downto 0)               := (others => '0');
-  signal ram_coeff_dat_s           : std_logic_vector(g_b_width-1 downto 0)     := (others => '0');
-  signal dcc_addr_reg_s            : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
+  signal dcc_coeff_s               : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
+  signal dcc_coeff_reg_s           : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
+  signal ram_coeff_dat_s           : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
+  signal dcc_addr_reg_s            : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
   signal valid_i_s, valid_reg_s    : std_logic := '0';
 
   -- DPRAM port A (write)
   signal wea_s                     : std_logic := '0';
-  signal aa_s                      : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
-  signal qa_s                      : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
+  signal aa_s                      : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
+  signal qa_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
 
   -- DPRAM port B (read)
   signal web_s                     : std_logic := '0';
-  signal ab_s                      : std_logic_vector(g_k_width-1 downto 0)     := (others => '0');
-  signal db_s                      : std_logic_vector(g_data_width-1 downto 0)  := (others => '0');
-  signal ram_coeff_s               : std_logic_vector(g_b_width-1 downto 0);
+  signal ab_s                      : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
+  signal db_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
+  signal ram_coeff_s               : std_logic_vector(g_B_WIDTH-1 downto 0);
 
 begin
 
@@ -124,13 +124,13 @@ begin
 
   cmp_ram_interface : generic_dpram
     generic map (
-      g_data_width                 => g_data_width,
-      g_size                       => g_size,
-      g_with_byte_enable           => g_with_byte_enable,
-      g_addr_conflict_resolution   => g_addr_conflict_resolution,
-      g_init_file                  => g_init_file,
-      g_dual_clock                 => g_dual_clock,
-      g_fail_if_file_not_found     => g_fail_if_file_not_found
+      g_DATA_WIDTH                 => g_DATA_WIDTH,
+      g_SIZE                       => g_SIZE,
+      g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
+      g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
+      g_INIT_FILE                  => g_INIT_FILE,
+      g_DUAL_CLOCK                 => g_DUAL_CLOCK,
+      g_FAIL_IF_FILE_NOT_FOUND     => g_FAIL_IF_FILE_NOT_FOUND
     )
     port map(
       -- Synchronous reset
