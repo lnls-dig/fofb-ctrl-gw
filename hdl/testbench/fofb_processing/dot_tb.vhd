@@ -37,30 +37,35 @@ architecture behave of dot_tb is
   constant c_k_width                 : natural                                    := 11;
   constant c_b_width                 : natural                                    := 32;
   constant c_c_width                 : natural                                    := 16;
-  constant c_mat_size                : natural                                    := 8;
+  constant c_channels                : natural                                    := 8;
 
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
+
   signal dcc_time_frame_start_s      : std_logic                                  := '0';
   signal dcc_time_frame_end_s        : std_logic                                  := '0';
+
   signal fofb_ctrl_s                 : std_logic                                  := '0';
   signal valid_fofb_ctrl_s           : std_logic                                  := '0';
   signal valid_tr                    : std_logic                                  := '0';
+
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
   signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
   signal ram_addr_s                  : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
-  signal valid_o_s                   : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal valid_debug_s               : std_logic_vector(c_mat_size-1 downto 0)    := (others => '0');
-  signal sp_s                        : t_dot_prod_array_signed(c_mat_size-1 downto 0);
-  signal sp_debug_s                  : t_dot_prod_array_signed(c_mat_size-1 downto 0);
 
-  constant c_dcc_fod_s               : t_dot_prod_record_fod := (valid => '0',
-                                                                 data  => (others => '0'),
-                                                                 addr  => (others => '0'));
+  signal valid_o_s                   : std_logic_vector(c_channels-1 downto 0)    := (others => '0');
+  signal valid_debug_s               : std_logic_vector(c_channels-1 downto 0)    := (others => '0');
 
-  signal dcc_fod_s                   : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
+  signal sp_s                        : t_dot_prod_array_signed(c_channels-1 downto 0);
+  signal sp_debug_s                  : t_dot_prod_array_signed(c_channels-1 downto 0);
 
+  constant c_dcc_fod_s               : t_dot_prod_record_fod                      := (valid => '0',
+                                                                                      data  => (others => '0'),
+                                                                                      addr  => (others => '0'));
+
+  signal dcc_fod_s                   : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0)
+                                                                                  := (others => c_dcc_fod_s);
 
 begin
 

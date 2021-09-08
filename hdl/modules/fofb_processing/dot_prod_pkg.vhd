@@ -53,9 +53,9 @@ package dot_prod_pkg is
 
     -- Input record
     type t_dot_prod_record_fod is record
-      valid                        : std_logic;                                -- data valid
-      data                         : std_logic_vector(c_A_WIDTH-1 downto 0);   -- (2*c_A_WIDTH-1 downto 0); -- coeffs x and y
-      addr                         : std_logic_vector(c_K_WIDTH-1 downto 0);   -- addr
+      valid                        : std_logic;
+      data                         : std_logic_vector(c_A_WIDTH-1 downto 0);
+      addr                         : std_logic_vector(c_K_WIDTH-1 downto 0);
     end record t_dot_prod_record_fod;
 
     -- Input array of record
