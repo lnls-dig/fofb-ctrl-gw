@@ -522,6 +522,9 @@ package fofb_ctrl_pkg is
     -- Width for RAM addr
     g_K_WIDTH                                  : natural := c_K_WIDTH;
 
+    -- Width for DCC addr
+    g_ID_WIDTH                                 : natural := c_ID_WIDTH;
+
     -- Width for output
     g_C_WIDTH                                  : natural := c_C_WIDTH;
 
@@ -596,6 +599,9 @@ package fofb_ctrl_pkg is
 
     -- Width for RAM addr
     g_K_WIDTH                                  : natural := c_K_WIDTH;
+
+    -- Width for DCC addr
+    g_ID_WIDTH                                 : natural := c_ID_WIDTH;
 
     -- Width for output
     g_C_WIDTH                                  : natural := c_C_WIDTH;
@@ -674,10 +680,10 @@ package fofb_ctrl_pkg is
     addr_first    => x"0000000000000000",
     addr_last     => x"00000000000000FF",
     product => (
-    vendor_id     => x"1000000000000d15",       -- DLS
+    vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"49681ca6",
     version       => x"00000001",
     date          => x"20210819",
-    name          => "MATMUL_REGS       ")));
+    name          => "FOFB_PROC_REGS     ")));
 
 end fofb_ctrl_pkg;

@@ -35,6 +35,7 @@ architecture behave of dot_tb is
 
   constant c_a_width                 : natural                                    := 32;
   constant c_k_width                 : natural                                    := 11;
+  constant c_id_width                : natural                                    := 9;
   constant c_b_width                 : natural                                    := 32;
   constant c_c_width                 : natural                                    := 16;
   constant c_channels                : natural                                    := 8;
@@ -149,7 +150,7 @@ begin
     file k_data_file                 : text open read_mode is "k.txt";
     variable a_line, k_line          : line;
     variable a_datain                : integer;
-    variable k_datain                : bit_vector(c_k_width-1 downto 0);
+    variable k_datain                : bit_vector(c_id_width-1 downto 0);
 
   begin
     if rising_edge(clk_s) then

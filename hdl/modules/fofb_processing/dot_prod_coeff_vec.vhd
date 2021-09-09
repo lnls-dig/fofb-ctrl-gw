@@ -45,6 +45,9 @@ entity dot_prod_coeff_vec is
     -- Width for RAM addr
     g_K_WIDTH                      : natural := c_K_WIDTH;
 
+    -- Width for DCC addr
+    g_ID_WIDTH                      : natural := c_ID_WIDTH;
+
     -- Width for output
     g_C_WIDTH                      : natural := c_C_WIDTH
   );
@@ -58,7 +61,7 @@ entity dot_prod_coeff_vec is
     -- DCC interface
     dcc_valid_i                    : in std_logic;
     dcc_data_i                     : in signed(g_A_WIDTH-1 downto 0);
-    dcc_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
+    dcc_addr_i                     : in std_logic_vector(g_ID_WIDTH-1 downto 0);
     dcc_time_frame_start_i         : in std_logic;
     dcc_time_frame_end_i           : in std_logic;
 
@@ -113,7 +116,8 @@ begin
       dcc_data_reg_s               <= dcc_data_i;
       dcc_data_s                   <= dcc_data_reg_s;
 
-      dcc_addr_reg_s               <= dcc_addr_i;
+      dcc_addr_reg_s(g_ID_WIDTH-1 downto 0)
+                                   <= dcc_addr_i;
       ram_coeff_dat_s              <= ram_coeff_dat_i;
 
       -- Valid bit delayed to align with coeffs from DPRAM

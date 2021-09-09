@@ -41,6 +41,8 @@ package dot_prod_pkg is
     constant c_B_WIDTH             : natural := 32;
     -- Width for ram addr
     constant c_K_WIDTH             : natural := 11;
+    -- Width for dcc addr
+    constant c_ID_WIDTH            : natural := 9;
     -- Width for output
     constant c_C_WIDTH             : natural := 16;
     -- Number of channels
@@ -55,7 +57,7 @@ package dot_prod_pkg is
     type t_dot_prod_record_fod is record
       valid                        : std_logic;
       data                         : std_logic_vector(c_A_WIDTH-1 downto 0);
-      addr                         : std_logic_vector(c_K_WIDTH-1 downto 0);
+      addr                         : std_logic_vector(c_ID_WIDTH-1 downto 0);
     end record t_dot_prod_record_fod;
 
     -- Input array of record
@@ -127,6 +129,9 @@ package dot_prod_pkg is
       -- Width for RAM addr
       g_K_WIDTH                    : natural := c_K_WIDTH;
 
+      -- Width for DCC addr
+      g_ID_WIDTH                   : natural := c_ID_WIDTH;
+
       -- Width for output
       g_C_WIDTH                    : natural := c_C_WIDTH
     );
@@ -140,7 +145,7 @@ package dot_prod_pkg is
       -- DCC interface
       dcc_valid_i                  : in std_logic;
       dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
-      dcc_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
+      dcc_addr_i                   : in std_logic_vector(c_ID_WIDTH-1 downto 0);
       dcc_time_frame_start_i       : in std_logic;
       dcc_time_frame_end_i         : in std_logic;
 
@@ -179,6 +184,9 @@ package dot_prod_pkg is
       -- Width for RAM addr
       g_K_WIDTH                    : natural := c_K_WIDTH;
 
+      -- Width for DCC addr
+      g_ID_WIDTH                   : natural := c_ID_WIDTH;
+
       -- Width for output
       g_C_WIDTH                    : natural := c_C_WIDTH
     );
@@ -195,7 +203,7 @@ package dot_prod_pkg is
       -- DCC interface
       dcc_valid_i                  : in std_logic;
       dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
-      dcc_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
+      dcc_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
       dcc_time_frame_start_i       : in std_logic;
       dcc_time_frame_end_i         : in std_logic;
 
@@ -233,6 +241,9 @@ package dot_prod_pkg is
 
       -- Width for RAM addr
       g_K_WIDTH                    : natural := c_K_WIDTH;
+
+      -- Width for DCC addr
+      g_ID_WIDTH                   : natural := c_ID_WIDTH;
 
       -- Width for output
       g_C_WIDTH                    : natural := c_C_WIDTH;

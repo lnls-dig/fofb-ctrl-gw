@@ -51,6 +51,9 @@ entity xwb_fofb_processing is
     -- Width for RAM addr
     g_K_WIDTH                    : natural := c_K_WIDTH;
 
+    -- Width for DCC addr
+    g_ID_WIDTH                   : natural := c_ID_WIDTH;
+
     -- Width for output
     g_C_WIDTH                    : natural := c_C_WIDTH;
 
@@ -116,6 +119,8 @@ begin
     g_B_WIDTH                    => g_B_WIDTH,
     -- Width for ram addr
     g_K_WIDTH                    => g_K_WIDTH,
+    -- Width for dcc addr
+    g_ID_WIDTH                   => g_ID_WIDTH,
     -- Width for output c
     g_C_WIDTH                    => g_C_WIDTH,
 

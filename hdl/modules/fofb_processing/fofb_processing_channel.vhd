@@ -43,6 +43,9 @@ entity fofb_processing_channel is
     -- Width for RAM addr
     g_K_WIDTH                      : natural := c_K_WIDTH;
 
+    -- Width for DCC addr
+    g_ID_WIDTH                     : natural := c_K_WIDTH;
+
     -- Width for output
     g_C_WIDTH                      : natural := c_C_WIDTH
   );
@@ -59,7 +62,7 @@ entity fofb_processing_channel is
     -- DCC interface
     dcc_valid_i                    : in std_logic;
     dcc_data_i                     : in signed(g_A_WIDTH-1 downto 0);
-    dcc_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
+    dcc_addr_i                     : in std_logic_vector(g_ID_WIDTH-1 downto 0);
     dcc_time_frame_start_i         : in std_logic;
     dcc_time_frame_end_i           : in std_logic;
 
