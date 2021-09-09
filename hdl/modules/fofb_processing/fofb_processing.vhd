@@ -22,6 +22,7 @@ use ieee.numeric_std.all;
 library work;
 -- Dot product package
 use work.dot_prod_pkg.all;
+-- RAM package
 use work.genram_pkg.all;
 
 entity fofb_processing is

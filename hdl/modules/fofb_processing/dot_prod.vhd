@@ -64,7 +64,7 @@ entity dot_prod is
     result_debug_o                 : out signed(g_C_WIDTH-1 downto 0);
 
 	-- Data valid output
-    result_valid_end_o						 : out std_logic;
+    result_valid_end_o             : out std_logic;
     result_valid_debug_o           : out std_logic
   );
 end dot_prod;
