@@ -95,7 +95,6 @@ architecture behave of dot_prod_coeff_vec is
 
   -- DPRAM port B (read)
   signal web_s                     : std_logic := '0';
-  signal ab_s                      : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
   signal db_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
   signal ram_coeff_s               : std_logic_vector(g_B_WIDTH-1 downto 0);
 

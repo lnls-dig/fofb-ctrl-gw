@@ -33,13 +33,6 @@ architecture behave of dot_tb is
   constant clk_period                : time                                       := 6.4 ns;
   constant fofb_ctrl_period          : time                                       := 40 us;
 
-  constant c_a_width                 : natural                                    := 32;
-  constant c_k_width                 : natural                                    := 11;
-  constant c_id_width                : natural                                    := 9;
-  constant c_b_width                 : natural                                    := 32;
-  constant c_c_width                 : natural                                    := 16;
-  constant c_channels                : natural                                    := 8;
-
   signal clk_s                       : std_logic                                  := '0';
   signal rst_n_s                     : std_logic                                  := '0';
 
@@ -52,14 +45,14 @@ architecture behave of dot_tb is
 
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
-  signal ram_data_s                  : std_logic_vector(c_b_width-1 downto 0)     := (others => '0');
-  signal ram_addr_s                  : std_logic_vector(c_k_width-1 downto 0)     := (others => '0');
+  signal ram_data_s                  : std_logic_vector(c_B_WIDTH-1 downto 0)     := (others => '0');
+  signal ram_addr_s                  : std_logic_vector(c_K_WIDTH-1 downto 0)     := (others => '0');
 
-  signal valid_o_s                   : std_logic_vector(c_channels-1 downto 0)    := (others => '0');
-  signal valid_debug_s               : std_logic_vector(c_channels-1 downto 0)    := (others => '0');
+  signal valid_o_s                   : std_logic_vector(c_CHANNELS-1 downto 0)    := (others => '0');
+  signal valid_debug_s               : std_logic_vector(c_CHANNELS-1 downto 0)    := (others => '0');
 
-  signal sp_s                        : t_dot_prod_array_signed(c_channels-1 downto 0);
-  signal sp_debug_s                  : t_dot_prod_array_signed(c_channels-1 downto 0);
+  signal sp_s                        : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
+  signal sp_debug_s                  : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
 
   constant c_dcc_fod_s               : t_dot_prod_record_fod                      := (valid => '0',
                                                                                       data  => (others => '0'),
@@ -71,6 +64,29 @@ architecture behave of dot_tb is
 begin
 
     fofb_processing_interface : fofb_processing
+      generic map
+      (
+        -- Standard parameters of generic_dpram
+        g_DATA_WIDTH                               => c_DATA_WIDTH,
+        g_SIZE                                     => c_SIZE,
+        g_WITH_BYTE_ENABLE                         => c_WITH_BYTE_ENABLE,
+        g_ADDR_CONFLICT_RESOLUTION                 => c_ADDR_CONFLICT_RESOLUTION,
+        g_INIT_FILE                                => c_INIT_FILE,
+        g_DUAL_CLOCK                               => c_DUAL_CLOCK,
+        g_FAIL_IF_FILE_NOT_FOUND                   => c_FAIL_IF_FILE_NOT_FOUND,
+        -- Width for inputs x and y
+        g_A_WIDTH                                  => c_A_WIDTH,
+        -- Width for ram data
+        g_B_WIDTH                                  => c_B_WIDTH,
+        -- Width for ram addr
+        g_K_WIDTH                                  => c_K_WIDTH,
+        -- Width for dcc addr
+        g_ID_WIDTH                                 => c_ID_WIDTH,
+        -- Width for output
+        g_C_WIDTH                                  => c_C_WIDTH,
+        -- Number of channels
+        g_CHANNELS                                 => c_CHANNELS
+      )
       port map (
         clk_i                        => clk_s,
         rst_n_i                      => rst_n_s,
@@ -119,13 +135,12 @@ begin
   end process time_frame_start_process;
 
   time_frame_end_process : process is
-  -- validate te output
+  -- validate output
   begin
     wait for fofb_ctrl_period;
     dcc_time_frame_end_s             <= '1';
     wait for clk_period;
     dcc_time_frame_end_s             <= '0';
-    wait for fofb_ctrl_period-clk_period;
   end process time_frame_end_process;
 
   valid_tr_gen_process : process is
@@ -162,17 +177,19 @@ begin
         -- Reading input k from a txt file
         readline(k_data_file, k_line);
         read(k_line, k_datain);
+        for i in 0 to c_CHANNELS-1 loop
+          -- Pass the variable to a signal
+          dcc_fod_s(i).data          <= std_logic_vector(to_signed(a_datain, dcc_fod_s(i).data'length));
+          dcc_fod_s(i).addr          <= to_stdlogicvector(k_datain);
 
-        -- Pass the variable to a signal
-        dcc_fod_s(0).data            <= std_logic_vector(to_signed(a_datain, dcc_fod_s(0).data'length));
-        dcc_fod_s(0).addr            <= to_stdlogicvector(k_datain);
-
-        -- Update valid input bit
-        dcc_fod_s(0).valid           <= '1';
-
+          -- Update valid input bit
+          dcc_fod_s(i).valid         <= '1';
+        end loop;
       else
-        -- Update valid input bit
-        dcc_fod_s(0).valid           <= '0';
+        for i in 0 to c_CHANNELS-1 loop
+          -- Update valid input bit
+          dcc_fod_s(i).valid         <= '0';
+        end loop;
       end if;
     end if;
   end process input_read_process;
