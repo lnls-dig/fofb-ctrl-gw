@@ -1487,6 +1487,81 @@ begin
   fofb_userrst_n(c_FOFB_CC_P2P_ID) <= not fofb_userrst(c_FOFB_CC_P2P_ID);
 
   ----------------------------------------------------------------------
+  --                          FOFB PROCESSING                         --
+  ----------------------------------------------------------------------
+  gen_dcc_fod_data: for i in 0 to c_ACQ_NUM_CORES generate
+   -- Data xpos
+    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_FMC_ID)(i);
+    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
+    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+
+    -- Data ypos
+    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_FMC_ID)(i);
+    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
+    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+  end generate;
+
+  cmp_fofb_processing : xwb_fofb_processing
+  generic map
+  (
+    -- Standard parameters of generic_dpram
+    g_DATA_WIDTH                               => c_DATA_WIDTH,
+    g_SIZE                                     => c_SIZE,
+    g_WITH_BYTE_ENABLE                         => c_WITH_BYTE_ENABLE,
+    g_ADDR_CONFLICT_RESOLUTION                 => c_ADDR_CONFLICT_RESOLUTION,
+    g_INIT_FILE                                => c_INIT_FILE,
+    g_DUAL_CLOCK                               => c_DUAL_CLOCK,
+    g_FAIL_IF_FILE_NOT_FOUND                   => c_FAIL_IF_FILE_NOT_FOUND,
+    -- Width for inputs x and y
+    g_A_WIDTH                                  => c_A_WIDTH,
+    -- Width for ram data
+    g_B_WIDTH                                  => c_B_WIDTH,
+    -- Width for ram addr
+    g_K_WIDTH                                  => c_K_WIDTH,
+    -- Width for dcc addr
+    g_ID_WIDTH                                 => c_ID_WIDTH,
+    -- Width for output
+    g_C_WIDTH                                  => c_C_WIDTH,
+    -- Number of channels
+    g_CHANNELS                                 => c_CHANNELS,
+
+    -- Wishbone parameters
+    g_INTERFACE_MODE                           => CLASSIC,
+    g_ADDRESS_GRANULARITY                      => WORD,
+    g_WITH_EXTRA_WB_REG                        => false
+  )
+  port map
+  (
+    ---------------------------------------------------------------------------
+    -- Clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_i                                      => fofb_userclk(c_FOFB_CC_FMC_ID),
+    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_FMC_ID),
+    clk_sys_i                                  => clk_sys,
+    rst_sys_n_i                                => clk_sys_rstn,
+
+    ---------------------------------------------------------------------------
+    -- FOFB Processing Interface signals
+    ---------------------------------------------------------------------------
+    -- DCC interface
+    dcc_fod_i                                  => dcc_fod_s,
+    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_ID),
+    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_ID),
+
+    -- Result output array
+    sp_o                                       => sp_s,
+
+    -- Valid output
+    sp_valid_o                                 => open,
+
+    ---------------------------------------------------------------------------
+    -- Wishbone Control Interface signals
+    ---------------------------------------------------------------------------
+    wb_slv_i                                   => user_wb_out(c_FOFB_PROCESSING_ID),
+    wb_slv_o                                   => user_wb_in(c_FOFB_PROCESSING_ID)
+  );
+
+  ----------------------------------------------------------------------
   --                          RTM LAMP OHWR                           --
   ----------------------------------------------------------------------
 
@@ -1612,81 +1687,6 @@ begin
   );
 
   ----------------------------------------------------------------------
-  --                          FOFB PROCESSING                         --
-  ----------------------------------------------------------------------
-  gen_dcc_fod_data: for i in 0 to c_ACQ_NUM_CORES generate
-   -- Data xpos
-    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_FMC_ID)(i);
-    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
-    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketIDMSB downto def_PacketIDLSB);
-
-    -- Data ypos
-    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_FMC_ID)(i);
-    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
-    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_FMC_ID)(def_PacketIDMSB downto def_PacketIDLSB);
-  end generate;
-
-  cmp_fofb_processing : xwb_fofb_processing
-  generic map
-  (
-    -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                               => c_DATA_WIDTH,
-    g_SIZE                                     => c_SIZE,
-    g_WITH_BYTE_ENABLE                         => c_WITH_BYTE_ENABLE,
-    g_ADDR_CONFLICT_RESOLUTION                 => c_ADDR_CONFLICT_RESOLUTION,
-    g_INIT_FILE                                => c_INIT_FILE,
-    g_DUAL_CLOCK                               => c_DUAL_CLOCK,
-    g_FAIL_IF_FILE_NOT_FOUND                   => c_FAIL_IF_FILE_NOT_FOUND,
-    -- Width for inputs x and y
-    g_A_WIDTH                                  => c_A_WIDTH,
-    -- Width for ram data
-    g_B_WIDTH                                  => c_B_WIDTH,
-    -- Width for ram addr
-    g_K_WIDTH                                  => c_K_WIDTH,
-    -- Width for dcc addr
-    g_ID_WIDTH                                 => c_ID_WIDTH,
-    -- Width for output
-    g_C_WIDTH                                  => c_C_WIDTH,
-    -- Number of channels
-    g_CHANNELS                                 => c_CHANNELS,
-
-    -- Wishbone parameters
-    g_INTERFACE_MODE                           => CLASSIC,
-    g_ADDRESS_GRANULARITY                      => WORD,
-    g_WITH_EXTRA_WB_REG                        => false
-  )
-  port map
-  (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      => fofb_userclk(c_FOFB_CC_FMC_ID),
-    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_FMC_ID),
-    clk_sys_i                                  => clk_sys,
-    rst_sys_n_i                                => clk_sys_rstn,
-
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  => dcc_fod_s,
-    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_ID),
-    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_ID),
-
-    -- Result output array
-    sp_o                                       => sp_s,
-
-    -- Valid output
-    sp_valid_o                                 => open,
-
-    ---------------------------------------------------------------------------
-    -- Wishbone Control Interface signals
-    ---------------------------------------------------------------------------
-    wb_slv_i                                   => user_wb_out(c_FOFB_PROCESSING_ID),
-    wb_slv_o                                   => user_wb_in(c_FOFB_PROCESSING_ID)
-  );
-
-  ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
@@ -1751,7 +1751,7 @@ begin
   --------------------
   -- DCC P2P
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(to_UNsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
+          std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
 
