@@ -54,9 +54,12 @@ use work.fofb_cc_pkg.all;
 
 entity afc_rtm_sfp_fofb_ctrl is
 generic (
-  g_NUM_SFPS                                 : integer := 4;
+  g_NUM_SFPS                                 : integer range 1 to 4 := 4;
+  -- Starting index of used SFP GTs
   g_SFP_START_ID                             : integer := 4;
-  g_NUM_P2P_GTS                              : integer := 4;
+  -- Number of P2P GTs
+  g_NUM_P2P_GTS                              : integer range 1 to 8 := 4;
+  -- Starting index of used P2P GTs
   g_P2P_GT_START_ID                          : integer := 0
 );
 port (
@@ -235,6 +238,35 @@ end entity afc_rtm_sfp_fofb_ctrl;
 
 architecture top of afc_rtm_sfp_fofb_ctrl is
 
+  type t_gt_cfg is record
+    with_fp_p2p    : boolean;
+    num_p2p_gts    : integer;
+    max_p2p_gts    : integer;
+    num_fp_p2p_gts : integer;
+    max_fp_p2p_gts : integer;
+  end record;
+
+  function f_extract_gt_cfg(num_p2p : integer) return t_gt_cfg is
+    variable rv : t_gt_cfg;
+  begin
+    rv.max_p2p_gts       := 4;           -- maximum
+    rv.max_fp_p2p_gts    := 4;           -- maximum
+
+    if num_p2p > 4 then
+      rv.with_fp_p2p     := true;
+      rv.num_p2p_gts     := 4;           -- maximum
+      rv.max_p2p_gts     := 4;           -- maximum
+      rv.num_fp_p2p_gts  := num_p2p - 4; -- remaining, up to 4
+      rv.max_fp_p2p_gts  := 4;           -- maximum
+    else
+      rv.with_fp_p2p     := false;
+      rv.num_p2p_gts     := num_p2p; -- up to 4
+      rv.num_fp_p2p_gts  := 0;       -- no FP GT
+    end if;
+
+    return rv;
+  end function;
+
   -----------------------------------------------------------------------------
   -- General constants
   -----------------------------------------------------------------------------
@@ -249,18 +281,16 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_RTM_8SFP_0_ID                   : natural := 0;
 
   -- P2P GT IDs
-  constant c_NUM_P2P_GTS_FOFB                : integer := 4; -- maximum of 4 supported
+  constant c_GT_CFG                          : t_gt_cfg := f_extract_gt_cfg(g_NUM_P2P_GTS);
+  constant c_NUM_P2P_GTS                     : integer := c_GT_CFG.num_p2p_gts + c_GT_CFG.num_fp_p2p_gts;
 
   -- FOFB CC
   constant c_NUM_FOFC_CC_CORES               : natural := 2;
 
-  constant c_FOFB_CC_RTM_ID                  : natural := 0;
-  constant c_FOFB_CC_P2P_ID                  : natural := 1;
-
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
-  constant c_LANE_COUNT                      : integer := c_NUM_SFPS_FOFB;
+  constant c_MAX_LANE_COUNT                  : integer := 8;
   constant c_USE_CHIPSCOPE                   : boolean := false;
 
   constant c_AFC_SI57x_I2C_FREQ              : integer := 400000;
@@ -356,8 +386,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   type t_fofb_cc_std32_array is array (natural range <>) of std_logic_vector(31 downto 0);
   type t_fofb_cc_std4_array is array (natural range <>) of std_logic_vector(3 downto 0);
   type t_fofb_cc_fod_data_array is array (natural range <>) of std_logic_vector((32*PacketSize-1) downto 0);
-  type t_fofb_cc_fod_val_array is array (natural range <>) of std_logic_vector(c_LANE_COUNT-1 downto 0);
-  type t_fofb_cc_rio_array is array (natural range <>) of std_logic_vector(c_LANE_COUNT-1 downto 0);
+  type t_fofb_cc_fod_val_array is array (natural range <>) of std_logic_vector(c_MAX_LANE_COUNT-1 downto 0);
+  type t_fofb_cc_rio_array is array (natural range <>) of std_logic_vector(c_MAX_LANE_COUNT-1 downto 0);
 
   signal fai_fa_block_start                  : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
@@ -388,6 +418,17 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
                                                     (others => '0');
   signal fofb_userrst_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
+  signal fofb_userclk_2x                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_initclk                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_refclk                         : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_mgtreset                       : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+  signal fofb_gtreset                        : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
+                                                    (others => '0');
+
   signal timeframe_start                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
                                                     (others => '0');
   signal timeframe_end                       : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) :=
@@ -412,6 +453,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal fofb_ref_clk_p                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
   signal fofb_ref_clk_n                      : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0);
 
+  signal fofb_ext_initclk                    : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
+  signal fofb_ext_refclk                     : t_fofb_cc_logic_array(c_NUM_FOFC_CC_CORES-1 downto 0) := (others => '0');
+
   -----------------------------------------------------------------------------
   -- Acquisition signals
   -----------------------------------------------------------------------------
@@ -421,8 +465,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   -- Number of acquisition cores. Same as the number of DCC
   constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES;
   -- Acquisition core IDs
-  constant c_ACQ_CORE_0_ID                   : natural := 0;
-  constant c_ACQ_CORE_1_ID                   : natural := 1;
+  constant c_ACQ_CORE_CC_RTM_ID              : natural := 0;
+  constant c_ACQ_CORE_CC_P2P_ID              : natural := 1;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
@@ -458,24 +502,14 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal fs_ce_array                         : std_logic_vector(c_ACQ_NUM_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
-  -- Data signals
-  -----------------------------------------------------------------------------
-
-  type t_acq_logic_array is array (natural range <>) of std_logic;
-  type t_acq_data_array is array (natural range <>) of std_logic_vector(to_integer(c_FACQ_PARAMS_DCC.width)-1 downto 0);
-
-  signal acq_data                            : t_acq_data_array(c_ACQ_NUM_CORES-1 downto 0);
-  signal acq_data_valid                      : t_acq_logic_array(c_ACQ_NUM_CORES-1 downto 0);
-
-  -----------------------------------------------------------------------------
   -- Trigger signals
   -----------------------------------------------------------------------------
 
   -- Trigger core IDs
-  constant c_TRIG_MUX_0_ID                   : natural  := 0;
-  constant c_TRIG_MUX_1_ID                   : natural  := 1;
+  constant c_TRIG_MUX_CC_RTM_ID              : natural  := 0;
+  constant c_TRIG_MUX_CC_P2P_ID              : natural  := 1;
 
-  constant c_TRIG_MUX_NUM_CORES              : natural  := 2;
+  constant c_TRIG_MUX_NUM_CORES              : natural  := c_ACQ_NUM_CORES;
 
   constant c_TRIG_MUX_SYNC_EDGE              : string   := "positive";
 
@@ -493,8 +527,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_TRIG_MUX_WITH_OUTPUT_SYNC       : boolean  := true;
 
   -- Trigger RCV intern IDs
-  constant c_TRIG_RCV_INTERN_CHAN_1_ID       : natural := 0; -- Internal Channel 1
-  constant c_TRIG_RCV_INTERN_CHAN_2_ID       : natural := 1; -- Internal Channel 2
+  constant c_TRIG_RCV_INTERN_CHAN_0_ID       : natural := 0; -- Internal Channel 1
+  constant c_TRIG_RCV_INTERN_CHAN_1_ID       : natural := 1; -- Internal Channel 2
 
   signal trig_ref_clk                        : std_logic;
   signal trig_ref_rst_n                      : std_logic;
@@ -503,16 +537,14 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal trig_pulse_transm                   : t_trig_channel_array2d(c_TRIG_MUX_NUM_CORES-1 downto 0, c_TRIG_MUX_INTERN_NUM-1 downto 0);
   signal trig_pulse_rcv                      : t_trig_channel_array2d(c_TRIG_MUX_NUM_CORES-1 downto 0, c_TRIG_MUX_INTERN_NUM-1 downto 0);
 
-  signal trig_acq1_channel_1                 : t_trig_channel;
-  signal trig_acq1_channel_2                 : t_trig_channel;
-
-  signal trig_acq2_channel_1                 : t_trig_channel;
-  signal trig_acq2_channel_2                 : t_trig_channel;
+  signal trig_acq_channel                    : t_trig_channel_array2d(c_TRIG_MUX_NUM_CORES-1 downto 0, c_TRIG_MUX_RCV_INTERN_NUM-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- User Signals
   -----------------------------------------------------------------------------
 
+  constant c_FOFB_CC_RTM_ID                  : natural := 0;
+  constant c_FOFB_CC_P2P_ID                  : natural := 1;
   constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES;
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
@@ -531,6 +563,9 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal clk_aux                             : std_logic;
   signal clk_aux_rstn                        : std_logic;
   signal clk_aux_rst                         : std_logic;
+  signal clk_aux_raw                         : std_logic;
+  signal clk_aux_raw_rstn                    : std_logic;
+  signal clk_aux_raw_rst                     : std_logic;
   signal clk_fp2_clk1_p                      : std_logic;
   signal clk_fp2_clk1_n                      : std_logic;
   signal clk_200mhz                          : std_logic;
@@ -559,18 +594,18 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   signal fofb_reset_n                        : std_logic := '1';
   signal fofb_reset                          : std_logic := '0';
 
-  -----------------------------------------------------------------------------
-  -- VIO/ILA signals
-  -----------------------------------------------------------------------------
+  -------------------------------------------------------------------------------
+  ---- VIO/ILA signals
+  -------------------------------------------------------------------------------
 
-  signal probe_in0                           : std_logic_vector(63 downto 0);
-  signal probe_in1                           : std_logic_vector(63 downto 0);
+  --signal probe_in0                           : std_logic_vector(63 downto 0);
+  --signal probe_in1                           : std_logic_vector(63 downto 0);
 
-  signal probe_out0                          : std_logic_vector(63 downto 0);
-  signal probe_out1                          : std_logic_vector(63 downto 0);
+  --signal probe_out0                          : std_logic_vector(63 downto 0);
+  --signal probe_out1                          : std_logic_vector(63 downto 0);
 
-  signal data                 : std_logic_vector(255 downto 0);
-  signal trig0                : std_logic_vector(7 downto 0);
+  --signal data                                : std_logic_vector(255 downto 0);
+  --signal trig0                               : std_logic_vector(7 downto 0);
 
 begin
 
@@ -1011,7 +1046,7 @@ begin
 
   -- Trigger signal for DCC timeframe_start.
   -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_RTM_ID) <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
+  fai_sim_trigger(c_FOFB_CC_RTM_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_RTM_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
@@ -1019,15 +1054,15 @@ begin
     g_INTERFACE_MODE                          => PIPELINED,
     g_ADDRESS_GRANULARITY                     => BYTE,
     g_ID                                      => 0,
-    g_DEVICE                                  => BPM,
+    g_DEVICE                                  => DISTRIBUTOR,
     g_PHYSICAL_INTERFACE                      => "SFP",
     g_REFCLK_INPUT                            => "REFCLK0",
-    g_LANE_COUNT                              => c_LANE_COUNT,
+    g_LANE_COUNT                              => c_NUM_SFPS_FOFB,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
+    -- Data from another DCC
+    g_USE_EXT_CC_IF                           => true,
     -- BPM synthetic data
-    g_SIM_BPM_DATA                            => true,
-    g_SIM_BLOCK_START_PERIOD                  => 10000,
-    g_SIM_BLOCK_VALID_LENGTH                  => 32
+    g_SIM_BPM_DATA                            => false
   )
   port map
   (
@@ -1052,36 +1087,31 @@ begin
     wb_slv_o                                  => user_wb_in(c_FOFB_CC_RTM_ID),
 
     ---------------------------------------------------------------------------
-    -- fast acquisition data interface
-    -- Only used when g_SIM_BPM_DATA = false
+    -- external CC interface for data from another DCC. Used
+    -- when the other DCC is typically in a DISTRIBUTOR mode and
+    -- the other one (using this inteface) is part of another DCC
+    -- network that receives data from both externl GT links and
+    -- DCC. Used when USE_EXT_CC_IF = true. Overrides USE_PARALLEL_FA_IF
     ---------------------------------------------------------------------------
-    fai_fa_block_start_i                       => fai_fa_block_start(c_FOFB_CC_RTM_ID),
-    fai_fa_data_valid_i                        => fai_fa_data_valid(c_FOFB_CC_RTM_ID),
-    fai_fa_d_i                                 => fai_fa_d(c_FOFB_CC_RTM_ID),
-
-    ---------------------------------------------------------------------------
-    -- Synthetic data fast acquisition data interface.
-    -- Only used when g_SIM_BPM_DATA = true
-    ---------------------------------------------------------------------------
-    fai_sim_data_sel_i                         => fai_sim_data_sel(c_FOFB_CC_RTM_ID),
-    fai_sim_enable_i                           => fai_sim_enable(c_FOFB_CC_RTM_ID),
-    fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_RTM_ID),
-    fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_RTM_ID),
-    fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_RTM_ID),
+    ext_cc_clk_i                               => fofb_userclk(c_FOFB_CC_P2P_ID),
+    ext_cc_rst_n_i                             => fofb_userrst_n(c_FOFB_CC_P2P_ID),
+    ext_cc_dat_i                               => fofb_fod_dat(c_FOFB_CC_P2P_ID),
+    ext_cc_dat_val_i                           => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0),
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
     ---------------------------------------------------------------------------
-    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_RTM_ID),
-    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_RTM_ID),
-    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_RTM_ID),
-    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_RTM_ID),
-    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_RTM_ID),
+    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_RTM_ID)(c_NUM_SFPS_FOFB-1 downto 0),
+    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_RTM_ID)(c_NUM_SFPS_FOFB-1 downto 0),
+    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_RTM_ID)(c_NUM_SFPS_FOFB-1 downto 0),
+    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_RTM_ID)(c_NUM_SFPS_FOFB-1 downto 0),
+    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_RTM_ID)(c_NUM_SFPS_FOFB-1 downto 0),
 
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
     fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_RTM_ID),
+    fofb_userclk_2x_o                          => fofb_userclk_2x(c_FOFB_CC_RTM_ID),
     fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_RTM_ID),
     timeframe_start_o                          => timeframe_start(c_FOFB_CC_RTM_ID),
     timeframe_end_o                            => timeframe_end(c_FOFB_CC_RTM_ID),
@@ -1090,7 +1120,7 @@ begin
     fofb_timestamp_val_o                       => fofb_timestamp_val(c_FOFB_CC_RTM_ID),
     fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_RTM_ID),
     fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_RTM_ID),
-    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_RTM_ID)
+    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(c_NUM_SFPS_FOFB-1 downto 0)
   );
 
   fofb_sysreset_n(c_FOFB_CC_RTM_ID) <= clk_sys_rstn and rtm_reconfig_rst_n and fofb_reset_n;
@@ -1127,7 +1157,7 @@ begin
   --                          FOFB DCC P2P                            --
   ----------------------------------------------------------------------
 
-  gen_fofb_p2p_gts: for i in 0 to c_NUM_P2P_GTS_FOFB-1 generate
+  gen_fofb_p2p_gts: for i in 0 to c_GT_CFG.num_p2p_gts-1 generate
 
     -- RX lines
     fofb_rio_rx_p(c_FOFB_CC_P2P_ID)(i) <= p2p_gt_rx_p_i(g_P2P_GT_START_ID+i);
@@ -1139,22 +1169,47 @@ begin
 
   end generate;
 
-  gen_unused_fofb_p2p_gts: for i in c_NUM_P2P_GTS_FOFB to g_NUM_P2P_GTS-1 generate
+  gen_unused_fofb_p2p_gts: for i in c_GT_CFG.num_p2p_gts to c_GT_CFG.max_p2p_gts-1 generate
 
     -- TX lines
-    p2p_gt_tx_p_o(i) <= '0';
-    p2p_gt_tx_n_o(i) <= '1';
+    p2p_gt_tx_p_o(g_P2P_GT_START_ID+i) <= '0';
+    p2p_gt_tx_n_o(g_P2P_GT_START_ID+i) <= '1';
 
   end generate;
 
-  -- Clocks. Use rtm_clk1_p as this goes to the same bank as SFP 0, 1, 2, 3
-  -- transceivers
+  gen_with_fofb_fp : if c_GT_CFG.with_fp_p2p generate
+    gen_fofb_fp_p2p_gts: for i in 0 to c_GT_CFG.num_fp_p2p_gts-1 generate
+
+      -- RX lines. Starts after all possible P2P GTs
+      fofb_rio_rx_p(c_FOFB_CC_P2P_ID)(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <=
+          p2p_gt_rx_p_i(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i);
+      fofb_rio_rx_n(c_FOFB_CC_P2P_ID)(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <=
+          p2p_gt_rx_n_i(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i);
+
+      -- TX lines. Starts after all possible P2P GTs
+      p2p_gt_tx_p_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <=
+          fofb_rio_tx_p(c_FOFB_CC_P2P_ID)(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i);
+      p2p_gt_tx_n_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <=
+          fofb_rio_tx_n(c_FOFB_CC_P2P_ID)(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i);
+
+    end generate;
+
+    gen_unused_fofb_fp_p2p_gts: for i in c_GT_CFG.num_fp_p2p_gts to c_GT_CFG.max_fp_p2p_gts-1 generate
+
+      -- TX lines
+      p2p_gt_tx_p_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '0';
+      p2p_gt_tx_n_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '1';
+
+    end generate;
+  end generate;
+
+  -- Only used if FP P2P is not used.
   fofb_ref_clk_p(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_p;
   fofb_ref_clk_n(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_n;
 
   -- Trigger signal for DCC timeframe_start.
   -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_1_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
+  fai_sim_trigger(c_FOFB_CC_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
   cmp_fofb_ctrl_wrapper_1 : xwb_fofb_ctrl_wrapper
   generic map
@@ -1162,18 +1217,21 @@ begin
     g_INTERFACE_MODE                          => PIPELINED,
     g_ADDRESS_GRANULARITY                     => BYTE,
     g_ID                                      => 0,
-    g_DEVICE                                  => BPM,
+    g_DEVICE                                  => DISTRIBUTOR,
     g_PHYSICAL_INTERFACE                      => "BACKPLANE",
+    -- clock from right-side GTP
     g_REFCLK_INPUT                            => "REFCLK1",
-    g_LANE_COUNT                              => c_LANE_COUNT,
+    -- if FP P2P is used we take ref. clock from it, if not we instantiate
+    -- the clock buffers ourselves
+    g_CLK_BUFFERS                             => true,
+    g_LANE_COUNT                              => c_NUM_P2P_GTS,
     g_USE_CHIPSCOPE                           => c_USE_CHIPSCOPE,
     -- BPM synthetic data
-    g_SIM_BPM_DATA                            => true,
-    g_SIM_BLOCK_START_PERIOD                  => 10000,
-    g_SIM_BLOCK_VALID_LENGTH                  => 32
+    g_SIM_BPM_DATA                            => false
   )
   port map
   (
+    -- Only used when CLK_BUFFERS := false
     ---------------------------------------------------------------------------
     -- differential MGT/GTP clock inputs
     ---------------------------------------------------------------------------
@@ -1195,36 +1253,19 @@ begin
     wb_slv_o                                  => user_wb_in(c_FOFB_CC_P2P_ID),
 
     ---------------------------------------------------------------------------
-    -- fast acquisition data interface
-    -- Only used when g_SIM_BPM_DATA = false
-    ---------------------------------------------------------------------------
-    fai_fa_block_start_i                       => fai_fa_block_start(c_FOFB_CC_P2P_ID),
-    fai_fa_data_valid_i                        => fai_fa_data_valid(c_FOFB_CC_P2P_ID),
-    fai_fa_d_i                                 => fai_fa_d(c_FOFB_CC_P2P_ID),
-
-    ---------------------------------------------------------------------------
-    -- Synthetic data fast acquisition data interface.
-    -- Only used when g_SIM_BPM_DATA = true
-    ---------------------------------------------------------------------------
-    fai_sim_data_sel_i                         => fai_sim_data_sel(c_FOFB_CC_P2P_ID),
-    fai_sim_enable_i                           => fai_sim_enable(c_FOFB_CC_P2P_ID),
-    fai_sim_trigger_i                          => fai_sim_trigger(c_FOFB_CC_P2P_ID),
-    fai_sim_trigger_internal_i                 => fai_sim_trigger_internal(c_FOFB_CC_P2P_ID),
-    fai_sim_armed_o                            => fai_sim_armed(c_FOFB_CC_P2P_ID),
-
-    ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
     ---------------------------------------------------------------------------
-    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_P2P_ID),
-    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_P2P_ID),
-    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_P2P_ID),
-    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_P2P_ID),
-    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_P2P_ID),
+    fai_rio_rdp_i                              => fofb_rio_rx_p(c_FOFB_CC_P2P_ID)(c_NUM_P2P_GTS-1 downto 0),
+    fai_rio_rdn_i                              => fofb_rio_rx_n(c_FOFB_CC_P2P_ID)(c_NUM_P2P_GTS-1 downto 0),
+    fai_rio_tdp_o                              => fofb_rio_tx_p(c_FOFB_CC_P2P_ID)(c_NUM_P2P_GTS-1 downto 0),
+    fai_rio_tdn_o                              => fofb_rio_tx_n(c_FOFB_CC_P2P_ID)(c_NUM_P2P_GTS-1 downto 0),
+    fai_rio_tdis_o                             => fofb_rio_tx_disable(c_FOFB_CC_P2P_ID)(c_NUM_P2P_GTS-1 downto 0),
 
     ---------------------------------------------------------------------------
     -- Higher-level integration interface (PMC, SNIFFER_V5)
     ---------------------------------------------------------------------------
     fofb_userclk_o                             => fofb_userclk(c_FOFB_CC_P2P_ID),
+    fofb_userclk_2x_o                          => fofb_userclk_2x(c_FOFB_CC_P2P_ID),
     fofb_userrst_o                             => fofb_userrst(c_FOFB_CC_P2P_ID),
     timeframe_start_o                          => timeframe_start(c_FOFB_CC_P2P_ID),
     timeframe_end_o                            => timeframe_end(c_FOFB_CC_P2P_ID),
@@ -1233,7 +1274,7 @@ begin
     fofb_timestamp_val_o                       => fofb_timestamp_val(c_FOFB_CC_P2P_ID),
     fofb_link_status_o                         => fofb_link_status(c_FOFB_CC_P2P_ID),
     fofb_fod_dat_o                             => fofb_fod_dat(c_FOFB_CC_P2P_ID),
-    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)
+    fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(c_NUM_P2P_GTS-1 downto 0)
   );
 
   fofb_sysreset_n(c_FOFB_CC_P2P_ID) <= clk_sys_rstn and afc_si57x_reconfig_rst_n and fofb_reset_n;
@@ -1244,11 +1285,12 @@ begin
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
-  fs_clk_array(c_ACQ_CORE_0_ID)   <= fofb_userclk(c_FOFB_CC_RTM_ID);
-  fs_rst_n_array(c_ACQ_CORE_0_ID) <= fofb_userrst_n(c_FOFB_CC_RTM_ID);
+  fs_clk_array(c_ACQ_CORE_CC_RTM_ID)   <= fofb_userclk(c_FOFB_CC_RTM_ID);
+  fs_rst_n_array(c_ACQ_CORE_CC_RTM_ID) <= fofb_userrst_n(c_FOFB_CC_RTM_ID);
 
-  fs_clk_array(c_ACQ_CORE_1_ID)   <= fofb_userclk(c_FOFB_CC_P2P_ID);
-  fs_rst_n_array(c_ACQ_CORE_1_ID) <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
+  fs_clk_array(c_ACQ_CORE_CC_P2P_ID)   <= fofb_userclk(c_FOFB_CC_P2P_ID);
+  fs_rst_n_array(c_ACQ_CORE_CC_P2P_ID) <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
+
 
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
@@ -1257,31 +1299,23 @@ begin
 
   end generate;
 
-  -- DCC data
-
-  acq_data(c_ACQ_CORE_0_ID) <= fofb_fod_dat(c_FOFB_CC_RTM_ID);
-  acq_data_valid(c_ACQ_CORE_0_ID) <= fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(0);
-
-  acq_data(c_ACQ_CORE_1_ID) <= fofb_fod_dat(c_FOFB_CC_P2P_ID);
-  acq_data_valid(c_ACQ_CORE_1_ID) <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
-
   --------------------
   -- ACQ Channel 1
   --------------------
 
-  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-                                                                 acq_data(c_ACQ_CORE_0_ID);
-  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_0_ID);
-  acq_chan_array(c_ACQ_CORE_0_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_0_ID, c_ACQ_DCC_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_CC_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
+                                                                 fofb_fod_dat(c_FOFB_CC_RTM_ID);
+  acq_chan_array(c_ACQ_CORE_CC_RTM_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(0);
+  acq_chan_array(c_ACQ_CORE_CC_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_RTM_ID, c_ACQ_DCC_ID).pulse;
 
   --------------------
   -- ACQ Channel 2
   --------------------
 
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-                                                                 acq_data(c_ACQ_CORE_1_ID);
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).dvalid        <= acq_data_valid(c_ACQ_CORE_1_ID);
-  acq_chan_array(c_ACQ_CORE_1_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_1_ID, c_ACQ_DCC_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
+                                                                 fofb_fod_dat(c_FOFB_CC_P2P_ID);
+  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
+  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
@@ -1291,18 +1325,26 @@ begin
   trig_ref_rst_n <= clk_trig_ref_rstn;
 
   -- Assign trigger pulses to trigger channel interfaces
-  trig_acq1_channel_1.pulse <= timeframe_start(c_FOFB_CC_RTM_ID);
-  trig_acq1_channel_2.pulse <= timeframe_end(c_FOFB_CC_RTM_ID);
+  trig_acq_channel(c_TRIG_MUX_CC_RTM_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
+    timeframe_start(c_FOFB_CC_RTM_ID);
+  trig_acq_channel(c_TRIG_MUX_CC_RTM_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
+    timeframe_end(c_FOFB_CC_RTM_ID);
 
-  trig_acq2_channel_1.pulse <= timeframe_start(c_FOFB_CC_P2P_ID);
-  trig_acq2_channel_2.pulse <= timeframe_end(c_FOFB_CC_P2P_ID);
+  trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
+    timeframe_start(c_FOFB_CC_P2P_ID);
+  trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
+    timeframe_end(c_FOFB_CC_P2P_ID);
 
   -- Assign intern triggers to trigger module
-  trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq1_channel_1;
-  trig_rcv_intern(c_TRIG_MUX_0_ID, c_TRIG_RCV_INTERN_CHAN_2_ID) <= trig_acq1_channel_2;
+  trig_rcv_intern(c_TRIG_MUX_CC_RTM_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
+    trig_acq_channel(c_TRIG_MUX_CC_RTM_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
+  trig_rcv_intern(c_TRIG_MUX_CC_RTM_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <=
+    trig_acq_channel(c_TRIG_MUX_CC_RTM_ID, c_TRIG_RCV_INTERN_CHAN_1_ID);
 
-  trig_rcv_intern(c_TRIG_MUX_1_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <= trig_acq2_channel_1;
-  trig_rcv_intern(c_TRIG_MUX_1_ID, c_TRIG_RCV_INTERN_CHAN_2_ID) <= trig_acq2_channel_2;
+  trig_rcv_intern(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
+    trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
+  trig_rcv_intern(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <=
+    trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID);
 
   ----------------------------------------------------------------------
   --                          VIO                                     --
