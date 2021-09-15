@@ -21,43 +21,14 @@ use ieee.numeric_std.all;
 
 package dot_prod_pkg is
 
-    -----------------------------------------------------------------------------
-    -- FOFB Processing constants
-    -----------------------------------------------------------------------------
-    -- Standard parameters of generic_dpram
-    constant c_DATA_WIDTH          : natural := 32;
-    constant c_SIZE                : natural := 2048; -- 2**g_K_WIDTH
-    constant c_WITH_BYTE_ENABLE    : boolean := false;
-    constant c_ADDR_CONFLICT_RESOLUTION
-                                   : string  := "read_first";
-    constant c_INIT_FILE           : string  := "";
-    constant c_DUAL_CLOCK          : boolean := true;
-    constant c_FAIL_IF_FILE_NOT_FOUND
-                                   : boolean := true;
-
-    -- Width for inputs x and y
-    constant c_A_WIDTH             : natural := 32;
-    -- Width for ram data
-    constant c_B_WIDTH             : natural := 32;
-    -- Width for ram addr
-    constant c_K_WIDTH             : natural := 11;
-    -- Width for dcc addr
-    constant c_ID_WIDTH            : natural := 9;
-    -- Width for output
-    constant c_C_WIDTH             : natural := 16;
-    -- Number of channels
-    constant c_CHANNELS            : natural := 8;
-    -- Extra bits for accumulator
-    constant c_EXTRA_WIDTH         : natural := 4;
-
     -- Output array
-    type t_dot_prod_array_signed is array (natural range <>) of signed(c_C_WIDTH-1 downto 0);
+    type t_dot_prod_array_signed is array (natural range <>) of signed(16-1 downto 0);
 
     -- Input record
     type t_dot_prod_record_fod is record
       valid                        : std_logic;
-      data                         : std_logic_vector(c_A_WIDTH-1 downto 0);
-      addr                         : std_logic_vector(c_ID_WIDTH-1 downto 0);
+      data                         : std_logic_vector(32-1 downto 0);
+      addr                         : std_logic_vector(9-1 downto 0);
     end record t_dot_prod_record_fod;
 
     -- Input array of record
@@ -66,16 +37,16 @@ package dot_prod_pkg is
   component dot_prod is
     generic(
       -- Width for input a[k]
-      g_A_WIDTH                    : natural := c_A_WIDTH;
+      g_A_WIDTH                    : natural := 32;
 
       -- Width for input b[k]
-      g_B_WIDTH                    : natural := c_B_WIDTH;
+      g_B_WIDTH                    : natural := 32;
 
       -- Width for output
-      g_C_WIDTH                    : natural := c_C_WIDTH;
+      g_C_WIDTH                    : natural := 16;
 
       -- Extra bits for accumulator
-      g_EXTRA_WIDTH                : natural := c_EXTRA_WIDTH
+      g_EXTRA_WIDTH                : natural := 4
     );
     port(
       -- Core clock
@@ -112,30 +83,27 @@ package dot_prod_pkg is
   component dot_prod_coeff_vec is
     generic(
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH                 : natural := c_DATA_WIDTH;
-      g_SIZE                       : natural := c_SIZE;
-      g_WITH_BYTE_ENABLE           : boolean := c_WITH_BYTE_ENABLE;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := c_ADDR_CONFLICT_RESOLUTION;
-      g_INIT_FILE                  : string  := c_INIT_FILE;
-      g_DUAL_CLOCK                 : boolean := c_DUAL_CLOCK;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := c_FAIL_IF_FILE_NOT_FOUND;
+      g_DATA_WIDTH                 : natural := 32;
+      g_SIZE                       : natural := 512;
+      g_WITH_BYTE_ENABLE           : boolean := false;
+      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
+      g_INIT_FILE                  : string  := "";
+      g_DUAL_CLOCK                 : boolean := true;
+      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
 
       -- Width for DCC input
-      g_A_WIDTH                    : natural := c_A_WIDTH;
+      g_A_WIDTH                    : natural := 32;
 
       -- Width for RAM coeff
-      g_B_WIDTH                    : natural := c_B_WIDTH;
-
-      -- Width for RAM addr
-      g_K_WIDTH                    : natural := c_K_WIDTH;
+      g_B_WIDTH                    : natural := 32;
 
       -- Width for DCC addr
-      g_ID_WIDTH                   : natural := c_ID_WIDTH;
+      g_ID_WIDTH                   : natural := 9;
 
       -- Width for output
-      g_C_WIDTH                    : natural := c_C_WIDTH
+      g_C_WIDTH                    : natural := 16
     );
-    port (
+    port(
       -- Core clock
       clk_i                        : in std_logic;
 
@@ -145,13 +113,13 @@ package dot_prod_pkg is
       -- DCC interface
       dcc_valid_i                  : in std_logic;
       dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
-      dcc_addr_i                   : in std_logic_vector(c_ID_WIDTH-1 downto 0);
+      dcc_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
       dcc_time_frame_start_i       : in std_logic;
       dcc_time_frame_end_i         : in std_logic;
 
       -- RAM interface
       ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
+      ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
@@ -167,30 +135,27 @@ package dot_prod_pkg is
   component fofb_processing_channel is
     generic(
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH                 : natural := c_DATA_WIDTH;
-      g_SIZE                       : natural := c_SIZE;
-      g_WITH_BYTE_ENABLE           : boolean := c_WITH_BYTE_ENABLE;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := c_ADDR_CONFLICT_RESOLUTION;
-      g_INIT_FILE                  : string  := c_INIT_FILE;
-      g_DUAL_CLOCK                 : boolean := c_DUAL_CLOCK;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := c_FAIL_IF_FILE_NOT_FOUND;
+      g_DATA_WIDTH                 : natural := 32;
+      g_SIZE                       : natural := 512;
+      g_WITH_BYTE_ENABLE           : boolean := false;
+      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
+      g_INIT_FILE                  : string  := "";
+      g_DUAL_CLOCK                 : boolean := true;
+      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
 
       -- Width for DCC input
-      g_A_WIDTH                    : natural := c_A_WIDTH;
+      g_A_WIDTH                    : natural := 32;
 
       -- Width for RAM coeff
-      g_B_WIDTH                    : natural := c_B_WIDTH;
-
-      -- Width for RAM addr
-      g_K_WIDTH                    : natural := c_K_WIDTH;
+      g_B_WIDTH                    : natural := 32;
 
       -- Width for DCC addr
-      g_ID_WIDTH                   : natural := c_ID_WIDTH;
+      g_ID_WIDTH                   : natural := 9;
 
       -- Width for output
-      g_C_WIDTH                    : natural := c_C_WIDTH
+      g_C_WIDTH                    : natural := 16
     );
-    port (
+    port(
       ---------------------------------------------------------------------------
       -- Clock and reset interface
       ---------------------------------------------------------------------------
@@ -209,7 +174,7 @@ package dot_prod_pkg is
 
       -- RAM interface
       ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
+      ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
       ram_write_enable_i           : in std_logic;
 
       -- Result output array
@@ -225,33 +190,33 @@ package dot_prod_pkg is
   component fofb_processing is
     generic(
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH                 : natural := c_DATA_WIDTH;
-      g_SIZE                       : natural := c_SIZE;
-      g_WITH_BYTE_ENABLE           : boolean := c_WITH_BYTE_ENABLE;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := c_ADDR_CONFLICT_RESOLUTION;
-      g_INIT_FILE                  : string  := c_INIT_FILE;
-      g_DUAL_CLOCK                 : boolean := c_DUAL_CLOCK;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := c_FAIL_IF_FILE_NOT_FOUND;
+      g_DATA_WIDTH                 : natural := 32;
+      g_SIZE                       : natural := 512;
+      g_WITH_BYTE_ENABLE           : boolean := false;
+      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
+      g_INIT_FILE                  : string  := "";
+      g_DUAL_CLOCK                 : boolean := true;
+      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
 
       -- Width for DCC input
-      g_A_WIDTH                    : natural := c_A_WIDTH;
+      g_A_WIDTH                    : natural := 32;
 
       -- Width for RAM coeff
-      g_B_WIDTH                    : natural := c_B_WIDTH;
+      g_B_WIDTH                    : natural := 32;
 
       -- Width for RAM addr
-      g_K_WIDTH                    : natural := c_K_WIDTH;
+      g_K_WIDTH                    : natural := 12;
 
       -- Width for DCC addr
-      g_ID_WIDTH                   : natural := c_ID_WIDTH;
+      g_ID_WIDTH                   : natural := 9;
 
       -- Width for output
-      g_C_WIDTH                    : natural := c_C_WIDTH;
+      g_C_WIDTH                    : natural := 16;
 
       -- Number of channels
-      g_CHANNELS                   : natural := c_CHANNELS
+      g_CHANNELS                   : natural := 8
     );
-    port (
+    port(
       ---------------------------------------------------------------------------
       -- FOFB processing channel interface
       ---------------------------------------------------------------------------
@@ -282,7 +247,7 @@ package dot_prod_pkg is
   end component fofb_processing;
 
   component dot_prod_wb is
-    port (
+    port(
       rst_n_i                      : in    std_logic;
       clk_sys_i                    : in    std_logic;
       wb_adr_i                     : in    std_logic_vector(1 downto 0);

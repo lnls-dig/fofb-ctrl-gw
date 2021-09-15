@@ -358,7 +358,16 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- FOFB Processing signals
   -----------------------------------------------------------------------------
 
-  constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0', data => (others => '0'), addr => (others => '0'));
+  constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
+  constant c_CHANNELS                        : natural := 8;
+  constant c_ADDR_WIDTH                      : natural := NodeW + f_log2_size(c_CHANNELS);
+  constant c_RAM_SIZE                        : natural := 2**NodeW;
+  constant c_SP_OUT_WIDTH                    : natural := 16;
+
+  constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
+                                                                         data => (others => '0'),
+                                                                         addr => (others => '0'));
+
   signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
   signal sp_s                                : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
 
@@ -1506,28 +1515,28 @@ begin
   (
     -- Standard parameters of generic_dpram
     g_DATA_WIDTH                               => c_DATA_WIDTH,
-    g_SIZE                                     => c_SIZE,
-    g_WITH_BYTE_ENABLE                         => c_WITH_BYTE_ENABLE,
-    g_ADDR_CONFLICT_RESOLUTION                 => c_ADDR_CONFLICT_RESOLUTION,
-    g_INIT_FILE                                => c_INIT_FILE,
-    g_DUAL_CLOCK                               => c_DUAL_CLOCK,
-    g_FAIL_IF_FILE_NOT_FOUND                   => c_FAIL_IF_FILE_NOT_FOUND,
+    g_SIZE                                     => c_RAM_SIZE,
+    g_WITH_BYTE_ENABLE                         => false,
+    g_ADDR_CONFLICT_RESOLUTION                 => "read_first",
+    g_INIT_FILE                                => "../../../../modules/fofb_processing/ram_ones32b.txt",
+    g_DUAL_CLOCK                               => true,
+    g_FAIL_IF_FILE_NOT_FOUND                   => true,
     -- Width for inputs x and y
-    g_A_WIDTH                                  => c_A_WIDTH,
+    g_A_WIDTH                                  => c_DATA_WIDTH,
     -- Width for ram data
-    g_B_WIDTH                                  => c_B_WIDTH,
+    g_B_WIDTH                                  => c_DATA_WIDTH,
     -- Width for ram addr
-    g_K_WIDTH                                  => c_K_WIDTH,
+    g_K_WIDTH                                  => c_ADDR_WIDTH,
     -- Width for dcc addr
-    g_ID_WIDTH                                 => c_ID_WIDTH,
+    g_ID_WIDTH                                 => NodeW,
     -- Width for output
-    g_C_WIDTH                                  => c_C_WIDTH,
+    g_C_WIDTH                                  => c_SP_OUT_WIDTH,
     -- Number of channels
     g_CHANNELS                                 => c_CHANNELS,
 
     -- Wishbone parameters
-    g_INTERFACE_MODE                           => CLASSIC,
-    g_ADDRESS_GRANULARITY                      => WORD,
+    g_INTERFACE_MODE                           => PIPELINED,
+    g_ADDRESS_GRANULARITY                      => BYTE,
     g_WITH_EXTRA_WB_REG                        => false
   )
   port map

@@ -28,33 +28,33 @@ use work.genram_pkg.all;
 entity fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                   : natural := c_DATA_WIDTH;
-    g_SIZE                         : natural := c_SIZE;
-    g_WITH_BYTE_ENABLE             : boolean := c_WITH_BYTE_ENABLE;
-    g_ADDR_CONFLICT_RESOLUTION     : string  := c_ADDR_CONFLICT_RESOLUTION;
-    g_INIT_FILE                    : string  := c_INIT_FILE;
-    g_DUAL_CLOCK                   : boolean := c_DUAL_CLOCK;
-    g_FAIL_IF_FILE_NOT_FOUND       : boolean := c_FAIL_IF_FILE_NOT_FOUND;
+    g_DATA_WIDTH                   : natural := 32;
+    g_SIZE                         : natural := 512;
+    g_WITH_BYTE_ENABLE             : boolean := false;
+    g_ADDR_CONFLICT_RESOLUTION     : string  := "read_first";
+    g_INIT_FILE                    : string  := "";
+    g_DUAL_CLOCK                   : boolean := true;
+    g_FAIL_IF_FILE_NOT_FOUND       : boolean := true;
 
     -- Width for DCC input
-    g_A_WIDTH                      : natural := c_A_WIDTH;
+    g_A_WIDTH                      : natural := 32;
 
     -- Width for RAM coeff
-    g_B_WIDTH                      : natural := c_B_WIDTH;
+    g_B_WIDTH                      : natural := 32;
 
     -- Width for RAM addr
-    g_K_WIDTH                      : natural := c_K_WIDTH;
+    g_K_WIDTH                      : natural := 12;
 
     -- Width for DCC addr
-    g_ID_WIDTH                     : natural := c_ID_WIDTH;
+    g_ID_WIDTH                     : natural := 9;
 
     -- Width for output
-    g_C_WIDTH                      : natural := c_C_WIDTH;
+    g_C_WIDTH                      : natural := 16;
 
     -- Number of channels
-    g_CHANNELS                     : natural := c_CHANNELS
+    g_CHANNELS                     : natural := 8
   );
-  port (
+  port(
     ---------------------------------------------------------------------------
     -- FOFB processing interface
     ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ entity fofb_processing is
   end fofb_processing;
 
 architecture behave of fofb_processing is
-  signal aa_s                      : std_logic_vector(g_K_WIDTH-1 downto 0)  := (others => '0');
+  signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0) := (others => '0');
   signal wea_s                     : std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
 begin
 
@@ -97,8 +97,7 @@ begin
         aa_s                       <= (others => '0');
         wea_s                      <= (others => '0');
       else
-        aa_s(g_K_WIDTH-f_log2_size(g_CHANNELS)-1 downto 0)
-                                   <= ram_addr_i(g_K_WIDTH-f_log2_size(g_CHANNELS)-1 downto 0);
+        aa_s                       <= ram_addr_i(g_K_WIDTH-f_log2_size(g_CHANNELS)-1 downto 0);
 
         for i in 0 to g_CHANNELS-1 loop
           if ram_addr_i(g_K_WIDTH-1 downto g_K_WIDTH-f_log2_size(g_CHANNELS)) = std_logic_vector(to_unsigned(i, f_log2_size(g_CHANNELS))) then
@@ -113,7 +112,27 @@ begin
 
   gen_channels : for i in 0 to g_CHANNELS-1 generate
     fofb_processing_channel_interface : fofb_processing_channel
-      port map (
+      generic map
+      (
+        -- Standard parameters of generic_dpram
+        g_DATA_WIDTH               => g_DATA_WIDTH,
+        g_SIZE                     => g_SIZE,
+        g_WITH_BYTE_ENABLE         => g_WITH_BYTE_ENABLE,
+        g_ADDR_CONFLICT_RESOLUTION => g_ADDR_CONFLICT_RESOLUTION,
+        g_INIT_FILE                => g_INIT_FILE,
+        g_DUAL_CLOCK               => g_DUAL_CLOCK,
+        g_FAIL_IF_FILE_NOT_FOUND   => g_FAIL_IF_FILE_NOT_FOUND,
+        -- Width for inputs x and y
+        g_A_WIDTH                  => g_A_WIDTH,
+        -- Width for ram data
+        g_B_WIDTH                  => g_B_WIDTH,
+        -- Width for dcc addr
+        g_ID_WIDTH                 => g_ID_WIDTH,
+        -- Width for output
+        g_C_WIDTH                  => g_C_WIDTH
+      )
+      port map
+      (
         clk_i                      => clk_i,
         rst_n_i                    => rst_n_i,
         dcc_valid_i                => dcc_fod_i(i).valid,

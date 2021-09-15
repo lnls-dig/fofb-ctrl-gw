@@ -51,6 +51,10 @@ use work.pcie_cntr_axi_pkg.all;
 use work.fofb_ctrl_pkg.all;
 -- FOFC CC
 use work.fofb_cc_pkg.all;
+-- Dot product package
+use work.dot_prod_pkg.all;
+-- RAM package
+use work.genram_pkg.all;
 
 entity afc_rtm_sfp_fofb_ctrl is
 generic (
@@ -306,6 +310,23 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_RTM_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0) := "000";
 
   -----------------------------------------------------------------------------
+  -- FOFB Processing signals
+  -----------------------------------------------------------------------------
+
+  constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
+  constant c_CHANNELS                        : natural := 8;
+  constant c_ADDR_WIDTH                      : natural := NodeW + f_log2_size(c_CHANNELS);
+  constant c_RAM_SIZE                        : natural := 2**NodeW;
+  constant c_SP_OUT_WIDTH                    : natural := 16;
+
+  constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
+                                                                         data => (others => '0'),
+                                                                         addr => (others => '0'));
+
+  signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
+  signal sp_s                                : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
+
+  -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
 
@@ -483,8 +504,8 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
   constant c_ACQ_NUM_CHANNELS                : natural := 1; -- DCC Acquisition
 
   constant c_FACQ_PARAMS_DCC                 : t_facq_chan_param := (
-    width                                    => to_unsigned(128, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
-    num_atoms                                => to_unsigned(4, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
+    width                                    => to_unsigned(256, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
+    num_atoms                                => to_unsigned(8, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
     atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2) -- 2^5 = 16-bit
   );
 
@@ -545,12 +566,14 @@ architecture top of afc_rtm_sfp_fofb_ctrl is
 
   constant c_FOFB_CC_RTM_ID                  : natural := 0;
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
-  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES;
+  constant c_FOFB_PROCESSING_ID              : natural := 2;
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + 1;
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
   (
     c_FOFB_CC_RTM_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,        true),
-    c_FOFB_CC_P2P_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,        true)
+    c_FOFB_CC_P2P_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,        true),
+    c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,true)
   );
 
   -----------------------------------------------------------------------------
@@ -1282,6 +1305,81 @@ begin
   fofb_userrst_n(c_FOFB_CC_P2P_ID) <= not fofb_userrst(c_FOFB_CC_P2P_ID);
 
   ----------------------------------------------------------------------
+  --                          FOFB PROCESSING                         --
+  ----------------------------------------------------------------------
+  gen_dcc_fod_data: for i in 0 to c_CHANNELS/2-1 generate
+   -- Data xpos
+    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(i);
+    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
+    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+
+    -- Data ypos
+    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(i);
+    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
+    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+  end generate;
+
+  cmp_fofb_processing : xwb_fofb_processing
+  generic map
+  (
+    -- Standard parameters of generic_dpram
+    g_DATA_WIDTH                               => c_DATA_WIDTH,
+    g_SIZE                                     => c_RAM_SIZE,
+    g_WITH_BYTE_ENABLE                         => false,
+    g_ADDR_CONFLICT_RESOLUTION                 => "read_first",
+    g_INIT_FILE                                => "../../../../modules/fofb_processing/ram.txt",
+    g_DUAL_CLOCK                               => true,
+    g_FAIL_IF_FILE_NOT_FOUND                   => true,
+    -- Width for inputs x and y
+    g_A_WIDTH                                  => c_DATA_WIDTH,
+    -- Width for ram data
+    g_B_WIDTH                                  => c_DATA_WIDTH,
+    -- Width for ram addr
+    g_K_WIDTH                                  => c_ADDR_WIDTH,
+    -- Width for dcc addr
+    g_ID_WIDTH                                 => NodeW,
+    -- Width for output
+    g_C_WIDTH                                  => c_SP_OUT_WIDTH,
+    -- Number of channels
+    g_CHANNELS                                 => c_CHANNELS,
+
+    -- Wishbone parameters
+    g_INTERFACE_MODE                           => PIPELINED,
+    g_ADDRESS_GRANULARITY                      => BYTE,
+    g_WITH_EXTRA_WB_REG                        => false
+  )
+  port map
+  (
+    ---------------------------------------------------------------------------
+    -- Clock and reset interface
+    ---------------------------------------------------------------------------
+    clk_i                                      => fofb_userclk(c_FOFB_CC_RTM_ID),
+    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_RTM_ID),
+    clk_sys_i                                  => clk_sys,
+    rst_sys_n_i                                => clk_sys_rstn,
+
+    ---------------------------------------------------------------------------
+    -- FOFB Processing Interface signals
+    ---------------------------------------------------------------------------
+    -- DCC interface
+    dcc_fod_i                                  => dcc_fod_s,
+    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_RTM_ID),
+    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_RTM_ID),
+
+    -- Result output array
+    sp_o                                       => sp_s,
+
+    -- Valid output
+    sp_valid_o                                 => open,
+
+    ---------------------------------------------------------------------------
+    -- Wishbone Control Interface signals
+    ---------------------------------------------------------------------------
+    wb_slv_i                                   => user_wb_out(c_FOFB_PROCESSING_ID),
+    wb_slv_o                                   => user_wb_in(c_FOFB_PROCESSING_ID)
+  );
+
+  ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
@@ -1304,7 +1402,9 @@ begin
   --------------------
 
   acq_chan_array(c_ACQ_CORE_CC_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-                                                                 fofb_fod_dat(c_FOFB_CC_RTM_ID);
+          std_logic_vector(sp_s(0)) & std_logic_vector(sp_s(1)) & std_logic_vector(sp_s(2)) & std_logic_vector(sp_s(3)) &
+          std_logic_vector(sp_s(4)) & std_logic_vector(sp_s(5)) & std_logic_vector(sp_s(6)) & std_logic_vector(sp_s(7)) &
+          fofb_fod_dat(c_FOFB_CC_RTM_ID);
   acq_chan_array(c_ACQ_CORE_CC_RTM_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_RTM_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_RTM_ID, c_ACQ_DCC_ID).pulse;
 
@@ -1313,7 +1413,7 @@ begin
   --------------------
 
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-                                                                 fofb_fod_dat(c_FOFB_CC_P2P_ID);
+          std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
 

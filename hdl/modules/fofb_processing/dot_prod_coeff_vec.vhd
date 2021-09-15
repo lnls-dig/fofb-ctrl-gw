@@ -28,30 +28,27 @@ use work.genram_pkg.all;
 entity dot_prod_coeff_vec is
   generic(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                   : natural := c_DATA_WIDTH;
-    g_SIZE                         : natural := c_SIZE;
-    g_WITH_BYTE_ENABLE             : boolean := c_WITH_BYTE_ENABLE;
-    g_ADDR_CONFLICT_RESOLUTION     : string  := c_ADDR_CONFLICT_RESOLUTION;
-    g_INIT_FILE                    : string  := c_INIT_FILE;
-    g_DUAL_CLOCK                   : boolean := c_DUAL_CLOCK;
-    g_FAIL_IF_FILE_NOT_FOUND       : boolean := c_FAIL_IF_FILE_NOT_FOUND;
+    g_DATA_WIDTH                   : natural := 32;
+    g_SIZE                         : natural := 512;
+    g_WITH_BYTE_ENABLE             : boolean := false;
+    g_ADDR_CONFLICT_RESOLUTION     : string  := "read_first";
+    g_INIT_FILE                    : string  := "";
+    g_DUAL_CLOCK                   : boolean := true;
+    g_FAIL_IF_FILE_NOT_FOUND       : boolean := true;
 
     -- Width for DCC input
-    g_A_WIDTH                      : natural := c_A_WIDTH;
+    g_A_WIDTH                      : natural := 32;
 
     -- Width for RAM coeff
-    g_B_WIDTH                      : natural := c_B_WIDTH;
-
-    -- Width for RAM addr
-    g_K_WIDTH                      : natural := c_K_WIDTH;
+    g_B_WIDTH                      : natural := 32;
 
     -- Width for DCC addr
-    g_ID_WIDTH                      : natural := c_ID_WIDTH;
+    g_ID_WIDTH                     : natural := 9;
 
     -- Width for output
-    g_C_WIDTH                      : natural := c_C_WIDTH
+    g_C_WIDTH                      : natural := 16
   );
-  port (
+  port(
     -- Core clock
     clk_i                          : in std_logic;
 
@@ -67,7 +64,7 @@ entity dot_prod_coeff_vec is
 
     -- RAM interface
     ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
-    ram_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
+    ram_addr_i                     : in std_logic_vector(g_ID_WIDTH-1 downto 0);
     ram_write_enable_i             : in std_logic;
 
     -- Result output array
@@ -84,19 +81,19 @@ architecture behave of dot_prod_coeff_vec is
 
   signal dcc_data_s                : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
   signal dcc_data_reg_s            : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
-  signal ram_coeff_dat_s           : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
-  signal dcc_addr_reg_s            : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
+  signal ram_coeff_dat_s           : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
+  signal dcc_addr_reg_s            : std_logic_vector(g_ID_WIDTH-1 downto 0)    := (others => '0');
   signal valid_i_s, valid_reg_s    : std_logic := '0';
 
   -- DPRAM port A (write)
   signal wea_s                     : std_logic := '0';
-  signal aa_s                      : std_logic_vector(g_K_WIDTH-1 downto 0)     := (others => '0');
+  signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0)    := (others => '0');
   signal qa_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
 
   -- DPRAM port B (read)
   signal web_s                     : std_logic := '0';
   signal db_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
-  signal ram_coeff_s               : std_logic_vector(g_B_WIDTH-1 downto 0);
+  signal ram_coeff_s               : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
 
 begin
 
@@ -126,7 +123,8 @@ begin
     end process dot_product_process;
 
   cmp_ram_interface : generic_dpram
-    generic map (
+    generic map
+    (
       g_DATA_WIDTH                 => g_DATA_WIDTH,
       g_SIZE                       => g_SIZE,
       g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
@@ -135,7 +133,8 @@ begin
       g_DUAL_CLOCK                 => g_DUAL_CLOCK,
       g_FAIL_IF_FILE_NOT_FOUND     => g_FAIL_IF_FILE_NOT_FOUND
     )
-    port map(
+    port map
+    (
       -- Synchronous reset
       rst_n_i                      => rst_n_i,
 
@@ -157,7 +156,19 @@ begin
     );
 
   dot_prod_interface : dot_prod
-    port map (
+    generic map
+    (
+      -- Width for input a[k]
+      g_A_WIDTH                  => g_A_WIDTH,
+      -- Width for input b[k]
+      g_B_WIDTH                  => g_B_WIDTH,
+      -- Width for output
+      g_C_WIDTH                  => g_C_WIDTH,
+      -- Extra bits for accumulator
+      g_EXTRA_WIDTH              => 4
+    )
+    port map
+    (
       clk_i                        => clk_i,
       rst_n_i                      => rst_n_i,
       clear_acc_i                  => dcc_time_frame_start_i,
