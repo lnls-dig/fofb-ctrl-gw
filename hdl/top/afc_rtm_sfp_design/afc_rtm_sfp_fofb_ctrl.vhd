@@ -882,8 +882,8 @@ begin
 
     rtm_sfp_fix_rx_p(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_p_i(g_SFP_START_ID+i);
     rtm_sfp_fix_rx_n(g_NUM_SFPS-1-i)  <= rtm_sfp_rx_n_i(g_SFP_START_ID+i);
-    rtm_sfp_tx_p_o(g_SFP_START_ID+i) <= rtm_sfp_fix_tx_p(g_NUM_SFPS-1-i);
-    rtm_sfp_tx_n_o(g_SFP_START_ID+i) <= rtm_sfp_fix_tx_n(g_NUM_SFPS-1-i);
+    rtm_sfp_tx_p_o(g_SFP_START_ID+i)  <= rtm_sfp_fix_tx_p(g_NUM_SFPS-1-i);
+    rtm_sfp_tx_n_o(g_SFP_START_ID+i)  <= rtm_sfp_fix_tx_n(g_NUM_SFPS-1-i);
 
   end generate;
 
