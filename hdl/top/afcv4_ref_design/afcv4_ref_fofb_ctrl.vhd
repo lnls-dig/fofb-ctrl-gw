@@ -274,6 +274,8 @@ begin
   cmp_afc_ref_fofb_ctrl_gen : entity work.afc_ref_fofb_ctrl_gen
   generic map (
     g_BOARD                                    => "AFCv4",
+    -- Select RTM LAMP or RTM SFP
+    g_RTM                                      => "RTMLAMP",
     -- Number of P2P GTs
     g_NUM_P2P_GTS                              => g_NUM_P2P_GTS,
     -- Starting index of used P2P GTs

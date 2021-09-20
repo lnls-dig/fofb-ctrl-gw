@@ -62,7 +62,7 @@ entity afc_ref_fofb_ctrl_gen is
 generic (
   g_BOARD                                    : string  := "AFCv4";
   -- Select RTM LAMP or RTM SFP
-  g_RTM                                      : string  := "RTMSFP";
+  g_RTM                                      : string  := "RTMLAMP";
   -- Number of SFP GTs
   g_NUM_SFPS                                 : integer range 1 to 4 := 4;
   -- Starting index of used SFP GTs
@@ -1903,15 +1903,15 @@ begin
   --                          RTM LAMP OHWR                           --
   ----------------------------------------------------------------------
 
+  -- Keep it so it's easier to apply constraints on all nets that use this clock
+  -- name
+  clk_fast_spi <= clk_user2;
+  clk_fast_spi_rstn <= clk_user2_rstn;
+
+  clk_rtm_ref <= clk_aux_raw;
+  clk_rtm_ref_rstn <= clk_aux_raw_rstn;
+
   gen_rtm_lamp : if g_RTM = "RTMLAMP" generate
-
-    -- Keep it so it's easier to apply constraints on all nets that use this clock
-    -- name
-    clk_fast_spi <= clk_user2;
-    clk_fast_spi_rstn <= clk_user2_rstn;
-
-    clk_rtm_ref <= clk_aux_raw;
-    clk_rtm_ref_rstn <= clk_aux_raw_rstn;
 
     cmp_rtmlamp_ohwr : xwb_rtmlamp_ohwr
     generic map
