@@ -34,6 +34,9 @@ entity dot_prod is
     -- Width for output
     g_C_WIDTH                      : natural := 16;
 
+    -- Fixed point representation for output
+    g_OUT_FIXED                    : natural := 26;
+
     -- Extra bits for accumulator
     g_EXTRA_WIDTH                  : natural := 4
   );
@@ -72,8 +75,8 @@ end dot_prod;
 architecture behave of dot_prod is
 
   -- Constants to truncate the output
-  constant c_OUT_MSB               : natural                        := 2 * g_A_WIDTH + g_EXTRA_WIDTH - 1;
-  constant c_OUT_LSB               : natural                        := 2 * g_A_WIDTH + g_EXTRA_WIDTH - g_C_WIDTH;
+  constant c_OUT_TRUNCATE          : natural                        := g_OUT_FIXED;
+  constant c_REGS_MSB              : natural                        := 2 * g_A_WIDTH + g_EXTRA_WIDTH - 1;
 
   -- Registers for input values
   signal a_reg_s                   : signed(g_A_WIDTH-1 downto 0)   := (others =>'0');
@@ -81,9 +84,9 @@ architecture behave of dot_prod is
 
   -- Registers for intermediate values
   signal mult_reg_s                : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
-  signal adder_out_s               : signed(c_OUT_MSB downto 0)     := (others =>'0');
-  signal adder_reg1_s              : signed(c_OUT_MSB downto 0)     := (others =>'0');
-  signal adder_reg2_s              : signed(c_OUT_MSB downto 0)     := (others =>'0');
+  signal adder_out_s               : signed(c_REGS_MSB downto 0)    := (others =>'0');
+  signal adder_reg1_s              : signed(c_REGS_MSB downto 0)    := (others =>'0');
+  signal adder_reg2_s              : signed(c_REGS_MSB downto 0)    := (others =>'0');
 
   -- Registers for bit valid
   signal valid_reg1_s              : std_logic                      := '0';
@@ -195,11 +198,11 @@ begin
         result_valid_debug_o       <= valid_reg5_s;
 
         -- Truncate the output
-        result_debug_o             <= adder_reg2_s(c_OUT_MSB downto c_OUT_LSB);
+        result_debug_o             <= adder_reg2_s(g_C_WIDTH+c_OUT_TRUNCATE-1 downto c_OUT_TRUNCATE);
 
 				-- End of the FOFB cycle
         if (time_frame_end_i = '1') then
-          result_o                 <= adder_reg2_s(c_OUT_MSB downto c_OUT_LSB);
+          result_o                 <= adder_reg2_s(g_C_WIDTH+c_OUT_TRUNCATE-1 downto c_OUT_TRUNCATE);
           result_valid_end_o       <= '1';
         else
           result_valid_end_o       <= '0';

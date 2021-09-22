@@ -46,7 +46,10 @@ entity dot_prod_coeff_vec is
     g_ID_WIDTH                     : natural := 9;
 
     -- Width for output
-    g_C_WIDTH                      : natural := 16
+    g_C_WIDTH                      : natural := 16;
+
+    -- Fixed point representation for output
+    g_OUT_FIXED                    : natural := 26
   );
   port(
     -- Core clock
@@ -129,7 +132,7 @@ begin
       g_SIZE                       => g_SIZE,
       g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
       g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
-      g_INIT_FILE                  => g_INIT_FILE,
+      g_INIT_FILE                  => "../../testbench/fofb_processing/ram_col_h_Q26.txt",
       g_DUAL_CLOCK                 => g_DUAL_CLOCK,
       g_FAIL_IF_FILE_NOT_FOUND     => g_FAIL_IF_FILE_NOT_FOUND
     )
@@ -164,6 +167,8 @@ begin
       g_B_WIDTH                  => g_B_WIDTH,
       -- Width for output
       g_C_WIDTH                  => g_C_WIDTH,
+      -- Fixed point representation for output
+      g_OUT_FIXED                => g_OUT_FIXED,
       -- Extra bits for accumulator
       g_EXTRA_WIDTH              => 4
     )

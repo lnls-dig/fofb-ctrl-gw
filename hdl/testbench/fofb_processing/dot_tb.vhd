@@ -167,29 +167,41 @@ begin
   end process valid_tr_gen_process;
 
   input_read_process : process(clk_s)
-    file a_data_file                 : text open read_mode is "a_k.txt";
+    file x_data_file                 : text open read_mode is "BPM_x.txt";
+    file y_data_file                 : text open read_mode is "BPM_y.txt";
     file k_data_file                 : text open read_mode is "k.txt";
-    variable a_line, k_line          : line;
-    variable a_datain                : integer;
+    variable x_line, y_line, k_line  : line;
+    variable x_datain                : integer;
+    variable y_datain                : integer;
     variable k_datain                : bit_vector(c_ID_WIDTH-1 downto 0);
 
   begin
     if rising_edge(clk_s) then
-      if not endfile(a_data_file) and valid_tr = '1' and valid_fofb_ctrl_s = '1' and dcc_time_frame_start_s = '0' then -- and ram_finish_s = '1'
-        -- Reading input a[k] from a txt file
-        readline(a_data_file, a_line);
-        read(a_line, a_datain);
+      if not endfile(x_data_file) and valid_tr = '1' and valid_fofb_ctrl_s = '1' and dcc_time_frame_start_s = '0' then -- and ram_finish_s = '1'
+        -- Reading input BPM_x from a txt file
+        readline(x_data_file, x_line);
+        read(x_line, x_datain);
+
+        -- Reading input BPM_y from a txt file
+        readline(y_data_file, y_line);
+        read(y_line, y_datain);
 
         -- Reading input k from a txt file
         readline(k_data_file, k_line);
         read(k_line, k_datain);
-        for i in 0 to c_CHANNELS-1 loop
-          -- Pass the variable to a signal
-          dcc_fod_s(i).data          <= std_logic_vector(to_signed(a_datain, dcc_fod_s(i).data'length));
-          dcc_fod_s(i).addr          <= to_stdlogicvector(k_datain);
 
+        for i in 0 to c_CHANNELS/2-1 loop
+          -- Data x
+          dcc_fod_s(2*i).data          <= std_logic_vector(to_signed(x_datain, dcc_fod_s(2*i).data'length));
+          dcc_fod_s(2*i).addr          <= to_stdlogicvector(k_datain);
           -- Update valid input bit
-          dcc_fod_s(i).valid         <= '1';
+          dcc_fod_s(2*i).valid         <= '1';
+
+          -- Data y
+          dcc_fod_s(2*i+1).data        <= std_logic_vector(to_signed(y_datain, dcc_fod_s(2*i+1).data'length));
+          dcc_fod_s(2*i+1).addr        <= to_stdlogicvector(k_datain);
+          -- Update valid input bit
+          dcc_fod_s(2*i+1).valid       <= '1';
         end loop;
       else
         for i in 0 to c_CHANNELS-1 loop
@@ -201,7 +213,7 @@ begin
   end process input_read_process;
 
 --   ram_input_read_process : process(clk_s)
---     file ram_b_data_file             : text open read_mode is "ram_ones32b.txt";
+--     file ram_b_data_file             : text open read_mode is "ram_sofb_Q28.txt";
 --     file ram_k_data_file             : text open read_mode is "ram_k256x8.txt";
 --     variable ram_b_line, ram_k_line  : line;
 --     variable ram_b_datain            : bit_vector(c_b_width-1 downto 0);
@@ -232,7 +244,7 @@ begin
 
   output_write_process : process(clk_s)
     file ouput_file                  : text open write_mode is "my_output.txt";
-    file c_data_file                 : text open read_mode is "c_acc_ones.txt";
+    file c_data_file                 : text open read_mode is "sp_out_x.txt";
     variable o_line, c_line          : line;
     variable dataout, c_datain       : integer;
     variable pass_test               : std_logic := '0';
@@ -251,16 +263,17 @@ begin
         read(c_line, c_datain);
 
         -- Report if the test fails
-        if dataout /= c_datain then
+        if (c_datain - dataout) = 1 then
+          report "TRUNCATED VALUE";
+          pass_test                  := '1';
+        elsif (c_datain /= dataout) then
           report "FAIL";
           pass_test                  := '0';
-        else
-          pass_test                  := '1';
         end if;
-       end if;
 
-      if endfile(c_data_file) and pass_test = '1' then
-        report "SUCESS";
+        if endfile(c_data_file) and pass_test = '1' then
+          report "SUCESS";
+        end if;
       end if;
     end if;
   end process output_write_process;

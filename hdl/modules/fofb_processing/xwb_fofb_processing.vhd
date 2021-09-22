@@ -57,6 +57,9 @@ entity xwb_fofb_processing is
     -- Width for output
     g_C_WIDTH                    : natural := 16;
 
+    -- Fixed point representation for output
+    g_OUT_FIXED                  : natural := 26;
+
     -- Number of channels
     g_CHANNELS                   : natural := 8;
 
@@ -123,6 +126,8 @@ begin
     g_ID_WIDTH                   => g_ID_WIDTH,
     -- Width for output c
     g_C_WIDTH                    => g_C_WIDTH,
+    -- Fixed point representation for output
+    g_OUT_FIXED                => g_OUT_FIXED,
 
     -- Wishbone parameters
     g_INTERFACE_MODE             => g_INTERFACE_MODE,

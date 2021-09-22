@@ -45,6 +45,9 @@ package dot_prod_pkg is
       -- Width for output
       g_C_WIDTH                    : natural := 16;
 
+      -- Fixed point representation for output
+      g_OUT_FIXED                  : natural := 26;
+
       -- Extra bits for accumulator
       g_EXTRA_WIDTH                : natural := 4
     );
@@ -101,7 +104,10 @@ package dot_prod_pkg is
       g_ID_WIDTH                   : natural := 9;
 
       -- Width for output
-      g_C_WIDTH                    : natural := 16
+      g_C_WIDTH                    : natural := 16;
+
+      -- Fixed point representation for output
+      g_OUT_FIXED                  : natural := 26
     );
     port(
       -- Core clock
@@ -153,7 +159,10 @@ package dot_prod_pkg is
       g_ID_WIDTH                   : natural := 9;
 
       -- Width for output
-      g_C_WIDTH                    : natural := 16
+      g_C_WIDTH                    : natural := 16;
+
+      -- Fixed point representation for output
+      g_OUT_FIXED                  : natural := 26
     );
     port(
       ---------------------------------------------------------------------------
@@ -212,6 +221,9 @@ package dot_prod_pkg is
 
       -- Width for output
       g_C_WIDTH                    : natural := 16;
+
+      -- Fixed point representation for output
+      g_OUT_FIXED                  : natural := 26;
 
       -- Number of channels
       g_CHANNELS                   : natural := 8

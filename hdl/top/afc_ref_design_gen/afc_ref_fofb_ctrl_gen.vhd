@@ -434,6 +434,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ADDR_WIDTH                      : natural := NodeW + f_log2_size(c_CHANNELS);
   constant c_RAM_SIZE                        : natural := 2**NodeW;
   constant c_SP_OUT_WIDTH                    : natural := 16;
+  constant c_OUT_FIXED                       : natural := 26;
 
   constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
                                                                          data => (others => '0'),
@@ -1678,7 +1679,7 @@ begin
     g_SIZE                                     => c_RAM_SIZE,
     g_WITH_BYTE_ENABLE                         => false,
     g_ADDR_CONFLICT_RESOLUTION                 => "read_first",
-    g_INIT_FILE                                => "../../../../modules/fofb_processing/ram_ones32b.txt",
+    g_INIT_FILE                                => "../../../../modules/fofb_processing/ram_col_h_Q26.txt",
     g_DUAL_CLOCK                               => true,
     g_FAIL_IF_FILE_NOT_FOUND                   => true,
     -- Width for inputs x and y
@@ -1691,6 +1692,8 @@ begin
     g_ID_WIDTH                                 => NodeW,
     -- Width for output
     g_C_WIDTH                                  => c_SP_OUT_WIDTH,
+    -- Fixed point representation for output
+    g_OUT_FIXED                                => c_OUT_FIXED,
     -- Number of channels
     g_CHANNELS                                 => c_CHANNELS,
 
