@@ -263,14 +263,7 @@ begin
         read(c_line, c_datain);
 
         -- Report if the test fails
-        if (c_datain - dataout = 1) then
-          report                     "Horizontal sp_o[0]: TRUNCATED VALUE";
-
-        elsif (dataout = 2**15-1) then
-          report                     "Horizontal sp_o[0]: SATURATION";
-
-        elsif (c_datain /= dataout) then
-          report                     "Horizontal sp_o[0]: FAIL";
+        if (c_datain /= dataout) then
           fail_test                  := fail_test + 1;
         end if;
 
@@ -304,14 +297,7 @@ begin
         read(c_line, c_datain);
 
         -- Report if the test fails
-        if (c_datain - dataout = 1) then
-          report                     "Vertical sp_o[1]: TRUNCATED VALUE";
-
-        elsif (dataout = 2**15-1) then
-          report                     "Vertical sp_o[1]: SATURATION";
-
-        elsif (c_datain /= dataout) then
-          report                     "Vertical sp_o[1]: FAIL";
+        if (c_datain /= dataout) then
           fail_test                  := fail_test + 1;
         end if;
 
