@@ -74,8 +74,6 @@ end dot_prod;
 
 architecture behave of dot_prod is
 
-  -- Constants to truncate the output
-  constant c_OUT_TRUNCATE          : natural                        := g_OUT_FIXED;
   constant c_REGS_MSB              : natural                        := 2 * g_A_WIDTH + g_EXTRA_WIDTH - 1;
 
   -- Registers for input values
@@ -86,7 +84,8 @@ architecture behave of dot_prod is
   signal mult_reg_s                : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
   signal adder_out_s               : signed(c_REGS_MSB downto 0)    := (others =>'0');
   signal adder_reg1_s              : signed(c_REGS_MSB downto 0)    := (others =>'0');
-  signal adder_reg2_s              : signed(c_REGS_MSB downto 0)    := (others =>'0');
+  signal adder_reg2_s              : signed(c_REGS_MSB-g_OUT_FIXED downto 0)
+                                                                    := (others =>'0');
 
   -- Registers for bit valid
   signal valid_reg1_s              : std_logic                      := '0';
@@ -108,6 +107,64 @@ architecture behave of dot_prod is
   signal valid_dsp4_s              : std_logic                      := '0';
   signal valid_dsp5_s              : std_logic                      := '0';
   signal valid_dsp6_s              : std_logic                      := '0';
+
+  function vector_OR(x : std_logic_vector)
+    return std_logic
+  is
+    constant len : integer := x'length;
+    constant mid : integer := len / 2;
+    alias y : std_logic_vector(len-1 downto 0) is x;
+  begin
+    if len = 1
+    then return y(0);
+    else return vector_OR(y(len-1 downto mid)) or
+                vector_OR(y(mid-1 downto 0));
+    end if;
+  end vector_OR;
+
+  function vector_AND(x : std_logic_vector)
+    return std_logic
+  is
+    constant len : integer := x'length;
+    constant mid : integer := len / 2;
+    alias y : std_logic_vector(len-1 downto 0) is x;
+  begin
+    if len = 1
+    then return y(0);
+    else return vector_AND(y(len-1 downto mid)) and
+                vector_AND(y(mid-1 downto 0));
+    end if;
+  end vector_AND;
+
+  function f_replicate(x : std_logic; len : natural)
+    return std_logic_vector
+  is
+    variable v_ret : std_logic_vector(len-1 downto 0) := (others => x);
+  begin
+    return v_ret;
+  end f_replicate;
+
+  function f_saturate(x : std_logic_vector; x_new_msb : natural)
+    return std_logic_vector
+  is
+    constant x_old_msb : natural := x'left;
+    variable v_is_in_range : std_logic;
+    variable v_x_sat : std_logic_vector(x_new_msb downto 0);
+  begin
+    -- Check if signed overflow (all bits 0) or signed underflow (all bits 1)
+    v_is_in_range := (not vector_OR(x(x_old_msb downto x_new_msb)) or
+                (vector_AND(x(x_old_msb downto x_new_msb))));
+
+    if v_is_in_range = '1' then
+      -- just drop the redundant MSB bits
+      v_x_sat := x(x_new_msb downto 0);
+    else
+      -- saturate negative 10...0 or positive 01...1
+      v_x_sat := x(x_old_msb) & f_replicate(not x(x_old_msb), x_new_msb);
+    end if;
+
+    return v_x_sat;
+  end f_saturate;
 
 begin
 
@@ -189,7 +246,7 @@ begin
         valid_reg4_s               <= valid_reg3_s;
 
         -- Register the accumulation to fully pipeline the DSP cascade
-        adder_reg2_s               <= adder_reg1_s;
+        adder_reg2_s               <= adder_reg1_s(c_REGS_MSB downto g_OUT_FIXED);
 
         -- Store the valid bit in a register
         valid_reg5_s               <= valid_reg4_s;
@@ -198,11 +255,11 @@ begin
         result_valid_debug_o       <= valid_reg5_s;
 
         -- Truncate the output
-        result_debug_o             <= adder_reg2_s(g_C_WIDTH+c_OUT_TRUNCATE-1 downto c_OUT_TRUNCATE);
+        result_debug_o             <= signed(f_saturate(std_logic_vector(adder_reg2_s), g_C_WIDTH-1));
 
 				-- End of the FOFB cycle
         if (time_frame_end_i = '1') then
-          result_o                 <= adder_reg2_s(g_C_WIDTH+c_OUT_TRUNCATE-1 downto c_OUT_TRUNCATE);
+          result_o                 <= signed(f_saturate(std_logic_vector(adder_reg2_s), g_C_WIDTH-1));
           result_valid_end_o       <= '1';
         else
           result_valid_end_o       <= '0';

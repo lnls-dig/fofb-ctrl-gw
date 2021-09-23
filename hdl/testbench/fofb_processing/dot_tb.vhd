@@ -247,7 +247,7 @@ begin
     file c_data_file                 : text open read_mode is "sp_out_x.txt";
     variable o_line, c_line          : line;
     variable dataout, c_datain       : integer;
-    variable pass_test               : std_logic := '0';
+    variable fail_test               : integer := 0;
 
   begin
     if valid_debug_s(0) = '1' then
@@ -263,16 +263,19 @@ begin
         read(c_line, c_datain);
 
         -- Report if the test fails
-        if (c_datain - dataout) = 1 then
-          report "TRUNCATED VALUE";
-          pass_test                  := '1';
+        if (c_datain - dataout = 1) then
+          report                     "TRUNCATED VALUE";
+
+        elsif (dataout = 2**15-1) then
+          report                     "SATURATION";
+
         elsif (c_datain /= dataout) then
-          report "FAIL";
-          pass_test                  := '0';
+          report                     "FAIL";
+          fail_test                  := fail_test + 1;
         end if;
 
-        if endfile(c_data_file) and pass_test = '1' then
-          report "SUCESS";
+        if endfile(c_data_file) and (fail_test = 0) then
+          report                     "SUCESS";
         end if;
       end if;
     end if;
