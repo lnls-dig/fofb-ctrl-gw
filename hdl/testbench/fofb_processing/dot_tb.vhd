@@ -242,8 +242,8 @@ begin
 --     end if;
 --   end process ram_input_read_process;
 
-  output_write_process : process(clk_s)
-    file ouput_file                  : text open write_mode is "my_output.txt";
+  output_write_process_SPX : process(clk_s)
+    file ouput_file                  : text open write_mode is "my_output_x.txt";
     file c_data_file                 : text open read_mode is "sp_out_x.txt";
     variable o_line, c_line          : line;
     variable dataout, c_datain       : integer;
@@ -264,21 +264,64 @@ begin
 
         -- Report if the test fails
         if (c_datain - dataout = 1) then
-          report                     "TRUNCATED VALUE";
+          report                     "Horizontal sp_o[0]: TRUNCATED VALUE";
 
         elsif (dataout = 2**15-1) then
-          report                     "SATURATION";
+          report                     "Horizontal sp_o[0]: SATURATION";
 
         elsif (c_datain /= dataout) then
-          report                     "FAIL";
+          report                     "Horizontal sp_o[0]: FAIL";
           fail_test                  := fail_test + 1;
         end if;
 
         if endfile(c_data_file) and (fail_test = 0) then
-          report                     "SUCESS";
+          report                     "Horizontal sp_o[0]: SUCESS";
+        elsif (fail_test /= 0) then
+          report                     "Horizontal sp_o[0]: FAIL";
         end if;
       end if;
     end if;
-  end process output_write_process;
+  end process output_write_process_SPX;
+
+  output_write_process_SPY : process(clk_s)
+    file ouput_file                  : text open write_mode is "my_output_y.txt";
+    file c_data_file                 : text open read_mode is "sp_out_y.txt";
+    variable o_line, c_line          : line;
+    variable dataout, c_datain       : integer;
+    variable fail_test               : integer := 0;
+
+  begin
+    if valid_debug_s(1) = '1' then
+      dataout                        := to_integer(sp_debug_s(1));
+
+      if rising_edge(clk_s) then
+        -- Write output to a txt file
+        write(o_line, dataout);
+        writeline(ouput_file, o_line);
+
+        -- Reading input c_acc from a txt file
+        readline(c_data_file, c_line);
+        read(c_line, c_datain);
+
+        -- Report if the test fails
+        if (c_datain - dataout = 1) then
+          report                     "Vertical sp_o[1]: TRUNCATED VALUE";
+
+        elsif (dataout = 2**15-1) then
+          report                     "Vertical sp_o[1]: SATURATION";
+
+        elsif (c_datain /= dataout) then
+          report                     "Vertical sp_o[1]: FAIL";
+          fail_test                  := fail_test + 1;
+        end if;
+
+        if endfile(c_data_file) and (fail_test = 0) then
+          report                     "Vertical sp_o[1]: SUCESS";
+        elsif (fail_test /= 0) then
+          report                     "Vertical sp_o[1]: FAIL";
+        end if;
+      end if;
+    end if;
+  end process output_write_process_SPY;
 
 end architecture behave;
