@@ -75,6 +75,7 @@ end dot_prod;
 architecture behave of dot_prod is
 
   constant c_REGS_MSB              : natural                        := 2 * g_A_WIDTH + g_EXTRA_WIDTH - 1;
+  signal result_s                  : signed(g_C_WIDTH-1 downto 0)   := (others =>'0');
 
   -- Registers for input values
   signal a_reg_s                   : signed(g_A_WIDTH-1 downto 0)   := (others =>'0');
@@ -255,11 +256,11 @@ begin
         result_valid_debug_o       <= valid_reg5_s;
 
         -- Truncate the output
-        result_debug_o             <= signed(f_saturate(std_logic_vector(adder_reg2_s), g_C_WIDTH-1));
+        result_debug_o             <= result_s;
 
 				-- End of the FOFB cycle
         if (time_frame_end_i = '1') then
-          result_o                 <= signed(f_saturate(std_logic_vector(adder_reg2_s), g_C_WIDTH-1));
+          result_o                 <= result_s;
           result_valid_end_o       <= '1';
         else
           result_valid_end_o       <= '0';
@@ -267,5 +268,7 @@ begin
       end if; -- Reset
     end if; -- Clock
   end process MAC;
+
+  result_s                         <= signed(f_saturate(std_logic_vector(adder_reg2_s), g_C_WIDTH-1));
 
 end architecture behave;
