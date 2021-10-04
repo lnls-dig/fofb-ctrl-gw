@@ -76,7 +76,7 @@ begin
         g_SIZE                       => 512,
         g_WITH_BYTE_ENABLE           => false,
         g_ADDR_CONFLICT_RESOLUTION   => "read_first",
-        g_INIT_FILE                  => "",
+        g_INIT_FILE                  => "../../testbench/fofb_processing/ram_col_h_Q26.txt",
         g_DUAL_CLOCK                 => true,
         g_FAIL_IF_FILE_NOT_FOUND     => true,
         -- Width for inputs x and y

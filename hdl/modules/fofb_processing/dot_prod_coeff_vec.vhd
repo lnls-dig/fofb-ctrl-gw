@@ -132,7 +132,7 @@ begin
       g_SIZE                       => g_SIZE,
       g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
       g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
-      g_INIT_FILE                  => "../../testbench/fofb_processing/ram_col_h_Q26.txt",
+      g_INIT_FILE                  => g_INIT_FILE,
       g_DUAL_CLOCK                 => g_DUAL_CLOCK,
       g_FAIL_IF_FILE_NOT_FOUND     => g_FAIL_IF_FILE_NOT_FOUND
     )

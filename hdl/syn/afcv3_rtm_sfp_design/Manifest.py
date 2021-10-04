@@ -11,8 +11,8 @@ if locals().get('fetchto', None) is None:
 syn_device = "xc7a200t"
 syn_grade = "-2"
 syn_package = "ffg1156"
-syn_top = "afc_rtm_sfp_fofb_ctrl"
-syn_project = "afc_rtm_sfp_fofb_ctrl"
+syn_top = "afcv3_rtm_sfp_fofb_ctrl"
+syn_project = "afcv3_rtm_sfp_fofb_ctrl"
 syn_tool = "vivado"
 syn_properties = [
     ["steps.synth_design.args.more options", "-verbose"],
@@ -43,7 +43,7 @@ else:
 # on afc_base xdc files.
 xdc_files = [
     "afc_rtm_8sfp+_ohwr.xdc",
-    "afc_rtm_sfp_fofb_ctrl.xdc",
+    "afcv3_rtm_sfp_fofb_ctrl.xdc",
     "../afc_common/afc_p2p_gts.xdc",
     "../afc_common/afc_rtm_8sfp+_ohwr_gts.xdc",
 ]
@@ -54,6 +54,6 @@ for f in xdc_files:
 
 modules = {
     "local" : [
-        "../../top/afc_rtm_sfp_design",
+        "../../top/afcv3_rtm_sfp_design",
     ]
 }

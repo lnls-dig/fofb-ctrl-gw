@@ -56,7 +56,7 @@ use work.dot_prod_pkg.all;
 -- RAM package
 use work.genram_pkg.all;
 
-entity afcv3_rtm_sfp is
+entity afcv3_rtm_sfp_fofb_ctrl is
 generic (
   -- Number of SFP GTs
   g_NUM_SFPS                                 : integer := 4;
@@ -243,9 +243,9 @@ port (
   rtm_ext_clk_p_i                            : in    std_logic;
   rtm_ext_clk_n_i                            : in    std_logic
 );
-end entity afcv3_rtm_sfp;
+end entity afcv3_rtm_sfp_fofb_ctrl;
 
-architecture top of afcv3_rtm_sfp is
+architecture top of afcv3_rtm_sfp_fofb_ctrl is
 
 begin
 

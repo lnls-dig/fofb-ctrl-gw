@@ -1,5 +1,5 @@
 files = [
-    "afcv3_rtm_sfp.vhd",
+    "afcv3_rtm_sfp_fofb_ctrl.vhd",
 ]
 
 modules = {
