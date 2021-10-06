@@ -1388,13 +1388,38 @@ begin
     fofb_ref_clk_p(c_FOFB_CC_FMC_OR_RTM_ID) <= fmc0_fpga_si570_clk_p;
     fofb_ref_clk_n(c_FOFB_CC_FMC_OR_RTM_ID) <= fmc0_fpga_si570_clk_n;
 
+    fofb_sysreset_n(c_FOFB_CC_FMC_OR_RTM_ID) <= clk_sys_rstn and fmc0_si57x_reconfig_rst_n and fofb_reset_n;
+
   end generate;
 
-  gen_fofb_sfp_clk: if g_RTM = "RTMSFP" generate
+  gen_fofb_sfps : if g_RTM = "RTMSFP" generate
+    gen_used_fofb_sfps: for i in 0 to g_NUM_SFPS-1 generate
+
+      -- RX lines
+      fofb_rio_rx_p(c_FOFB_CC_FMC_OR_RTM_ID)(i) <= rtm_sfp_rx_p(i);
+      fofb_rio_rx_n(c_FOFB_CC_FMC_OR_RTM_ID)(i) <= rtm_sfp_rx_n(i);
+
+      -- TX lines
+      rtm_sfp_tx_p(i) <= fofb_rio_tx_p(c_FOFB_CC_FMC_OR_RTM_ID)(i);
+      rtm_sfp_tx_n(i) <= fofb_rio_tx_n(c_FOFB_CC_FMC_OR_RTM_ID)(i);
+
+    end generate;
+
+    gen_unused_fofb_sfps: for i in g_NUM_SFPS to c_NUM_SFPS_FOFB-1 generate
+
+      -- TX lines
+      rtm_sfp_tx_p(i) <= '0';
+      rtm_sfp_tx_n(i) <= '1';
+
+    end generate;
+
     -- Clocks. Use rtm_clk1_p as this goes to the same bank as SFP 0, 1, 2, 3
     -- transceivers
     fofb_ref_clk_p(c_FOFB_CC_FMC_OR_RTM_ID) <= rtm_clk1_p;
     fofb_ref_clk_n(c_FOFB_CC_FMC_OR_RTM_ID) <= rtm_clk1_n;
+
+    fofb_sysreset_n(c_FOFB_CC_FMC_OR_RTM_ID) <= clk_sys_rstn and rtm_reconfig_rst_n and fofb_reset_n;
+
   end generate;
 
   -- Trigger signal for DCC timeframe_start.
@@ -1476,8 +1501,6 @@ begin
     fofb_fod_dat_val_o                         => fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(c_NUM_FMC_SFPS-1 downto 0)
   );
 
-  fofb_sysreset_n(c_FOFB_CC_FMC_OR_RTM_ID) <= clk_sys_rstn and fmc0_si57x_reconfig_rst_n and fofb_reset_n;
-
   fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID)  <= not fofb_userrst(c_FOFB_CC_FMC_OR_RTM_ID);
 
   ----------------------------------------------------------------------
@@ -1554,28 +1577,6 @@ begin
     p2p_gt_tx_p_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '0';
     p2p_gt_tx_n_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '1';
 
-  end generate;
-
-  gen_fofb_sfps : if g_RTM = "RTMSFP" generate
-    gen_used_fofb_sfps: for i in 0 to c_NUM_SFPS_FOFB-1 generate
-
-      -- RX lines
-      fofb_rio_rx_p(c_FOFB_CC_FMC_OR_RTM_ID)(i) <= rtm_sfp_rx_p(i);
-      fofb_rio_rx_n(c_FOFB_CC_FMC_OR_RTM_ID)(i) <= rtm_sfp_rx_n(i);
-
-      -- TX lines
-      rtm_sfp_tx_p(i) <= fofb_rio_tx_p(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-      rtm_sfp_tx_n(i) <= fofb_rio_tx_n(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-
-    end generate;
-
-    gen_unused_fofb_sfps: for i in c_NUM_SFPS_FOFB to g_NUM_SFPS-1 generate
-
-      -- TX lines
-      rtm_sfp_tx_p(i) <= '0';
-      rtm_sfp_tx_n(i) <= '1';
-
-    end generate;
   end generate;
 
   -- Only used if FP P2P is not used.
@@ -1661,14 +1662,14 @@ begin
   ----------------------------------------------------------------------
   gen_dcc_fod_data: for i in 0 to c_CHANNELS/2-1 generate
    -- Data xpos
-    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
-    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(i);
+    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
+    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
 
     -- Data ypos
-    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
-    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(i);
+    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
+    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
   end generate;
 
   cmp_fofb_processing : xwb_fofb_processing
@@ -1707,8 +1708,8 @@ begin
     ---------------------------------------------------------------------------
     -- Clock and reset interface
     ---------------------------------------------------------------------------
-    clk_i                                      => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
-    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID),
+    clk_i                                      => fofb_userclk(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
+    rst_n_i                                    => fofb_userrst_n(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
     clk_sys_i                                  => clk_sys,
     rst_sys_n_i                                => clk_sys_rstn,
 
@@ -1717,8 +1718,8 @@ begin
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_fod_i                                  => dcc_fod_s,
-    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID),
-    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
+    dcc_time_frame_start_i                     => timeframe_start(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
+    dcc_time_frame_end_i                       => timeframe_end(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
 
     -- Result output array
     sp_o                                       => sp_s,
@@ -2068,8 +2069,7 @@ begin
   end generate;
 
   gen_rtm_acq_acq_num_cores_unused : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    gen_rtm_acq_channels_unused : for j in c_ADC_CHANNELS to
-        to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).num_atoms)-1 generate
+    gen_rtm_acq_channels_unused : for j in c_ADC_CHANNELS to to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).num_atoms)-1 generate
 
       acq_rtmlamp_data(i)(
         (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
@@ -2098,8 +2098,8 @@ begin
   -- DCC P2P
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
           std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid               <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
+  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
 
   --------------------
   -- ACQ Core 2
