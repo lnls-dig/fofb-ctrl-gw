@@ -1569,14 +1569,14 @@ begin
           fofb_rio_tx_n(c_FOFB_CC_P2P_ID)(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i);
 
     end generate;
-  end generate;
 
-  gen_unused_fofb_fp_p2p_gts: for i in c_GT_CFG.num_fp_p2p_gts to c_GT_CFG.max_fp_p2p_gts-1 generate
+    gen_unused_fofb_fp_p2p_gts: for i in c_GT_CFG.num_fp_p2p_gts to c_GT_CFG.max_fp_p2p_gts-1 generate
 
-    -- TX lines
-    p2p_gt_tx_p_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '0';
-    p2p_gt_tx_n_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '1';
+      -- TX lines
+      p2p_gt_tx_p_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '0';
+      p2p_gt_tx_n_o(g_P2P_GT_START_ID+c_GT_CFG.max_p2p_gts+i) <= '1';
 
+    end generate;
   end generate;
 
   -- Only used if FP P2P is not used.
@@ -1662,14 +1662,14 @@ begin
   ----------------------------------------------------------------------
   gen_dcc_fod_data: for i in 0 to c_CHANNELS/2-1 generate
    -- Data xpos
-    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
-    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
+    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
+    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
 
     -- Data ypos
-    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
-    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_ACQ_CORE_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
+    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
+    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
+    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
   end generate;
 
   cmp_fofb_processing : xwb_fofb_processing
@@ -1708,8 +1708,8 @@ begin
     ---------------------------------------------------------------------------
     -- Clock and reset interface
     ---------------------------------------------------------------------------
-    clk_i                                      => fofb_userclk(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
-    rst_n_i                                    => fofb_userrst_n(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
+    clk_i                                      => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
+    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID),
     clk_sys_i                                  => clk_sys,
     rst_sys_n_i                                => clk_sys_rstn,
 
@@ -1718,8 +1718,8 @@ begin
     ---------------------------------------------------------------------------
     -- DCC interface
     dcc_fod_i                                  => dcc_fod_s,
-    dcc_time_frame_start_i                     => timeframe_start(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
-    dcc_time_frame_end_i                       => timeframe_end(c_ACQ_CORE_CC_FMC_OR_RTM_ID),
+    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID),
+    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
 
     -- Result output array
     sp_o                                       => sp_s,
