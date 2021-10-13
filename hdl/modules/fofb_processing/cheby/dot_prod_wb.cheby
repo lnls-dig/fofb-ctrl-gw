@@ -1,0 +1,35 @@
+memory-map:
+  bus: wb-32-be
+  name: dot_prod_wb
+  description: interface to memory
+  children:
+  - reg:
+      name: ram_coeff_dat
+      address: 0x00000000
+      width: 32
+      access: rw
+      x-wbgen:
+        type: SLV
+        clock: dot_prod_clk_reg_i
+  - reg:
+      name: ram_coeff_addr
+      address: 0x00000004
+      width: 32
+      access: rw
+      x-wbgen:
+        type: SLV
+        clock: dot_prod_clk_reg_i
+  - reg:
+      name: ram_write
+      address: 0x00000008
+      width: 32
+      access: rw
+      x-hdl:
+        write-strobe: True
+      children:
+        - field:
+            name: enable
+            range: 0
+            x-wbgen:
+              type: MONOSTABLE
+              clock: dot_prod_clk_reg_i

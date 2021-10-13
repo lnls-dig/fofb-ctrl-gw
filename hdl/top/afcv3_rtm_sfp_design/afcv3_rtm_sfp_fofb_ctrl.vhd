@@ -1,19 +1,19 @@
 ------------------------------------------------------------------------------
--- Title      : AFC design for FOFB Controller + 1 FMC 4SFP
+-- Title      : AFC RTM SFP design for FOFB Controller
 ------------------------------------------------------------------------------
--- Author     : Lucas Maziero Russo
+-- Author     : Melissa Aguiar
 -- Company    : CNPEM LNLS-DIG
--- Created    : 2021-04-15
+-- Created    : 2021-09-16
 -- Platform   : FPGA-generic
 -------------------------------------------------------------------------------
--- Description: AFC design for FOFB Controller + 1 FMC SFP
+-- Description: AFC design for FOFB Controller + 1 FMC SFPs
 -------------------------------------------------------------------------------
 -- Copyright (c) 2020 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author          Description
--- 2021-04-15  1.0      lucas.russo        Created
+-- 2021-09-16  1.0      melissa.aguiar  Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -51,19 +51,25 @@ use work.pcie_cntr_axi_pkg.all;
 use work.fofb_ctrl_pkg.all;
 -- FOFC CC
 use work.fofb_cc_pkg.all;
--- RTM LAMP definitions
-use work.rtm_lamp_pkg.all;
+-- Dot product package
+use work.dot_prod_pkg.all;
+-- RAM package
+use work.genram_pkg.all;
 
-entity afcv4_ref_fofb_ctrl is
+entity afcv3_rtm_sfp_fofb_ctrl is
 generic (
+  -- Number of SFP GTs
+  g_NUM_SFPS                                 : integer := 4;
+  -- Starting index of used SFP GTs
+  g_SFP_START_ID                             : integer := 4;
   -- Number of P2P GTs
   g_NUM_P2P_GTS                              : integer := 8;
   -- Starting index of used P2P GTs
   g_P2P_GT_START_ID                          : integer := 0;
   -- Number of RTM LAMP ADC channels
-  g_ADC_CHANNELS                             : natural := 12;
+  g_ADC_CHANNELS                             : natural := 8;
   -- Number of RTM LAMP DAC channels
-  g_DAC_CHANNELS                             : natural := 12
+  g_DAC_CHANNELS                             : natural := 8
 );
 port (
   ---------------------------------------------------------------------------
@@ -94,8 +100,7 @@ port (
   -- Trigger pins
   ---------------------------------------------------------------------------
   trig_dir_o                                 : out   std_logic_vector(c_NUM_TRIG-1 downto 0);
-  trig_i                                     : in    std_logic_vector(c_NUM_TRIG-1 downto 0);
-  trig_o                                     : out   std_logic_vector(c_NUM_TRIG-1 downto 0);
+  trig_b                                     : inout std_logic_vector(c_NUM_TRIG-1 downto 0);
 
   ---------------------------------------------------------------------------
   -- AFC Diagnostics
@@ -105,6 +110,11 @@ port (
   diag_spi_si_i                              : in std_logic := '0';
   diag_spi_so_o                              : out std_logic;
   diag_spi_clk_i                             : in std_logic := '0';
+
+  ---------------------------------------------------------------------------
+  -- ADN4604ASVZ
+  ---------------------------------------------------------------------------
+  adn4604_vadj2_clk_updt_n_o                 : out std_logic;
 
   ---------------------------------------------------------------------------
   -- AFC I2C.
@@ -178,105 +188,76 @@ port (
   p2p_gt_tx_n_o                              : out   std_logic_vector(g_NUM_P2P_GTS+g_P2P_GT_START_ID-1 downto g_P2P_GT_START_ID);
 
   ---------------------------------------------------------------------------
-  -- FMC slot 0 - CAEN 4 SFP+
+  -- RTM SFP board pins
   ---------------------------------------------------------------------------
+  -- SFP
+  rtm_sfp_rx_p_i                             : in    std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
+  rtm_sfp_rx_n_i                             : in    std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
+  rtm_sfp_tx_p_o                             : out   std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
+  rtm_sfp_tx_n_o                             : out   std_logic_vector(g_NUM_SFPS+g_SFP_START_ID-1 downto g_SFP_START_ID);
 
-  fmc0_sfp_rx_p_i                            : in    std_logic_vector(3 downto 0);
-  fmc0_sfp_rx_n_i                            : in    std_logic_vector(3 downto 0);
-  fmc0_sfp_tx_p_o                            : out   std_logic_vector(3 downto 0);
-  fmc0_sfp_tx_n_o                            : out   std_logic_vector(3 downto 0);
+  -- RTM I2C.
+  -- SFP configuration pins, behind a I2C MAX7356. I2C addr = 1110_100 & '0' = 0xE8
+  -- Si570 oscillator. Input 0 of CDCLVD1212. I2C addr = 1010101 & '0' = 0x55
+  rtm_scl_b                                  : inout std_logic;
+  rtm_sda_b                                  : inout std_logic;
 
-  fmc0_sfp_scl_b                             : inout std_logic_vector(3 downto 0);
-  fmc0_sfp_sda_b                             : inout std_logic_vector(3 downto 0);
-  fmc0_sfp_mod_abs_i                         : in    std_logic_vector(3 downto 0);
-  fmc0_sfp_rx_los_i                          : in    std_logic_vector(3 downto 0);
-  fmc0_sfp_tx_disable_o                      : out   std_logic_vector(3 downto 0);
-  fmc0_sfp_tx_fault_i                        : in    std_logic_vector(3 downto 0);
-  fmc0_sfp_rs0_o                             : out   std_logic_vector(3 downto 0);
-  fmc0_sfp_rs1_o                             : out   std_logic_vector(3 downto 0);
+  -- Si570 oscillator output enable
+  rtm_si570_oe_o                             : out   std_logic;
 
-  fmc0_si570_clk_p_i                         : in    std_logic;
-  fmc0_si570_clk_n_i                         : in    std_logic;
-  fmc0_si570_scl_b                           : inout std_logic;
-  fmc0_si570_sda_b                           : inout std_logic;
+  ---- Clock to RTM connector. Input 1 of CDCLVD1212. Not connected directly to
+  -- AFC
+  --rtm_rtm_sync_clk_p_o                       : out   std_logic;
+  --rtm_rtm_sync_clk_n_o                       : out   std_logic;
 
-  ---------------------------------------------------------------------------
-  -- FMC slot 0 management
-  ---------------------------------------------------------------------------
-  fmc0_prsnt_m2c_n_i                         : in    std_logic;       -- Mezzanine present (active low)
-  -- fmc0_scl_b         : inout std_logic;       -- Mezzanine system I2C clock (EEPROM)
-  -- fmc0_sda_b         : inout std_logic        -- Mezzanine system I2C data (EEPROM)
+  -- Select between input 0 or 1 or CDCLVD1212. 0 is Si570, 1 is RTM sync clock
+  rtm_clk_in_sel_o                           : out   std_logic;
 
-  ---------------------------------------------------------------------------
-  -- FMC slot 1 management
-  ---------------------------------------------------------------------------
-  fmc1_prsnt_m2c_n_i                         : in    std_logic;       -- Mezzanine present (active low)
-  -- fmc1_scl_b         : inout std_logic;       -- Mezzanine system I2C clock (EEPROM)
-  -- fmc1_sda_b         : inout std_logic        -- Mezzanine system I2C data (EEPROM)
+  -- FPGA clocks from CDCLVD1212
+  rtm_fpga_clk1_p_i                          : in    std_logic;
+  rtm_fpga_clk1_n_i                          : in    std_logic;
+  rtm_fpga_clk2_p_i                          : in    std_logic;
+  rtm_fpga_clk2_n_i                          : in    std_logic;
 
-  ---------------------------------------------------------------------------
-  -- RTM LAMP board pins
-  ---------------------------------------------------------------------------
+  -- SFP status bits. Behind 4 74HC165, 8-parallel-in/serial-out. 4 x 8 bits.
+  -- The PISO chips are organized like this:
+  --
+  -- Parallel load
+  rtm_sfp_status_reg_pl_o                    : out   std_logic;
+  -- Clock N
+  rtm_sfp_status_reg_clk_n_o                 : out   std_logic;
+  -- Serial output
+  rtm_sfp_status_reg_out_i                   : in    std_logic;
 
-  ---------------------------------------------------------------------------
-  -- RTM ADC interface
-  ---------------------------------------------------------------------------
-  rtmlamp_adc_cnv_o                          : out   std_logic;
+  -- SFP control bits. Behind 4 74HC4094D, serial-in/8-parallel-out. 5 x 8 bits.
+  -- The SIPO chips are organized like this:
+  --
+  -- Strobe
+  rtm_sfp_ctl_str_n_o                        : out   std_logic;
+  -- Data input
+  rtm_sfp_ctl_din_n_o                        : out   std_logic;
+  -- Parallel output enable
+  rtm_sfp_ctl_oe_n_o                         : out   std_logic;
 
-  rtmlamp_adc_octo_sck_p_o                   : out   std_logic;
-  rtmlamp_adc_octo_sck_n_o                   : out   std_logic;
-  rtmlamp_adc_octo_sck_ret_p_i               : in    std_logic;
-  rtmlamp_adc_octo_sck_ret_n_i               : in    std_logic;
-  rtmlamp_adc_octo_sdoa_p_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdoa_n_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdob_p_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdob_n_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdoc_p_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdoc_n_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdod_p_i                  : in    std_logic;
-  rtmlamp_adc_octo_sdod_n_i                  : in    std_logic;
-
-  -- Only used when g_ADC_CHANNELS > 8
-  rtmlamp_adc_quad_sck_p_o                   : out   std_logic;
-  rtmlamp_adc_quad_sck_n_o                   : out   std_logic;
-  rtmlamp_adc_quad_sck_ret_p_i               : in    std_logic := '0';
-  rtmlamp_adc_quad_sck_ret_n_i               : in    std_logic := '0';
-  rtmlamp_adc_quad_sdoa_p_i                  : in    std_logic := '0';
-  rtmlamp_adc_quad_sdoa_n_i                  : in    std_logic := '0';
-  rtmlamp_adc_quad_sdoc_p_i                  : in    std_logic := '0';
-  rtmlamp_adc_quad_sdoc_n_i                  : in    std_logic := '0';
-
-  ---------------------------------------------------------------------------
-  -- RTM DAC interface
-  ---------------------------------------------------------------------------
-  rtmlamp_dac_ldac_n_o                       : out  std_logic;
-  rtmlamp_dac_cs_n_o                         : out  std_logic;
-  rtmlamp_dac_sck_o                          : out  std_logic;
-  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_DAC_CHANNELS-1 downto 0);
-
-  ---------------------------------------------------------------------------
-  -- RTM Serial registers interface
-  ---------------------------------------------------------------------------
-  rtmlamp_amp_shift_clk_o                    : out   std_logic;
-  rtmlamp_amp_shift_dout_i                   : in    std_logic;
-  rtmlamp_amp_shift_pl_o                     : out   std_logic;
-
-  rtmlamp_amp_shift_oe_n_o                   : out   std_logic;
-  rtmlamp_amp_shift_din_o                    : out   std_logic;
-  rtmlamp_amp_shift_str_o                    : out   std_logic
+  -- External clock from RTM to FPGA
+  rtm_ext_clk_p_i                            : in    std_logic;
+  rtm_ext_clk_n_i                            : in    std_logic
 );
-end entity afcv4_ref_fofb_ctrl;
+end entity afcv3_rtm_sfp_fofb_ctrl;
 
-architecture top of afcv4_ref_fofb_ctrl is
+architecture top of afcv3_rtm_sfp_fofb_ctrl is
 
 begin
 
   cmp_afc_ref_fofb_ctrl_gen : entity work.afc_ref_fofb_ctrl_gen
   generic map (
-    g_BOARD                                    => "AFCv4",
-    -- Select RTM LAMP or RTM SFP
-    g_RTM                                      => "RTMLAMP",
-    -- Number of P2P GTs
+    g_BOARD                                    => "AFCv3",
+    g_RTM                                      => "RTMSFP",
+    -- Number of SFP GTs
+    g_NUM_SFPS                                 => g_NUM_SFPS,
+    -- Starting index of used SFP GTs
+    g_SFP_START_ID                             => g_SFP_START_ID,
+  -- Number of P2P GTs
     g_NUM_P2P_GTS                              => g_NUM_P2P_GTS,
     -- Starting index of used P2P GTs
     g_P2P_GT_START_ID                          => g_P2P_GT_START_ID,
@@ -314,9 +295,8 @@ begin
     -- Trigger pins
     ---------------------------------------------------------------------------
     trig_dir_o                                 => trig_dir_o,
-    -- AFCv4
-    trig_i                                     => trig_i,
-    trig_o                                     => trig_o,
+    -- AFCv3
+    trig_b                                     => trig_b,
 
     ---------------------------------------------------------------------------
     -- AFC Diagnostics
@@ -326,6 +306,11 @@ begin
     diag_spi_si_i                              => diag_spi_si_i,
     diag_spi_so_o                              => diag_spi_so_o,
     diag_spi_clk_i                             => diag_spi_clk_i,
+
+    ---------------------------------------------------------------------------
+    -- ADN4604ASVZ. AFCv3
+    ---------------------------------------------------------------------------
+    adn4604_vadj2_clk_updt_n_o                 => adn4604_vadj2_clk_updt_n_o,
 
     ---------------------------------------------------------------------------
     -- AFC I2C.
@@ -399,95 +384,60 @@ begin
     p2p_gt_tx_n_o                              => p2p_gt_tx_n_o,
 
     ---------------------------------------------------------------------------
-    -- FMC slot 0 - CAEN 4 SFP+
+    -- RTM SFP board pins
     ---------------------------------------------------------------------------
+    -- SFP
+    rtm_sfp_rx_p_i                             => rtm_sfp_rx_p_i,
+    rtm_sfp_rx_n_i                             => rtm_sfp_rx_n_i,
+    rtm_sfp_tx_p_o                             => rtm_sfp_tx_p_o,
+    rtm_sfp_tx_n_o                             => rtm_sfp_tx_n_o,
 
-    fmc0_sfp_rx_p_i                            => fmc0_sfp_rx_p_i,
-    fmc0_sfp_rx_n_i                            => fmc0_sfp_rx_n_i,
-    fmc0_sfp_tx_p_o                            => fmc0_sfp_tx_p_o,
-    fmc0_sfp_tx_n_o                            => fmc0_sfp_tx_n_o,
+    -- RTM I2C.
+    -- SFP configuration pins, behind a I2C MAX7356. I2C addr = 1110_100 & '0' = 0xE8
+    -- Si570 oscillator. Input 0 of CDCLVD1212. I2C addr = 1010101 & '0' = 0x55
+    rtm_scl_b                                  => rtm_scl_b,
+    rtm_sda_b                                  => rtm_sda_b,
 
-    fmc0_sfp_scl_b                             => fmc0_sfp_scl_b,
-    fmc0_sfp_sda_b                             => fmc0_sfp_sda_b,
-    fmc0_sfp_mod_abs_i                         => fmc0_sfp_mod_abs_i,
-    fmc0_sfp_rx_los_i                          => fmc0_sfp_rx_los_i,
-    fmc0_sfp_tx_disable_o                      => fmc0_sfp_tx_disable_o,
-    fmc0_sfp_tx_fault_i                        => fmc0_sfp_tx_fault_i,
-    fmc0_sfp_rs0_o                             => fmc0_sfp_rs0_o,
-    fmc0_sfp_rs1_o                             => fmc0_sfp_rs1_o,
+    -- Si570 oscillator output enable
+    rtm_si570_oe_o                             => rtm_si570_oe_o,
 
-    fmc0_si570_clk_p_i                         => fmc0_si570_clk_p_i,
-    fmc0_si570_clk_n_i                         => fmc0_si570_clk_n_i,
-    fmc0_si570_scl_b                           => fmc0_si570_scl_b,
-    fmc0_si570_sda_b                           => fmc0_si570_sda_b,
+    ---- Clock to RTM connector. Input 1 of CDCLVD1212. Not connected directly to
+    -- AFC
+    --rtm_rtm_sync_clk_p_o                       : out   std_logic;
+    --rtm_rtm_sync_clk_n_o                       : out   std_logic;
 
-    ---------------------------------------------------------------------------
-    -- FMC slot 0 management
-    ---------------------------------------------------------------------------
-    fmc0_prsnt_m2c_n_i                         => fmc0_prsnt_m2c_n_i,
-    -- fmc0_scl_b         : inout std_logic;       -- Mezzanine system I2C clock (EEPROM)
-    -- fmc0_sda_b         : inout std_logic        -- Mezzanine system I2C data (EEPROM)
+    -- Select between input 0 or 1 or CDCLVD1212. 0 is Si570, 1 is RTM sync clock
+    rtm_clk_in_sel_o                           => rtm_clk_in_sel_o,
 
-    ---------------------------------------------------------------------------
-    -- FMC slot 1 management
-    ---------------------------------------------------------------------------
-    fmc1_prsnt_m2c_n_i                         => fmc1_prsnt_m2c_n_i,
-    -- fmc1_scl_b         : inout std_logic;       -- Mezzanine system I2C clock (EEPROM)
-    -- fmc1_sda_b         : inout std_logic        -- Mezzanine system I2C data (EEPROM)
+    -- FPGA clocks from CDCLVD1212
+    rtm_fpga_clk1_p_i                          => rtm_fpga_clk1_p_i,
+    rtm_fpga_clk1_n_i                          => rtm_fpga_clk1_n_i,
+    rtm_fpga_clk2_p_i                          => rtm_fpga_clk2_p_i,
+    rtm_fpga_clk2_n_i                          => rtm_fpga_clk2_n_i,
 
-    ---------------------------------------------------------------------------
-    -- RTM LAMP board pins
-    ---------------------------------------------------------------------------
+    -- SFP status bits. Behind 4 74HC165, 8-parallel-in/serial-out. 4 x 8 bits.
+    -- The PISO chips are organized like this:
+    --
+    -- Parallel load
+    rtm_sfp_status_reg_pl_o                    => rtm_sfp_status_reg_pl_o,
+    -- Clock N
+    rtm_sfp_status_reg_clk_n_o                 => rtm_sfp_status_reg_clk_n_o,
+    -- Serial output
+    rtm_sfp_status_reg_out_i                   => rtm_sfp_status_reg_out_i,
 
-    ---------------------------------------------------------------------------
-    -- RTM ADC interface
-    ---------------------------------------------------------------------------
-    rtmlamp_adc_cnv_o                          => rtmlamp_adc_cnv_o,
+    -- SFP control bits. Behind 4 74HC4094D, serial-in/8-parallel-out. 5 x 8 bits.
+    -- The SIPO chips are organized like this:
+    --
+    -- Strobe
+    rtm_sfp_ctl_str_n_o                        => rtm_sfp_ctl_str_n_o,
+    -- Data input
+    rtm_sfp_ctl_din_n_o                        => rtm_sfp_ctl_din_n_o,
+    -- Parallel output enable
+    rtm_sfp_ctl_oe_n_o                         => rtm_sfp_ctl_oe_n_o,
 
-    rtmlamp_adc_octo_sck_p_o                   => rtmlamp_adc_octo_sck_p_o,
-    rtmlamp_adc_octo_sck_n_o                   => rtmlamp_adc_octo_sck_n_o,
-    rtmlamp_adc_octo_sck_ret_p_i               => rtmlamp_adc_octo_sck_ret_p_i,
-    rtmlamp_adc_octo_sck_ret_n_i               => rtmlamp_adc_octo_sck_ret_n_i,
-    rtmlamp_adc_octo_sdoa_p_i                  => rtmlamp_adc_octo_sdoa_p_i,
-    rtmlamp_adc_octo_sdoa_n_i                  => rtmlamp_adc_octo_sdoa_n_i,
-    rtmlamp_adc_octo_sdob_p_i                  => rtmlamp_adc_octo_sdob_p_i,
-    rtmlamp_adc_octo_sdob_n_i                  => rtmlamp_adc_octo_sdob_n_i,
-    rtmlamp_adc_octo_sdoc_p_i                  => rtmlamp_adc_octo_sdoc_p_i,
-    rtmlamp_adc_octo_sdoc_n_i                  => rtmlamp_adc_octo_sdoc_n_i,
-    rtmlamp_adc_octo_sdod_p_i                  => rtmlamp_adc_octo_sdod_p_i,
-    rtmlamp_adc_octo_sdod_n_i                  => rtmlamp_adc_octo_sdod_n_i,
-
-    -- AFCv4. Only used when g_ADC_CHANNELS > 8
-    rtmlamp_adc_quad_sck_p_o                   => rtmlamp_adc_quad_sck_p_o,
-    rtmlamp_adc_quad_sck_n_o                   => rtmlamp_adc_quad_sck_n_o,
-    rtmlamp_adc_quad_sck_ret_p_i               => rtmlamp_adc_quad_sck_ret_p_i,
-    rtmlamp_adc_quad_sck_ret_n_i               => rtmlamp_adc_quad_sck_ret_n_i,
-    rtmlamp_adc_quad_sdoa_p_i                  => rtmlamp_adc_quad_sdoa_p_i,
-    rtmlamp_adc_quad_sdoa_n_i                  => rtmlamp_adc_quad_sdoa_n_i,
-    rtmlamp_adc_quad_sdoc_p_i                  => rtmlamp_adc_quad_sdoc_p_i,
-    rtmlamp_adc_quad_sdoc_n_i                  => rtmlamp_adc_quad_sdoc_n_i,
-
-    ---------------------------------------------------------------------------
-    -- RTM DAC interface
-    ---------------------------------------------------------------------------
-    rtmlamp_dac_ldac_n_o                       => rtmlamp_dac_ldac_n_o,
-    rtmlamp_dac_cs_n_o                         => rtmlamp_dac_cs_n_o,
-    rtmlamp_dac_sck_o                          => rtmlamp_dac_sck_o,
-    rtmlamp_dac_sdi_o                          => rtmlamp_dac_sdi_o,
-
-    ---------------------------------------------------------------------------
-    -- RTM Serial registers interface
-    ---------------------------------------------------------------------------
-    rtmlamp_amp_shift_clk_o                    => rtmlamp_amp_shift_clk_o,
-    -- AFCv4
-    rtmlamp_amp_shift_dout_i                   => rtmlamp_amp_shift_dout_i,
-    rtmlamp_amp_shift_pl_o                     => rtmlamp_amp_shift_pl_o,
-
-    -- AFCv4
-    rtmlamp_amp_shift_oe_n_o                   => rtmlamp_amp_shift_oe_n_o,
-
-    rtmlamp_amp_shift_din_o                    => rtmlamp_amp_shift_din_o,
-    rtmlamp_amp_shift_str_o                    => rtmlamp_amp_shift_str_o
+    -- External clock from RTM to FPGA
+    rtm_ext_clk_p_i                            => rtm_ext_clk_p_i,
+    rtm_ext_clk_n_i                            => rtm_ext_clk_n_i
   );
 
 end architecture top;
