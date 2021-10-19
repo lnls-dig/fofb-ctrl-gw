@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cheby -i dot_prod_wb.cheby --hdl vhdl --gen-wbgen-hdl dot_prod_wb.vhd --doc html --gen-doc doc/dot_prod_wb.html --gen-c dot_prod_wb.h --consts-style verilog --gen-consts ../../../sim/regs/dot_prod_wb.vh
+cheby -i wb_fofb_processing_regs.cheby --hdl vhdl --gen-wbgen-hdl wb_fofb_processing_regs.vhd --gen-c wb_fofb_processing_regs.h --consts-style verilog --gen-consts ../../../sim/regs/wb_fofb_processing_regs.vh
