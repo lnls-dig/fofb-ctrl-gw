@@ -435,6 +435,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_RAM_SIZE                        : natural := 2**NodeW;
   constant c_SP_OUT_WIDTH                    : natural := 16;
   constant c_OUT_FIXED                       : natural := 26;
+  constant c_EXTRA_WIDTH                     : natural := 4;
 
   constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
                                                                          data => (others => '0'),
@@ -1676,7 +1677,6 @@ begin
   generic map
   (
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                               => c_DATA_WIDTH,
     g_SIZE                                     => c_RAM_SIZE,
     g_WITH_BYTE_ENABLE                         => false,
     g_ADDR_CONFLICT_RESOLUTION                 => "read_first",
@@ -1695,6 +1695,8 @@ begin
     g_C_WIDTH                                  => c_SP_OUT_WIDTH,
     -- Fixed point representation for output
     g_OUT_FIXED                                => c_OUT_FIXED,
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                              => c_EXTRA_WIDTH,
     -- Number of channels
     g_CHANNELS                                 => c_CHANNELS,
 

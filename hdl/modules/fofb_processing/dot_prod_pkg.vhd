@@ -86,7 +86,6 @@ package dot_prod_pkg is
   component dot_prod_coeff_vec is
     generic(
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH                 : natural := 32;
       g_SIZE                       : natural := 512;
       g_WITH_BYTE_ENABLE           : boolean := false;
       g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
@@ -107,7 +106,10 @@ package dot_prod_pkg is
       g_C_WIDTH                    : natural := 16;
 
       -- Fixed point representation for output
-      g_OUT_FIXED                  : natural := 26
+      g_OUT_FIXED                  : natural := 26;
+
+      -- Extra bits for accumulator
+      g_EXTRA_WIDTH                : natural := 4
     );
     port(
       -- Core clock
@@ -141,7 +143,6 @@ package dot_prod_pkg is
   component fofb_processing_channel is
     generic(
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH                 : natural := 32;
       g_SIZE                       : natural := 512;
       g_WITH_BYTE_ENABLE           : boolean := false;
       g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
@@ -162,7 +163,10 @@ package dot_prod_pkg is
       g_C_WIDTH                    : natural := 16;
 
       -- Fixed point representation for output
-      g_OUT_FIXED                  : natural := 26
+      g_OUT_FIXED                  : natural := 26;
+
+      -- Extra bits for accumulator
+      g_EXTRA_WIDTH                : natural := 4
     );
     port(
       ---------------------------------------------------------------------------
@@ -199,7 +203,6 @@ package dot_prod_pkg is
   component fofb_processing is
     generic(
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH                 : natural := 32;
       g_SIZE                       : natural := 512;
       g_WITH_BYTE_ENABLE           : boolean := false;
       g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
@@ -224,6 +227,9 @@ package dot_prod_pkg is
 
       -- Fixed point representation for output
       g_OUT_FIXED                  : natural := 26;
+
+      -- Extra bits for accumulator
+      g_EXTRA_WIDTH                : natural := 4;
 
       -- Number of channels
       g_CHANNELS                   : natural := 8
@@ -258,7 +264,7 @@ package dot_prod_pkg is
     );
   end component fofb_processing;
 
-  component dot_prod_wb is
+  component wb_fofb_processing_regs is
     port(
       rst_n_i                      : in    std_logic;
       clk_sys_i                    : in    std_logic;
@@ -271,18 +277,17 @@ package dot_prod_pkg is
       wb_we_i                      : in    std_logic;
       wb_ack_o                     : out   std_logic;
       wb_stall_o                   : out   std_logic;
-      dot_prod_clk_reg_i           : in    std_logic;
-
-      -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      dot_prod_wb_ram_coeff_dat_o  : out   std_logic_vector(31 downto 0);
-
-      -- Port for asynchronous (clock: matmul_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      dot_prod_wb_ram_coeff_addr_o : out   std_logic_vector(31 downto 0);
-
-      -- Port for asynchronous (clock: matmul_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
-      dot_prod_wb_ram_write_enable_o
+      fofb_processing_clk_reg_i    : in    std_logic;
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      wb_fofb_processing_regs_ram_coeff_dat_o
+                                   : out   std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      wb_fofb_processing_regs_ram_coeff_addr_o
+                                   : out   std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
+      wb_fofb_processing_regs_ram_write_enable_o
                                    : out   std_logic
     );
-  end component dot_prod_wb;
+  end component wb_fofb_processing_regs;
 
 end package dot_prod_pkg;

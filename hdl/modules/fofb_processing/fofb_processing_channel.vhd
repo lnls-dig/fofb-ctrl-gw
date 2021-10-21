@@ -26,7 +26,6 @@ use work.dot_prod_pkg.all;
 entity fofb_processing_channel is
   generic(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                   : natural := 32;
     g_SIZE                         : natural := 512;
     g_WITH_BYTE_ENABLE             : boolean := false;
     g_ADDR_CONFLICT_RESOLUTION     : string  := "read_first";
@@ -45,6 +44,9 @@ entity fofb_processing_channel is
 
     -- Fixed point representation for output
     g_OUT_FIXED                    : natural := 26;
+
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                  : natural := 4;
 
     -- Width for output
     g_C_WIDTH                      : natural := 16
@@ -89,23 +91,24 @@ begin
     generic map
       (
       -- Standard parameters of generic_dpram
-      g_DATA_WIDTH               => g_DATA_WIDTH,
-      g_SIZE                     => g_SIZE,
-      g_WITH_BYTE_ENABLE         => g_WITH_BYTE_ENABLE,
-      g_ADDR_CONFLICT_RESOLUTION => g_ADDR_CONFLICT_RESOLUTION,
-      g_INIT_FILE                => g_INIT_FILE,
-      g_DUAL_CLOCK               => g_DUAL_CLOCK,
-      g_FAIL_IF_FILE_NOT_FOUND   => g_FAIL_IF_FILE_NOT_FOUND,
+      g_SIZE                       => g_SIZE,
+      g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
+      g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
+      g_INIT_FILE                  => g_INIT_FILE,
+      g_DUAL_CLOCK                 => g_DUAL_CLOCK,
+      g_FAIL_IF_FILE_NOT_FOUND     => g_FAIL_IF_FILE_NOT_FOUND,
       -- Width for inputs x and y
-      g_A_WIDTH                  => g_A_WIDTH,
+      g_A_WIDTH                    => g_A_WIDTH,
       -- Width for ram data
-      g_B_WIDTH                  => g_B_WIDTH,
+      g_B_WIDTH                    => g_B_WIDTH,
       -- Width for dcc addr
-      g_ID_WIDTH                 => g_ID_WIDTH,
+      g_ID_WIDTH                   => g_ID_WIDTH,
       -- Width for output
-      g_C_WIDTH                  => g_C_WIDTH,
+      g_C_WIDTH                    => g_C_WIDTH,
       -- Fixed point representation for output
-      g_OUT_FIXED                => g_OUT_FIXED
+      g_OUT_FIXED                  => g_OUT_FIXED,
+      -- Extra bits for accumulator
+      g_EXTRA_WIDTH                => g_EXTRA_WIDTH
     )
     port map
     (

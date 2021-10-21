@@ -1,6 +1,6 @@
 memory-map:
   bus: wb-32-be
-  name: wb_fofb_processing
+  name: wb_fofb_processing_regs
   description: interface to memory
   children:
   - reg:

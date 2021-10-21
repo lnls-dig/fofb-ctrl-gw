@@ -34,7 +34,6 @@ use work.fofb_ctrl_pkg.all;
 entity xwb_fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                 : natural := 32;
     g_SIZE                       : natural := 512;
     g_WITH_BYTE_ENABLE           : boolean := false;
     g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
@@ -59,6 +58,9 @@ entity xwb_fofb_processing is
 
     -- Fixed point representation for output
     g_OUT_FIXED                  : natural := 26;
+
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                : natural := 4;
 
     -- Number of channels
     g_CHANNELS                   : natural := 8;
@@ -108,7 +110,6 @@ begin
   cmp_wb_fofb_processing : wb_fofb_processing
   generic map(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                 => g_DATA_WIDTH,
     g_SIZE                       => g_SIZE,
     g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
     g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
@@ -128,6 +129,8 @@ begin
     g_C_WIDTH                    => g_C_WIDTH,
     -- Fixed point representation for output
     g_OUT_FIXED                => g_OUT_FIXED,
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                => g_EXTRA_WIDTH,
 
     -- Wishbone parameters
     g_INTERFACE_MODE             => g_INTERFACE_MODE,

@@ -34,7 +34,6 @@ use work.fofb_ctrl_pkg.all;
 entity wb_fofb_processing is
   generic(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                 : natural := 32;
     g_SIZE                       : natural := 512;
     g_WITH_BYTE_ENABLE           : boolean := false;
     g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
@@ -59,6 +58,9 @@ entity wb_fofb_processing is
 
     -- Fixed point representation for output
     g_OUT_FIXED                  : natural := 26;
+
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                : natural := 4;
 
     -- Number of channels
     g_CHANNELS                   : natural := 8;
@@ -144,7 +146,6 @@ begin
   cmp_fofb_processing_interface: fofb_processing
     generic map(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                 => g_DATA_WIDTH,
     g_SIZE                       => g_SIZE,
     g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
     g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
@@ -164,6 +165,8 @@ begin
     g_C_WIDTH                    => g_C_WIDTH,
     -- Fixed point representation for output
     g_OUT_FIXED                  => g_OUT_FIXED,
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                => g_EXTRA_WIDTH,
     -- Number of channels
     g_CHANNELS                   => g_CHANNELS
     )
@@ -295,15 +298,15 @@ begin
       fofb_processing_clk_reg_i  => clk_i,
 
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_ram_coeff_dat_o
+      wb_fofb_processing_regs_ram_coeff_dat_o
                                  => ram_coeff_dat_s,
 
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_ram_coeff_addr_o
+      wb_fofb_processing_regs_ram_coeff_addr_o
                                  => ram_coeff_addr_s,
 
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
-      wb_fofb_processing_ram_write_enable_o
+      wb_fofb_processing_regs_ram_write_enable_o
                                  => ram_write_enable_s
     );
 

@@ -28,7 +28,6 @@ use work.genram_pkg.all;
 entity dot_prod_coeff_vec is
   generic(
     -- Standard parameters of generic_dpram
-    g_DATA_WIDTH                   : natural := 32;
     g_SIZE                         : natural := 512;
     g_WITH_BYTE_ENABLE             : boolean := false;
     g_ADDR_CONFLICT_RESOLUTION     : string  := "read_first";
@@ -49,7 +48,10 @@ entity dot_prod_coeff_vec is
     g_C_WIDTH                      : natural := 16;
 
     -- Fixed point representation for output
-    g_OUT_FIXED                    : natural := 26
+    g_OUT_FIXED                    : natural := 26;
+
+    -- Extra bits for accumulator
+    g_EXTRA_WIDTH                  : natural := 4
   );
   port(
     -- Core clock
@@ -84,19 +86,19 @@ architecture behave of dot_prod_coeff_vec is
 
   signal dcc_data_s                : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
   signal dcc_data_reg_s            : signed(g_A_WIDTH-1 downto 0)               := (others => '0');
-  signal ram_coeff_dat_s           : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
+  signal ram_coeff_dat_s           : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
   signal dcc_addr_reg_s            : std_logic_vector(g_ID_WIDTH-1 downto 0)    := (others => '0');
   signal valid_i_s, valid_reg_s    : std_logic := '0';
 
   -- DPRAM port A (write)
   signal wea_s                     : std_logic := '0';
   signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0)    := (others => '0');
-  signal qa_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
+  signal qa_s                      : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
 
   -- DPRAM port B (read)
   signal web_s                     : std_logic := '0';
-  signal db_s                      : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
-  signal ram_coeff_s               : std_logic_vector(g_DATA_WIDTH-1 downto 0)  := (others => '0');
+  signal db_s                      : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
+  signal ram_coeff_s               : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
 
 begin
 
@@ -128,7 +130,7 @@ begin
   cmp_ram_interface : generic_dpram
     generic map
     (
-      g_DATA_WIDTH                 => g_DATA_WIDTH,
+      g_DATA_WIDTH                 => g_B_WIDTH,
       g_SIZE                       => g_SIZE,
       g_WITH_BYTE_ENABLE           => g_WITH_BYTE_ENABLE,
       g_ADDR_CONFLICT_RESOLUTION   => g_ADDR_CONFLICT_RESOLUTION,
@@ -162,15 +164,15 @@ begin
     generic map
     (
       -- Width for input a[k]
-      g_A_WIDTH                  => g_A_WIDTH,
+      g_A_WIDTH                    => g_A_WIDTH,
       -- Width for input b[k]
-      g_B_WIDTH                  => g_B_WIDTH,
+      g_B_WIDTH                    => g_B_WIDTH,
       -- Width for output
-      g_C_WIDTH                  => g_C_WIDTH,
+      g_C_WIDTH                    => g_C_WIDTH,
       -- Fixed point representation for output
-      g_OUT_FIXED                => g_OUT_FIXED,
+      g_OUT_FIXED                  => g_OUT_FIXED,
       -- Extra bits for accumulator
-      g_EXTRA_WIDTH              => 4
+      g_EXTRA_WIDTH                => g_EXTRA_WIDTH
     )
     port map
     (
