@@ -1,6 +1,6 @@
 memory-map:
   bus: wb-32-be
-  name: dot_prod_wb
+  name: wb_fofb_processing_regs
   description: interface to memory
   children:
   - reg:
@@ -10,7 +10,7 @@ memory-map:
       access: rw
       x-wbgen:
         type: SLV
-        clock: dot_prod_clk_reg_i
+        clock: fofb_processing_clk_reg_i
   - reg:
       name: ram_coeff_addr
       address: 0x00000004
@@ -18,7 +18,7 @@ memory-map:
       access: rw
       x-wbgen:
         type: SLV
-        clock: dot_prod_clk_reg_i
+        clock: fofb_processing_clk_reg_i
   - reg:
       name: ram_write
       address: 0x00000008
@@ -32,4 +32,4 @@ memory-map:
             range: 0
             x-wbgen:
               type: MONOSTABLE
-              clock: dot_prod_clk_reg_i
+              clock: fofb_processing_clk_reg_i

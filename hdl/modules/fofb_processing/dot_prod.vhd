@@ -74,7 +74,7 @@ end dot_prod;
 
 architecture behave of dot_prod is
 
-  constant c_REGS_MSB              : natural                        := 2 * g_A_WIDTH + g_EXTRA_WIDTH - 1;
+  constant c_REGS_MSB              : natural                        := g_A_WIDTH + g_B_WIDTH + g_EXTRA_WIDTH - 1;
   signal result_s                  : signed(g_C_WIDTH-1 downto 0)   := (others =>'0');
 
   -- Registers for input values
@@ -82,7 +82,8 @@ architecture behave of dot_prod is
   signal b_reg_s                   : signed(g_B_WIDTH-1 downto 0)   := (others =>'0');
 
   -- Registers for intermediate values
-  signal mult_reg_s                : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
+  signal mult_reg_s                : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
   signal adder_out_s               : signed(c_REGS_MSB downto 0)    := (others =>'0');
   signal adder_reg1_s              : signed(c_REGS_MSB downto 0)    := (others =>'0');
   signal adder_reg2_s              : signed(c_REGS_MSB-g_OUT_FIXED downto 0)
@@ -96,12 +97,18 @@ architecture behave of dot_prod is
   signal valid_reg5_s              : std_logic                      := '0';
 
   -- Registers for the correct DSP48 inference
-  signal mult_dsp1_s               : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
-  signal mult_dsp2_s               : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
-  signal mult_dsp3_s               : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
-  signal mult_dsp4_s               : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
-  signal mult_dsp5_s               : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
-  signal mult_dsp6_s               : signed(2*g_A_WIDTH-1 downto 0) := (others =>'0');
+  signal mult_dsp1_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
+  signal mult_dsp2_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
+  signal mult_dsp3_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
+  signal mult_dsp4_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
+  signal mult_dsp5_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
+  signal mult_dsp6_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
+                                                                    := (others =>'0');
   signal valid_dsp1_s              : std_logic                      := '0';
   signal valid_dsp2_s              : std_logic                      := '0';
   signal valid_dsp3_s              : std_logic                      := '0';
@@ -114,7 +121,7 @@ architecture behave of dot_prod is
   is
     constant len : integer := x'length;
     constant mid : integer := len / 2;
-    alias y : std_logic_vector(len-1 downto 0) is x;
+    alias y      : std_logic_vector(len-1 downto 0) is x;
   begin
     if len = 1
     then return y(0);
@@ -128,7 +135,7 @@ architecture behave of dot_prod is
   is
     constant len : integer := x'length;
     constant mid : integer := len / 2;
-    alias y : std_logic_vector(len-1 downto 0) is x;
+    alias y      : std_logic_vector(len-1 downto 0) is x;
   begin
     if len = 1
     then return y(0);
@@ -148,9 +155,9 @@ architecture behave of dot_prod is
   function f_saturate(x : std_logic_vector; x_new_msb : natural)
     return std_logic_vector
   is
-    constant x_old_msb : natural := x'left;
+    constant x_old_msb     : natural := x'left;
     variable v_is_in_range : std_logic;
-    variable v_x_sat : std_logic_vector(x_new_msb downto 0);
+    variable v_x_sat       : std_logic_vector(x_new_msb downto 0);
   begin
     -- Check if signed overflow (all bits 0) or signed underflow (all bits 1)
     v_is_in_range := (not vector_OR(x(x_old_msb downto x_new_msb)) or

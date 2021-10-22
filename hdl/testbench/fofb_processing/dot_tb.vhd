@@ -72,7 +72,6 @@ begin
       generic map
       (
         -- Standard parameters of generic_dpram
-        g_DATA_WIDTH                 => 32,
         g_SIZE                       => 512,
         g_WITH_BYTE_ENABLE           => false,
         g_ADDR_CONFLICT_RESOLUTION   => "read_first",
