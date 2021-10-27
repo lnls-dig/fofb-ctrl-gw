@@ -129,6 +129,7 @@ package dot_prod_pkg is
       ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
       ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
       ram_write_enable_i           : in std_logic;
+      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Result output array
       sp_o                         : out signed(g_C_WIDTH-1 downto 0);
@@ -189,6 +190,7 @@ package dot_prod_pkg is
       ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
       ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
       ram_write_enable_i           : in std_logic;
+      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Result output array
       sp_o                         : out signed(g_C_WIDTH-1 downto 0);
@@ -253,6 +255,7 @@ package dot_prod_pkg is
       ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
       ram_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
       ram_write_enable_i           : in std_logic;
+      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Result output array
       sp_o                         : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
@@ -279,15 +282,17 @@ package dot_prod_pkg is
       wb_stall_o                   : out   std_logic;
       fofb_processing_clk_reg_i    : in    std_logic;
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_coeff_dat_o
+      wb_fofb_processing_regs_ram_data_in_o
                                    : out   std_logic_vector(31 downto 0);
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_coeff_addr_o
+      wb_fofb_processing_regs_ram_data_out_o
+                                   : out   std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      wb_fofb_processing_regs_ram_addr_o
                                    : out   std_logic_vector(31 downto 0);
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
       wb_fofb_processing_regs_ram_write_enable_o
                                    : out   std_logic
     );
   end component wb_fofb_processing_regs;
-
 end package dot_prod_pkg;

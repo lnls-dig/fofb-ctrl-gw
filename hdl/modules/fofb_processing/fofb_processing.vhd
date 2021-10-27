@@ -78,6 +78,7 @@ entity fofb_processing is
     ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
     ram_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     ram_write_enable_i             : in std_logic;
+    ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
     -- Result output array
     sp_o                           : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
@@ -151,6 +152,7 @@ begin
         ram_coeff_dat_i            => ram_coeff_dat_i,
         ram_addr_i                 => aa_s,
         ram_write_enable_i         => wea_s(i),
+        ram_coeff_dat_o            => ram_coeff_dat_o,
         sp_o                       => sp_o(i),
         sp_debug_o                 => sp_debug_o(i),
         sp_valid_o                 => sp_valid_o(i),

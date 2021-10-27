@@ -117,7 +117,8 @@ architecture rtl of wb_fofb_processing is
   -----------------------------
   -- RAM signals
   -----------------------------
-  signal ram_coeff_dat_s         : std_logic_vector(31 downto 0);
+  signal ram_coeff_dat_i_s       : std_logic_vector(31 downto 0);
+  signal ram_coeff_dat_o_s       : std_logic_vector(31 downto 0);
   signal ram_coeff_addr_s        : std_logic_vector(31 downto 0);
   signal ram_write_enable_s      : std_logic;
   signal ram_wr_s                : std_logic;
@@ -183,9 +184,10 @@ begin
     dcc_time_frame_end_i         => dcc_time_frame_end_i,
 
     -- RAM interface
-    ram_coeff_dat_i              => ram_coeff_dat_s,
+    ram_coeff_dat_i              => ram_coeff_dat_i_s,
     ram_addr_i                   => ram_coeff_addr_s(g_K_WIDTH-1 downto 0),
     ram_write_enable_i           => ram_write_enable_s,
+    ram_coeff_dat_o              => ram_coeff_dat_o_s,
 
     -- Result output array
     sp_o                         => sp_o,
@@ -298,11 +300,15 @@ begin
       fofb_processing_clk_reg_i  => clk_i,
 
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_coeff_dat_o
-                                 => ram_coeff_dat_s,
+      wb_fofb_processing_regs_ram_data_in_o
+                                 => ram_coeff_dat_i_s,
 
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_coeff_addr_o
+      wb_fofb_processing_regs_ram_data_out_o
+                                 => ram_coeff_dat_o_s,
+
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
+      wb_fofb_processing_regs_ram_addr_o
                                  => ram_coeff_addr_s,
 
       -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'

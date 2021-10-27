@@ -4,7 +4,7 @@ memory-map:
   description: interface to memory
   children:
   - reg:
-      name: ram_coeff_dat
+      name: ram_data_in
       address: 0x00000000
       width: 32
       access: rw
@@ -12,7 +12,7 @@ memory-map:
         type: SLV
         clock: fofb_processing_clk_reg_i
   - reg:
-      name: ram_coeff_addr
+      name: ram_data_out
       address: 0x00000004
       width: 32
       access: rw
@@ -20,8 +20,16 @@ memory-map:
         type: SLV
         clock: fofb_processing_clk_reg_i
   - reg:
-      name: ram_write
+      name: ram_addr
       address: 0x00000008
+      width: 32
+      access: rw
+      x-wbgen:
+        type: SLV
+        clock: fofb_processing_clk_reg_i
+  - reg:
+      name: ram_write
+      address: 0x0000000c
       width: 32
       access: rw
       x-hdl:
