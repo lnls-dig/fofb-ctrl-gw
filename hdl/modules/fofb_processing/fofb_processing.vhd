@@ -93,6 +93,7 @@ entity fofb_processing is
 architecture behave of fofb_processing is
   signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0) := (others => '0');
   signal wea_s                     : std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
+  signal ram_coeff_dat_s           : t_ram_data_out_array_logic_vector(g_CHANNELS-1 downto 0);
 begin
 
   ram_write : process(clk_i)
@@ -108,6 +109,7 @@ begin
         for i in 0 to g_CHANNELS-1 loop
           if ram_addr_i(g_K_WIDTH-1 downto g_K_WIDTH-f_log2_size(g_CHANNELS)) = std_logic_vector(to_unsigned(i, f_log2_size(g_CHANNELS))) then
             wea_s(i)               <= ram_write_enable_i;
+            ram_coeff_dat_o        <= ram_coeff_dat_s(i);
           else
             wea_s(i)               <= '0';
           end if;
@@ -152,7 +154,7 @@ begin
         ram_coeff_dat_i            => ram_coeff_dat_i,
         ram_addr_i                 => aa_s,
         ram_write_enable_i         => wea_s(i),
-        ram_coeff_dat_o            => ram_coeff_dat_o,
+        ram_coeff_dat_o            => ram_coeff_dat_s(i),
         sp_o                       => sp_o(i),
         sp_debug_o                 => sp_debug_o(i),
         sp_valid_o                 => sp_valid_o(i),

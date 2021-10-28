@@ -24,6 +24,9 @@ package dot_prod_pkg is
     -- Output array
     type t_dot_prod_array_signed is array (natural range <>) of signed(16-1 downto 0);
 
+    -- RAM data output array
+    type t_ram_data_out_array_logic_vector is array (natural range <>) of std_logic_vector(32-1 downto 0);
+
     -- Input record
     type t_dot_prod_record_fod is record
       valid                        : std_logic;
