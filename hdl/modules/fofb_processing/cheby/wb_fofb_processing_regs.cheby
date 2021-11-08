@@ -4,32 +4,8 @@ memory-map:
   description: interface to memory
   children:
   - reg:
-      name: ram_data_in
-      address: 0x00000000
-      width: 32
-      access: rw
-      x-wbgen:
-        type: SLV
-        clock: fofb_processing_clk_reg_i
-  - reg:
-      name: ram_data_out
-      address: 0x00000004
-      width: 32
-      access: rw
-      x-wbgen:
-        type: SLV
-        clock: fofb_processing_clk_reg_i
-  - reg:
-      name: ram_addr
-      address: 0x00000008
-      width: 32
-      access: rw
-      x-wbgen:
-        type: SLV
-        clock: fofb_processing_clk_reg_i
-  - reg:
       name: ram_write
-      address: 0x0000000c
+      address: 0x00000000
       width: 32
       access: rw
       x-hdl:
@@ -41,3 +17,28 @@ memory-map:
             x-wbgen:
               type: MONOSTABLE
               clock: fofb_processing_clk_reg_i
+  - reg:
+      name: ram_data_in
+      address: 0x00000004
+      width: 32
+      access: rw
+      x-wbgen:
+        type: SLV
+        clock: fofb_processing_clk_reg_i
+  - reg:
+      name: ram_data_out
+      address: 0x00000008
+      width: 32
+      access: ro
+      x-wbgen:
+        type: SLV
+        clock: fofb_processing_clk_reg_i
+  - reg:
+      name: ram_addr
+      address: 0x0000000c
+      width: 32
+      access: rw
+      x-wbgen:
+        type: SLV
+        clock: fofb_processing_clk_reg_i
+
