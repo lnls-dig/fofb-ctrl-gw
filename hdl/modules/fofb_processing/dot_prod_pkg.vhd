@@ -284,18 +284,18 @@ package dot_prod_pkg is
       wb_ack_o                     : out   std_logic;
       wb_stall_o                   : out   std_logic;
       fofb_processing_clk_reg_i    : in    std_logic;
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_data_in_o
-                                   : out   std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_data_out_o
-                                   : out   std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'None' in reg: 'None'
-      wb_fofb_processing_regs_ram_addr_o
-                                   : out   std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'None' in reg: 'None'
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'RAM write enable bit' in reg: 'RAM write register'
       wb_fofb_processing_regs_ram_write_enable_o
-                                   : out   std_logic
+                                   : out   std_logic;
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM data input' in reg: 'RAM data input register'
+      wb_fofb_processing_regs_ram_data_in_val_o
+                                   : out   std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM data output' in reg: 'RAM data output register'
+      wb_fofb_processing_regs_ram_data_out_val_i
+                                   : in    std_logic_vector(31 downto 0);
+      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM address' in reg: 'RAM address register'
+      wb_fofb_processing_regs_ram_addr_val_o
+                                   : out   std_logic_vector(11 downto 0)
     );
   end component wb_fofb_processing_regs;
 end package dot_prod_pkg;

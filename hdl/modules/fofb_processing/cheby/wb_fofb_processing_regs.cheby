@@ -1,44 +1,77 @@
 memory-map:
   bus: wb-32-be
   name: wb_fofb_processing_regs
-  description: interface to memory
+  description: interface to memory registers
+  x-wbgen:
+    hdl_entity: wb_fofb_processing_regs
   children:
+# --------------------------------------------
+# ------- Interface to RAM Registers ---------
+# --------------------------------------------  
   - reg:
       name: ram_write
       address: 0x00000000
       width: 32
       access: rw
-      x-hdl:
-        write-strobe: True
+      description: RAM write register
       children:
-        - field:
-            name: enable
-            range: 0
-            x-wbgen:
-              type: MONOSTABLE
-              clock: fofb_processing_clk_reg_i
+      - field:
+          name: enable
+          range: 0
+          description: RAM write enable bit
+          x-wbgen:
+            type: MONOSTABLE
+            access_bus: READ_WRITE
+            access_dev: READ_ONLY
+            clock: fofb_processing_clk_reg_i
+            x-hdl:
+              write-strobe: True
   - reg:
       name: ram_data_in
       address: 0x00000004
       width: 32
       access: rw
-      x-wbgen:
-        type: SLV
-        clock: fofb_processing_clk_reg_i
+      description: RAM data input register
+      children:
+      - field:
+          name: val
+          range: 31-0
+          description: RAM data input
+          x-wbgen:
+            type: SLV
+            access_bus: READ_WRITE
+            access_dev: READ_ONLY
+            clock: fofb_processing_clk_reg_i
   - reg:
       name: ram_data_out
       address: 0x00000008
       width: 32
       access: ro
-      x-wbgen:
-        type: SLV
-        clock: fofb_processing_clk_reg_i
+      description: RAM data output register
+      children:
+      - field:
+          name: val
+          range: 31-0
+          description: RAM data output
+          x-wbgen:
+            type: SLV
+            access_bus: READ_ONLY
+            access_dev: WRITE_ONLY
+            clock: fofb_processing_clk_reg_i
   - reg:
       name: ram_addr
       address: 0x0000000c
       width: 32
       access: rw
-      x-wbgen:
-        type: SLV
-        clock: fofb_processing_clk_reg_i
+      description: RAM address register
+      children:
+      - field:
+          name: val
+          range: 11-0
+          description: RAM address
+          x-wbgen:
+            type: SLV
+            access_bus: READ_WRITE
+            access_dev: READ_ONLY
+            clock: fofb_processing_clk_reg_i
 

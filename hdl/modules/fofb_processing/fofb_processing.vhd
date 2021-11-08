@@ -99,10 +99,9 @@ architecture behave of fofb_processing is
   -- VIO/ILA signals
   -----------------------------------------------------------------------------
 
-  signal reset_s                             : std_logic;
-
-  signal data                                : std_logic_vector(255 downto 0);
-  signal trig0                               : std_logic_vector(7 downto 0);
+--   signal reset_s                             : std_logic;
+--   signal data                                : std_logic_vector(255 downto 0);
+--   signal trig0                               : std_logic_vector(7 downto 0);
 
 begin
 
