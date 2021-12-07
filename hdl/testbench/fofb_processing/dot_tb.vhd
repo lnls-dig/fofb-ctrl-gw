@@ -50,7 +50,7 @@ architecture behave of dot_tb is
 
   signal ram_write_s                 : std_logic                                  := '1';
   signal ram_finish_s                : std_logic                                  := '0';
-  signal ram_data_s                  : std_logic_vector(c_B_WIDTH-1 downto 0)     := (others => '0');
+  signal ram_data_i_s, ram_data_o_s  : std_logic_vector(c_B_WIDTH-1 downto 0)     := (others => '0');
   signal ram_addr_s                  : std_logic_vector(c_K_WIDTH-1 downto 0)     := (others => '0');
 
   signal valid_o_s                   : std_logic_vector(c_CHANNELS-1 downto 0)    := (others => '0');
@@ -98,9 +98,10 @@ begin
         dcc_fod_i                    => dcc_fod_s,
         dcc_time_frame_start_i       => dcc_time_frame_start_s,
         dcc_time_frame_end_i         => dcc_time_frame_end_s,
-        ram_coeff_dat_i              => ram_data_s,
+        ram_coeff_dat_i              => ram_data_i_s,
         ram_addr_i                   => ram_addr_s,
         ram_write_enable_i           => '0',
+        ram_coeff_dat_o              => ram_data_o_s,
         sp_o                         => sp_s,
         sp_debug_o                   => sp_debug_s,
         sp_valid_o                   => valid_o_s,
@@ -231,7 +232,7 @@ begin
 --           read(ram_k_line, ram_k_datain);
 --
 --           -- Pass the variable to a signal
---           ram_data_s                 <= to_stdlogicvector(ram_b_datain);
+--           ram_data_i_s               <= to_stdlogicvector(ram_b_datain);
 --           ram_addr_s                 <= to_stdlogicvector(ram_k_datain);
 --         else
 --           ram_write_s                <= '0';

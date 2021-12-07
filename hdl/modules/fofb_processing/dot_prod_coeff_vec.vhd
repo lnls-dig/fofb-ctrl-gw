@@ -71,6 +71,7 @@ entity dot_prod_coeff_vec is
     ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
     ram_addr_i                     : in std_logic_vector(g_ID_WIDTH-1 downto 0);
     ram_write_enable_i             : in std_logic;
+    ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
     -- Result output array
     sp_o                           : out signed(g_C_WIDTH-1 downto 0);
@@ -93,7 +94,6 @@ architecture behave of dot_prod_coeff_vec is
   -- DPRAM port A (write)
   signal wea_s                     : std_logic := '0';
   signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0)    := (others => '0');
-  signal qa_s                      : std_logic_vector(g_B_WIDTH-1 downto 0)     := (others => '0');
 
   -- DPRAM port B (read)
   signal web_s                     : std_logic := '0';
@@ -125,7 +125,8 @@ begin
       valid_reg_s                  <= dcc_valid_i;
       valid_i_s                    <= valid_reg_s;
     end if;
-    end process dot_product_process;
+
+  end process dot_product_process;
 
   cmp_ram_interface : generic_dpram
     generic map
@@ -149,7 +150,7 @@ begin
       wea_i                        => ram_write_enable_i,
       aa_i                         => ram_addr_i,
       da_i                         => ram_coeff_dat_s,
-      qa_o                         => qa_s,
+      qa_o                         => ram_coeff_dat_o,
 
       -- Port B (read)
       clkb_i                       => clk_i,

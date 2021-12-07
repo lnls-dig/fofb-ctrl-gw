@@ -78,6 +78,7 @@ entity fofb_processing is
     ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
     ram_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
     ram_write_enable_i             : in std_logic;
+    ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
     -- Result output array
     sp_o                           : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
@@ -92,6 +93,16 @@ entity fofb_processing is
 architecture behave of fofb_processing is
   signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0) := (others => '0');
   signal wea_s                     : std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
+  signal ram_coeff_dat_s           : t_ram_data_out_array_logic_vector(g_CHANNELS-1 downto 0);
+
+  -----------------------------------------------------------------------------
+  -- VIO/ILA signals
+  -----------------------------------------------------------------------------
+
+--   signal reset_s                             : std_logic;
+--   signal data                                : std_logic_vector(255 downto 0);
+--   signal trig0                               : std_logic_vector(7 downto 0);
+
 begin
 
   ram_write : process(clk_i)
@@ -107,6 +118,7 @@ begin
         for i in 0 to g_CHANNELS-1 loop
           if ram_addr_i(g_K_WIDTH-1 downto g_K_WIDTH-f_log2_size(g_CHANNELS)) = std_logic_vector(to_unsigned(i, f_log2_size(g_CHANNELS))) then
             wea_s(i)               <= ram_write_enable_i;
+            ram_coeff_dat_o        <= ram_coeff_dat_s(i);
           else
             wea_s(i)               <= '0';
           end if;
@@ -151,11 +163,39 @@ begin
         ram_coeff_dat_i            => ram_coeff_dat_i,
         ram_addr_i                 => aa_s,
         ram_write_enable_i         => wea_s(i),
+        ram_coeff_dat_o            => ram_coeff_dat_s(i),
         sp_o                       => sp_o(i),
         sp_debug_o                 => sp_debug_o(i),
         sp_valid_o                 => sp_valid_o(i),
         sp_valid_debug_o           => sp_valid_debug_o(i)
       );
     end generate;
+
+--     ila_core_inst : entity work.ila_t8_d256_s8192_cap
+--     port map (
+--       clk               => clk_i,
+--       probe0            => data,
+--       probe1            => trig0
+--     );
+--
+--     reset_s             <= not rst_n_i;
+--
+--     trig0(0)            <= reset_s;
+--     trig0(1)            <= rst_n_i;
+--     trig0(2)            <= wea_s(0);
+--     trig0(3)            <= '0';
+--     trig0(4)            <= '0';
+--     trig0(5)            <= '0';
+--     trig0(6)            <= '0';
+--     trig0(7)            <= '0';
+--
+--     data(0)             <= reset_s;
+--     data(1)             <= rst_n_i;
+--     data(10 downto 2)   <= aa_s;
+--     data(11)            <= wea_s(0);
+--     data(43 downto 12)  <= ram_coeff_dat_i;
+--     data(75 downto 44)  <= ram_coeff_dat_s(0);
+--
+--     data(255 downto 76) <= (others => '0');
 
 end architecture behave;
