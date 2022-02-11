@@ -504,25 +504,17 @@ package fofb_ctrl_pkg is
   component wb_fofb_processing
   generic
   (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     : natural := 512;
-    g_WITH_BYTE_ENABLE                         : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION                 : string  := "read_first";
-    g_INIT_FILE                                : string  := "";
-    g_DUAL_CLOCK                               : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND                   : boolean := true;
-
     -- Width for DCC input
     g_A_WIDTH                                  : natural := 32;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural := 32;
-
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural := 12;
-
     -- Width for DCC addr
     g_ID_WIDTH                                 : natural := 9;
+
+    -- Width for RAM coeff
+    g_B_WIDTH                                  : natural;
+
+    -- Width for RAM addr
+    g_K_WIDTH                                  : natural;
 
     -- Width for output
     g_C_WIDTH                                  : natural := 16;
@@ -534,7 +526,7 @@ package fofb_ctrl_pkg is
     g_EXTRA_WIDTH                              : natural := 4;
 
     -- Number of channels
-    g_CHANNELS                                 : natural := 8;
+    g_CHANNELS                                 : natural;
 
     g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
     g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
@@ -586,25 +578,17 @@ package fofb_ctrl_pkg is
   component xwb_fofb_processing
   generic
   (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     : natural := 512;
-    g_WITH_BYTE_ENABLE                         : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION                 : string  := "read_first";
-    g_INIT_FILE                                : string  := "";
-    g_DUAL_CLOCK                               : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND                   : boolean := true;
-
     -- Width for DCC input
     g_A_WIDTH                                  : natural := 32;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural := 32;
-
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural := 12;
-
     -- Width for DCC addr
     g_ID_WIDTH                                 : natural := 9;
+
+    -- Width for RAM coeff
+    g_B_WIDTH                                  : natural;
+
+    -- Width for RAM addr
+    g_K_WIDTH                                  : natural;
 
     -- Width for output
     g_C_WIDTH                                  : natural := 16;
@@ -616,7 +600,7 @@ package fofb_ctrl_pkg is
     g_EXTRA_WIDTH                              : natural := 4;
 
     -- Number of channels
-    g_CHANNELS                                 : natural := 8;
+    g_CHANNELS                                 : natural;
 
     g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
     g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit

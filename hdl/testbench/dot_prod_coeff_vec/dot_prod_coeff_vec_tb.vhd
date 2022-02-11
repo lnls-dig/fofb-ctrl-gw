@@ -1,11 +1,17 @@
 -------------------------------------------------------------------------------
--- Title      :  dot_prod_coeff_vec_tb testbench
+-- Title      :  dot_prod_coeff_vec testbench
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
 -- Company    :  CNPEM LNLS GCA
 -- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
--- Description:  Testbench for the dot_prod_coeff_vec_tb module.
+-- Description:  Testbench for the dot_prod_coeff_vec module.
+--
+--               Files usage:
+--               * 'coeffs.txt' holds each of the 512 coefficients;
+--               * 'dcc_packets.txt' holds [1 - 256] DCC packet fields
+--                  organized at each 3 lines (BPM id, x measurement and y
+--                  measurement).
 -------------------------------------------------------------------------------
 -- Copyright (c) 2020 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
@@ -13,7 +19,7 @@
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2021-07-30  1.0      melissa.aguiar        Created
--- 2022-06-03  1.1      guilherme.ricioli     Refactored
+-- 2022-07-27  1.1      guilherme.ricioli     Refactored
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -26,6 +32,8 @@ use std.textio.all;
 
 library work;
 use work.dot_prod_pkg.all;
+-- generic_dpram package
+use work.genram_pkg.all;
 
 entity dot_prod_coeff_vec_tb is
 end dot_prod_coeff_vec_tb;
@@ -52,171 +60,184 @@ architecture behave of dot_prod_coeff_vec_tb is
   -- constants
   constant c_SYS_CLOCK_FREQ           : natural := 156250000;
 
-  constant c_CHANNELS                 : natural := 8;
-
   constant c_A_WIDTH                  : natural := 32;
-  constant c_B_WIDTH                  : natural := 32;
   constant c_ID_WIDTH                 : natural := 9;
+  constant c_B_WIDTH                  : natural := 32;
+  constant c_K_WIDTH                  : natural := 9;
   constant c_C_WIDTH                  : natural := 16;
 
   constant c_OUT_FIXED                : natural := 26;
   constant c_EXTRA_WIDTH              : natural := 4;
 
-  constant c_DCC_FOD                  :
+  constant c_DUMMY_DCC_FOD            :
     t_dot_prod_record_fod := (valid => '0',
                               data  => (others => '0'),
                               addr  => (others => '0'));
 
   -- signals
-  signal clk_s                        : std_logic := '0';
-  signal rst_n_s                      : std_logic := '0';
+  signal clk                          : std_logic := '0';
+  signal rst_n                        : std_logic := '0';
 
-  signal dcc_time_frame_start_s       : std_logic := '0';
-  signal dcc_time_frame_end_s         : std_logic := '0';
-  signal dcc_fod_s                    :
-    t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_DCC_FOD);
+  signal dcc_time_frame_start         : std_logic := '0';
+  signal dcc_time_frame_end           : std_logic := '0';
+  signal dcc_fod                      :
+    t_dot_prod_record_fod := c_DUMMY_DCC_FOD;
 
-  signal sp_arr_s                     :
-    t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
-  signal sp_valid_arr_s               :
-    std_logic_vector(c_CHANNELS-1 downto 0) := (others => '0');
+  signal coeff_ram_addr               : std_logic_vector(c_K_WIDTH-1 downto 0);
+  signal coeff_ram_data               : std_logic_vector(c_B_WIDTH-1 downto 0);
+
+  signal sp                           : signed(c_C_WIDTH-1 downto 0);
+  signal sp_valid                     : std_logic;
 
 begin
-  f_gen_clk(c_SYS_CLOCK_FREQ, clk_s);
+  f_gen_clk(c_SYS_CLOCK_FREQ, clk);
 
   -- main process
   process
-    file BPM_x_file                   : text;
-    file BPM_y_file                   : text;
-    file k_file                       : text;
-    variable x_line, y_line, k_line   : line;
-    variable x_datain, y_datain       : integer;
-    variable k_datain                 : bit_vector(c_ID_WIDTH-1 downto 0);
+    file fd_dcc                       : text;
+    variable aux_line                 : line;
+    variable bpm_id                   : natural;
+    variable bpm_x_reading,
+      bpm_y_reading                   : integer;
 
   begin
     -- resetting cores
     report "resetting cores"
     severity note;
 
-    rst_n_s <= '0';
-    f_wait_cycles(clk_s, 1);
-    rst_n_s <= '1';
-    f_wait_cycles(clk_s, 10);
+    rst_n <= '0';
+    f_wait_cycles(clk, 1);
+    rst_n <= '1';
+    f_wait_cycles(clk, 10);
 
     -- loading BPM readings and performing dot product
     report "loading BPM readings and performing dot product"
     severity note;
 
-    file_open(BPM_x_file, "../BPM_x.txt", read_mode);
-    file_open(BPM_y_file, "../BPM_y.txt", read_mode);
-    file_open(k_file, "../k.txt", read_mode);
+    file_open(fd_dcc, "../dcc_packets.txt", read_mode);
 
-    f_wait_cycles(clk_s, 1);
-    dcc_time_frame_start_s <= '1';
-    f_wait_cycles(clk_s, 1);
-    dcc_time_frame_start_s <= '0';
+    f_wait_cycles(clk, 1);
+    dcc_time_frame_start <= '1';
+    f_wait_cycles(clk, 1);
+    dcc_time_frame_start <= '0';
 
-    while not endfile(k_file)
+    -- synthetic dcc data
+    while not endfile(fd_dcc)
     loop
-      f_wait_cycles(clk_s, 1);
+      f_wait_cycles(clk, 1);
 
-      readline(BPM_x_file, x_line);
-      read(x_line, x_datain);
+      readline(fd_dcc, aux_line);
+      read(aux_line, bpm_id);
 
-      readline(BPM_y_file, y_line);
-      read(y_line, y_datain);
+      readline(fd_dcc, aux_line);
+      read(aux_line, bpm_x_reading);
 
-      readline(k_file, k_line);
-      read(k_line, k_datain);
+      readline(fd_dcc, aux_line);
+      read(aux_line, bpm_y_reading);
 
-      -- synthetic dcc data
-      for i in 0 to (c_CHANNELS/2 - 1)
-      loop
-        -- data x goes to even channels
-        dcc_fod_s(2*i).data <=
-          std_logic_vector(to_signed(x_datain, dcc_fod_s(2*i).data'length));
-        dcc_fod_s(2*i).addr <= to_stdlogicvector(k_datain);
+      -- bpm x reading
+      dcc_fod.data <=
+        std_logic_vector(to_signed(bpm_x_reading, dcc_fod.data'length));
+      dcc_fod.addr <=
+        std_logic_vector(to_unsigned(2*bpm_id, dcc_fod.addr'length));
 
-        -- data y goes to odd channels
-        dcc_fod_s(2*i + 1).data <=
-          std_logic_vector(to_signed(y_datain, dcc_fod_s(2*i + 1).data'length));
-        dcc_fod_s(2*i + 1).addr <= to_stdlogicvector(k_datain);
+      -- signalling a valid dcc data
+      dcc_fod.valid <= '1';
+      f_wait_cycles(clk, 1);
+      dcc_fod.valid <= '0';
+      f_wait_cycles(clk, 1);
 
-        -- signalling that dcc data has 'arrived'
-        dcc_fod_s(2*i).valid <= '1';
-        dcc_fod_s(2*i + 1).valid  <= '1';
-      end loop;
+      -- bpm y reading
+      dcc_fod.data <=
+        std_logic_vector(to_signed(bpm_y_reading, dcc_fod.data'length));
+      dcc_fod.addr <=
+        std_logic_vector(to_unsigned(2*bpm_id + 1, dcc_fod.addr'length));
 
-      f_wait_cycles(clk_s, 1);
+      -- signalling a valid dcc data
+      dcc_fod.valid <= '1';
+      f_wait_cycles(clk, 1);
+      dcc_fod.valid <= '0';
+      f_wait_cycles(clk, 1);
 
-      for i in 0 to (c_CHANNELS - 1)
-      loop
-        dcc_fod_s(i).valid <= '0';
-      end loop;
     end loop;
 
     -- NOTE:  This waiting has to be enough for dot_prod_coeff_vec to finish its
     --        processing. It was defined empirically.
-    f_wait_cycles(clk_s, 12);
-    dcc_time_frame_end_s <= '1';
-    f_wait_cycles(clk_s, 1);
-    dcc_time_frame_end_s <= '0';
+    f_wait_cycles(clk, 11);
+    dcc_time_frame_end <= '1';
+    f_wait_cycles(clk, 1);
+    dcc_time_frame_end <= '0';
+    f_wait_cycles(clk, 1);
 
-    -- delay added to allow sp_arr_s update to be shown
-    f_wait_cycles(clk_s, 20);
+    report "dot product result: " & integer'image(to_integer(sp))
+    severity note;
 
-    file_close(BPM_x_file);
-    file_close(BPM_y_file);
-    file_close(k_file);
+    file_close(fd_dcc);
 
     finish;
   end process;
 
+  coeff_ram_addr <= dcc_fod.addr;
+
   -- components
-  gen_cmps_dot_prod_coeff_vec :
-    for i in 0 to c_CHANNELS-1
-    generate
-      cmp_dot_prod_coeff_vec : dot_prod_coeff_vec
-        generic map
-        (
-          g_SIZE                      => 512,
-          g_WITH_BYTE_ENABLE          => false,
-          g_ADDR_CONFLICT_RESOLUTION  => "read_first",
-          g_INIT_FILE                 => "../coeffs.txt",
-          g_DUAL_CLOCK                => true,
-          g_FAIL_IF_FILE_NOT_FOUND    => true,
+  cmp_dot_prod_coeff_vec : dot_prod_coeff_vec
+    generic map (
+      g_A_WIDTH                   => c_A_WIDTH,
+      g_ID_WIDTH                  => c_ID_WIDTH,
+      g_B_WIDTH                   => c_B_WIDTH,
+      g_K_WIDTH                   => c_K_WIDTH,
+      g_C_WIDTH                   => c_C_WIDTH,
 
-          g_A_WIDTH                   => c_A_WIDTH,
-          g_B_WIDTH                   => c_B_WIDTH,
-          g_ID_WIDTH                  => c_ID_WIDTH,
-          g_C_WIDTH                   => c_C_WIDTH,
+      g_OUT_FIXED                 => c_OUT_FIXED,
+      g_EXTRA_WIDTH               => c_EXTRA_WIDTH
+    )
+    port map (
+      clk_i                       => clk,
+      rst_n_i                     => rst_n,
 
-          g_OUT_FIXED                 => c_OUT_FIXED,
-          g_EXTRA_WIDTH               => c_EXTRA_WIDTH
-        )
-        port map
-        (
-          clk_i                       => clk_s,
-          rst_n_i                     => rst_n_s,
+      dcc_valid_i                 => dcc_fod.valid,
+      dcc_data_i                  => signed(dcc_fod.data),
+      dcc_addr_i                  => dcc_fod.addr,
+      dcc_time_frame_start_i      => dcc_time_frame_start,
+      dcc_time_frame_end_i        => dcc_time_frame_end,
 
-          dcc_valid_i                 => dcc_fod_s(i).valid,
-          dcc_data_i                  => signed(dcc_fod_s(i).data),
-          dcc_addr_i                  => dcc_fod_s(i).addr,
-          dcc_time_frame_start_i      => dcc_time_frame_start_s,
-          dcc_time_frame_end_i        => dcc_time_frame_end_s,
+      coeff_ram_addr_o            => open,
+      coeff_ram_data_i            => coeff_ram_data,
 
-          -- not used
-          ram_coeff_dat_i             => (others => '0'),
-          ram_addr_i                  => (others => '0'),
-          ram_write_enable_i          => '0',
-          ram_coeff_dat_o             => open,
+      sp_o                        => sp,
+      sp_debug_o                  => open,
 
-          sp_o                        => sp_arr_s(i),
-          sp_debug_o                  => open,
+      sp_valid_o                  => sp_valid,
+      sp_valid_debug_o            => open
+    );
 
-          sp_valid_o                  => sp_valid_arr_s(i),
-          sp_valid_debug_o            => open
-        );
-    end generate;
+  cmp_generic_dpram : generic_dpram
+    generic map (
+      g_DATA_WIDTH                 => c_B_WIDTH,
+      g_SIZE                       => 512,
+      g_WITH_BYTE_ENABLE           => false,
+      g_ADDR_CONFLICT_RESOLUTION   => "read_first",
+      g_INIT_FILE                  => "../coeffs.txt",
+      g_DUAL_CLOCK                 => true,
+      g_FAIL_IF_FILE_NOT_FOUND     => true
+    )
+    port map (
+      rst_n_i                      => '0',
+
+      clka_i                       => clk,
+      bwea_i                       => (others => '1'),
+      wea_i                        => '0',
+      aa_i                         => coeff_ram_addr,
+      da_i                         => (others => '0'),
+      qa_o                         => coeff_ram_data,
+
+      -- not used
+      clkb_i                       => '0',
+      bweb_i                       => (others => '1'),
+      web_i                        => '0',
+      ab_i                         => (others => '0'),
+      db_i                         => (others => '0'),
+      qb_o                         => open
+    );
 
 end architecture behave;
