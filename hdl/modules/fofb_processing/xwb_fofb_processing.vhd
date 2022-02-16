@@ -131,6 +131,8 @@ begin
     g_OUT_FIXED                => g_OUT_FIXED,
     -- Extra bits for accumulator
     g_EXTRA_WIDTH                => g_EXTRA_WIDTH,
+    -- Number of channels
+    g_CHANNELS                   => g_CHANNELS,
 
     -- Wishbone parameters
     g_INTERFACE_MODE             => g_INTERFACE_MODE,

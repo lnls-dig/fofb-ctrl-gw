@@ -6,14 +6,15 @@
 -- Created    : 2021-06-02
 -- Platform   : FPGA-generic
 -------------------------------------------------------------------------------
--- Description: AFC design for FOFB Controller + 1 FMC SFP
+-- Description: AFC design for FOFB Controller + RTM-8SFP or RTM-LAMP+FMC-4SFP
 -------------------------------------------------------------------------------
--- Copyright (c) 2020 CNPEM
+-- Copyright (c) 2022 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
--- Date        Version  Author          Description
+-- Date        Version  Author             Description
 -- 2021-06-02  1.0      lucas.russo        Created
+-- 2021-09-08  1.1      melissa.aguiar     FOFB Processing module added
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -380,7 +381,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- General constants
   -----------------------------------------------------------------------------
   constant c_SYS_CLOCK_FREQ                  : natural := 100000000;
-  constant c_REF_CLOCK_FREQ                  : natural := 69306000; -- RF*5/36
+  constant c_REF_CLOCK_FREQ                  : natural := 100000000;
   constant c_FAST_SPI_FREQ                   : natural := 400000000;
   constant c_ADC_SCLK_FREQ                   : natural := 100000000;
   constant c_DAC_SCLK_FREQ                   : natural := 25000000;
@@ -394,7 +395,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_NUM_SFPS_FOFB                   : integer := 4; -- maximum of 4 supported
 
   -- RTM LAMP IDs
-  constant c_RTM_LAMP_NUM_CORES              : natural := 1;
+  constant c_RTM_LAMP_NUM_CORES              : natural := 2;
 
   -- FMC 4SFP IDs
   constant c_NUM_FMC_SFPS                    : integer := 4; -- maximum of 4 supported
@@ -416,14 +417,14 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_AFC_SI57x_I2C_FREQ              : integer := 400000;
   constant c_AFC_SI57x_INIT_OSC              : boolean := true;
   constant c_AFC_SI57x_INIT_RFREQ_VALUE      : std_logic_vector(37 downto 0) := "00" & x"2bc0af3b8";
-  constant c_AFC_SI57x_INIT_N1_VALUE         : std_logic_vector(6 downto 0) := "0000111";
-  constant c_AFC_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0) := "000";
+  constant c_AFC_SI57x_INIT_N1_VALUE         : std_logic_vector(6 downto 0)  := "0000111";
+  constant c_AFC_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0)  := "000";
 
   constant c_RTM_SI57x_I2C_FREQ              : integer := 400000;
   constant c_RTM_SI57x_INIT_OSC              : boolean := true;
   constant c_RTM_SI57x_INIT_RFREQ_VALUE      : std_logic_vector(37 downto 0) := "00" & x"2bc0af3b8";
-  constant c_RTM_SI57x_INIT_N1_VALUE         : std_logic_vector(6 downto 0) := "0000111";
-  constant c_RTM_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0) := "000";
+  constant c_RTM_SI57x_INIT_N1_VALUE         : std_logic_vector(6 downto 0)  := "0000111";
+  constant c_RTM_SI57x_INIT_HS_VALUE         : std_logic_vector(2 downto 0)  := "000";
 
   -----------------------------------------------------------------------------
   -- FOFB Processing signals
@@ -438,8 +439,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_EXTRA_WIDTH                     : natural := 4;
 
   constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
-                                                                         data => (others => '0'),
-                                                                         addr => (others => '0'));
+                                                                         data  => (others => '0'),
+                                                                         addr  => (others => '0'));
 
   signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
   signal sp_s                                : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
@@ -459,6 +460,10 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal rtmlamp_dac_data                    : t_16b_word_array(c_DAC_CHANNELS-1 downto 0);
   signal rtmlamp_dac_ready                   : std_logic;
   signal rtmlamp_dac_done_pp                 : std_logic;
+
+  signal rtmlamp_dbg_dac_start               : std_logic;
+  signal rtmlamp_dbg_dac_data                : t_16b_word_array(c_DAC_CHANNELS-1 downto 0);
+
 
   -----------------------------------------------------------------------------
   -- RTM SFP signals
@@ -652,10 +657,12 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Number of acquisition cores. Same as the number of DCC
   constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES;
+
   -- Acquisition core IDs
   constant c_ACQ_CORE_CC_FMC_OR_RTM_ID       : natural := 0;
   constant c_ACQ_CORE_CC_P2P_ID              : natural := 1;
-  constant c_ACQ_CORE_RTM_LAMP_ID            : natural := 2;
+  constant c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID    : natural := 2;
+  constant c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID   : natural := 3;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
@@ -668,9 +675,11 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Acquisition channels IDs
   constant c_ACQ_DCC_ID                      : natural := 0;
-  constant c_ACQ_RTM_LAMP_ID                 : natural := 1;
+  constant c_ACQ_RTM_LAMP_CH0_CH7_ID         : natural := 1;
+  constant c_ACQ_RTM_LAMP_CH8_CH11_ID        : natural := 2;
+
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 2;
+  constant c_ACQ_NUM_CHANNELS                : natural := 3;
 
   constant c_FACQ_PARAMS_DCC                 : t_facq_chan_param := (
     width                                    => to_unsigned(256, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
@@ -678,16 +687,23 @@ architecture top of afc_ref_fofb_ctrl_gen is
     atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2) -- 2^5 = 16-bit
   );
 
-  constant c_FACQ_PARAMS_RTM_LAMP            : t_facq_chan_param := (
+  constant c_FACQ_PARAMS_RTM_LAMP_CH0_CH7    : t_facq_chan_param := (
     width                                    => to_unsigned(256, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
     num_atoms                                => to_unsigned(16, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
     atom_width                               => to_unsigned(16, c_ACQ_ATOM_WIDTH_LOG2)
   );
 
+  constant c_FACQ_PARAMS_RTM_LAMP_CH8_CH11   : t_facq_chan_param := (
+    width                                    => to_unsigned(128, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
+    num_atoms                                => to_unsigned(8, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
+    atom_width                               => to_unsigned(16, c_ACQ_ATOM_WIDTH_LOG2)
+  );
+
   constant c_FACQ_CHANNELS                   : t_facq_chan_param_array(c_ACQ_NUM_CHANNELS-1 downto 0) :=
   (
-    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC,
-    c_ACQ_RTM_LAMP_ID       => c_FACQ_PARAMS_RTM_LAMP
+    c_ACQ_DCC_ID               => c_FACQ_PARAMS_DCC,
+    c_ACQ_RTM_LAMP_CH0_CH7_ID  => c_FACQ_PARAMS_RTM_LAMP_CH0_CH7,
+    c_ACQ_RTM_LAMP_CH8_CH11_ID => c_FACQ_PARAMS_RTM_LAMP_CH8_CH11
   );
 
   signal acq_chan_array                      : t_facq_chan_array2d(c_ACQ_NUM_CORES-1 downto 0, c_ACQ_NUM_CHANNELS-1 downto 0);
@@ -702,10 +718,12 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- RTM Data signals
   -----------------------------------------------------------------------------
 
-  type t_acq_logic_array is array (natural range <>) of std_logic;
-  type t_acq_rtmlamp_data_array is array (natural range <>) of std_logic_vector(to_integer(c_FACQ_PARAMS_RTM_LAMP.width)-1 downto 0);
+  type t_acq_logic_array is array                 (natural range <>) of std_logic;
+  type t_acq_rtmlamp_data_ch0_ch7_array  is array (natural range <>) of std_logic_vector(to_integer(c_FACQ_PARAMS_RTM_LAMP_CH0_CH7.width)-1 downto 0);
+  type t_acq_rtmlamp_data_ch8_ch11_array is array (natural range <>) of std_logic_vector(to_integer(c_FACQ_PARAMS_RTM_LAMP_CH8_CH11.width)-1 downto 0);
 
-  signal acq_rtmlamp_data                    : t_acq_rtmlamp_data_array(c_ACQ_NUM_CORES-1 downto 0);
+  signal acq_rtmlamp_ch0_ch7_data            : t_acq_rtmlamp_data_ch0_ch7_array(c_ACQ_NUM_CORES-1 downto 0)  := (others => (others => '0'));
+  signal acq_rtmlamp_ch8_ch11_data           : t_acq_rtmlamp_data_ch8_ch11_array(c_ACQ_NUM_CORES-1 downto 0) := (others => (others => '0'));
   signal acq_rtmlamp_data_valid              : t_acq_logic_array(c_ACQ_NUM_CORES-1 downto 0);
 
   -----------------------------------------------------------------------------
@@ -755,7 +773,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
   constant c_RTM_LAMP_ID                     : natural := 2;
   constant c_FOFB_PROCESSING_ID              : natural := 3;
-  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 1;
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES;
+
   constant c_RTM_LAMP_SDB                    : boolean := (g_RTM = "RTMLAMP");
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
@@ -845,6 +864,14 @@ begin
         g_CLK1_DIVIDE                            => 6,    -- Must be 200 MHz
         g_CLK2_DIVIDE                            => 3,    -- 400 MHz
         g_SYS_CLOCK_FREQ                         => c_SYS_CLOCK_FREQ,
+        -- aux PLL parameters
+        g_AUX_CLKIN_PERIOD                       => 14.400,
+        g_AUX_DIVCLK_DIVIDE                      => 1,
+        g_AUX_CLKBOUT_MULT_F                     => 18,
+        g_AUX_CLK_DIVIDE                         => 10,
+        g_AUX_CLK_PHASE                          => 0.0,
+        g_AUX_CLK_RAW_DIVIDE                     => 18,
+        g_AUX_CLK_RAW_PHASE                      => 0.0,
         -- AFC Si57x parameters
         g_AFC_SI57x_I2C_FREQ                     => c_AFC_SI57x_I2C_FREQ,
         -- Whether or not to initialize oscilator with the specified values
@@ -1071,6 +1098,14 @@ begin
         g_CLK1_DIVIDE                            => 6,    -- Must be 200 MHz
         g_CLK2_DIVIDE                            => 3,    -- 400 MHz
         g_SYS_CLOCK_FREQ                         => c_SYS_CLOCK_FREQ,
+        -- aux PLL parameters
+        g_AUX_CLKIN_PERIOD                       => 14.400,
+        g_AUX_DIVCLK_DIVIDE                      => 1,
+        g_AUX_CLKBOUT_MULT_F                     => 18,
+        g_AUX_CLK_DIVIDE                         => 10,
+        g_AUX_CLK_PHASE                          => 0.0,
+        g_AUX_CLK_RAW_DIVIDE                     => 18,
+        g_AUX_CLK_RAW_PHASE                      => 0.0,
         -- AFC Si57x parameters
         g_AFC_SI57x_I2C_FREQ                     => c_AFC_SI57x_I2C_FREQ,
         -- Whether or not to initialize oscilator with the specified values
@@ -1945,7 +1980,11 @@ begin
       -- DAC clock frequency [Hz]
       g_DAC_SCLK_FREQ                            => c_DAC_SCLK_FREQ,
       -- Number of DAC channels
-      g_DAC_CHANNELS                             => c_DAC_CHANNELS
+      g_DAC_CHANNELS                             => c_DAC_CHANNELS,
+      -- Use Chipscope or not
+      g_WITH_CHIPSCOPE                           => false,
+      -- Use VIO or not
+      g_WITH_VIO                                 => false
     )
     port map
     (
@@ -2031,8 +2070,50 @@ begin
       dac_start_i                                => rtmlamp_dac_start,
       dac_data_i                                 => rtmlamp_dac_data,
       dac_ready_o                                => rtmlamp_dac_ready,
-      dac_done_pp_o                              => rtmlamp_dac_done_pp
+      dac_done_pp_o                              => rtmlamp_dac_done_pp,
+      dbg_dac_start_o                            => rtmlamp_dbg_dac_start,
+      dbg_dac_data_o                             => rtmlamp_dbg_dac_data,
+
+      -- External PI setpoint data. It is used when ch_x_ctl.pi_sp_source is set to '1'
+      pi_sp_ext_i                                => (others => (others => '0'))
     );
+
+    -- RTM_LAMP data
+    gen_rtm_acq_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
+      -- channels 0 to 7
+      gen_rtm_acq_channels_0_to_7 : for j in 0 to 7 generate
+          acq_rtmlamp_ch0_ch7_data(i)(
+            (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH0_CH7_ID).atom_width)-1
+            downto
+            j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH0_CH7_ID).atom_width))
+          <= rtmlamp_adc_data(j);
+
+          acq_rtmlamp_ch0_ch7_data(i)(
+            (j+9)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH0_CH7_ID).atom_width)-1
+            downto
+            (j+8)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH0_CH7_ID).atom_width))
+          <= rtmlamp_dbg_dac_data(j);
+      end generate;
+
+      -- channels 8 to 11
+      gen_rtm_acq_channels_8_to_11 : for j in 0 to 3 generate
+          acq_rtmlamp_ch8_ch11_data(i)(
+            (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH8_CH11_ID).atom_width)-1
+            downto
+            j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH8_CH11_ID).atom_width))
+          <= rtmlamp_adc_data(j+8);
+
+          acq_rtmlamp_ch8_ch11_data(i)(
+            (j+5)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH8_CH11_ID).atom_width)-1
+            downto
+            (j+4)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH8_CH11_ID).atom_width))
+          <= rtmlamp_dbg_dac_data(j+8);
+      end generate;
+
+      acq_rtmlamp_data_valid(i) <= rtmlamp_adc_valid(0);
+
+    end generate;
+
   end generate;
 
   ----------------------------------------------------------------------
@@ -2045,41 +2126,17 @@ begin
   fs_clk_array(c_ACQ_CORE_CC_P2P_ID)          <= fofb_userclk(c_FOFB_CC_P2P_ID);
   fs_rst_n_array(c_ACQ_CORE_CC_P2P_ID)        <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
 
-  fs_clk_array(c_ACQ_CORE_RTM_LAMP_ID)        <= clk_sys;
-  fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_ID)      <= clk_sys_rstn;
+  fs_clk_array(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID)    <= clk_sys;
+  fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID) <= clk_sys_rstn;
+
+  fs_clk_array(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID)   <= clk_sys;
+  fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID)  <= clk_sys_rstn;
 
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
     fs_ce_array(i)    <= '1';
     fs_rst_array(i)   <= not fs_rst_n_array(i);
 
-  end generate;
-
-  -- RTM_LAMP data
-  gen_rtm_acq_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    gen_rtm_acq_channels : for j in 0 to c_ADC_CHANNELS-1 generate
-
-      acq_rtmlamp_data(i)(
-        (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
-        downto
-        j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
-      <= rtmlamp_adc_data(j);
-
-    end generate;
-
-    acq_rtmlamp_data_valid(i) <= rtmlamp_adc_valid(0);
-  end generate;
-
-  gen_rtm_acq_acq_num_cores_unused : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    gen_rtm_acq_channels_unused : for j in c_ADC_CHANNELS to to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).num_atoms)-1 generate
-
-      acq_rtmlamp_data(i)(
-        (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
-        downto
-        j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
-      <= (others => '0');
-
-    end generate;
   end generate;
 
   --------------------
@@ -2097,6 +2154,7 @@ begin
   --------------------
   -- ACQ Core 1
   --------------------
+
   -- DCC P2P
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
           std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
@@ -2107,11 +2165,22 @@ begin
   -- ACQ Core 2
   --------------------
 
-  -- RTM LAMP
-  acq_chan_array(c_ACQ_CORE_RTM_LAMP_ID, c_ACQ_RTM_LAMP_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).width)-1 downto 0) <=
-                                                                 acq_rtmlamp_data(c_ACQ_CORE_RTM_LAMP_ID);
-  acq_chan_array(c_ACQ_CORE_RTM_LAMP_ID, c_ACQ_RTM_LAMP_ID).dvalid        <= acq_rtmlamp_data_valid(c_ACQ_CORE_RTM_LAMP_ID);
-  acq_chan_array(c_ACQ_CORE_RTM_LAMP_ID, c_ACQ_RTM_LAMP_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_ACQ_RTM_LAMP_ID).pulse;
+  -- RTM LAMP CHANNELS 0 TO 7
+  acq_chan_array(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID, c_ACQ_RTM_LAMP_CH0_CH7_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH0_CH7_ID).width)-1 downto 0) <=
+                                                                 acq_rtmlamp_ch0_ch7_data(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID);
+  acq_chan_array(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID, c_ACQ_RTM_LAMP_CH0_CH7_ID).dvalid <= acq_rtmlamp_data_valid(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID);
+  acq_chan_array(c_ACQ_CORE_RTM_LAMP_CH0_CH7_ID, c_ACQ_RTM_LAMP_CH0_CH7_ID).trig   <= trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_ACQ_RTM_LAMP_CH0_CH7_ID).pulse;
+
+  --------------------
+  -- ACQ Core 3
+  --------------------
+
+  -- RTM LAMP CHANNELS 8 TO 11
+  acq_chan_array(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID, c_ACQ_RTM_LAMP_CH8_CH11_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_CH8_CH11_ID).width)-1 downto 0) <=
+                                                                acq_rtmlamp_ch8_ch11_data(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID);
+  acq_chan_array(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID, c_ACQ_RTM_LAMP_CH8_CH11_ID).dvalid <= acq_rtmlamp_data_valid(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID);
+  acq_chan_array(c_ACQ_CORE_RTM_LAMP_CH8_CH11_ID, c_ACQ_RTM_LAMP_CH8_CH11_ID).trig   <= trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_ACQ_RTM_LAMP_CH8_CH11_ID).pulse;
+
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
@@ -2174,7 +2243,10 @@ begin
 --  fofb_reset          <= probe_out1(11);
 --
 --  fofb_reset_n        <= not fofb_reset;
---
+
+  ----------------------------------------------------------------------
+  --                          ILA                                     --
+  ----------------------------------------------------------------------
 --  ila_core_inst : entity work.ila_t8_d256_s16384
 --  port map (
 --    clk             => clk_sys,
