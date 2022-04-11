@@ -1965,7 +1965,7 @@ begin
       -- Number of ADC channels
       g_ADC_CHANNELS                             => c_ADC_CHANNELS,
       -- If the ADC inputs are inverted on RTM-LAMP or not
-      g_ADC_FIX_INV_INPUTS                       => true,
+      g_ADC_FIX_INV_INPUTS                       => false,
       -- DAC clock frequency [Hz]
       g_DAC_SCLK_FREQ                            => c_DAC_SCLK_FREQ,
       -- Number of DAC channels
