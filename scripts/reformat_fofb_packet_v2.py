@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 
-# 8x16bit setpoints from fofb_processing added
+# 8x16bit set points from fofb_processing added
 
 import sys
 import re
 
+def two2dec(s):
+  if s[0] == '1':
+    return -1 * (int(''.join('1' if x == '0' else '0' for x in s), 2) + 1)
+  else:
+    return int(s, 2)
 
 def conv_int32_to_uint32(x):
   INT32_TO_UINT32 = (1 << 32)
@@ -61,13 +66,13 @@ for line in sys.stdin:
         bpm_pos_x,
         bpm_pos_y,
         tf_cnrt_32,
-        (conv_int32_to_uint32(aux_sp_0) & 0xFFFF0000) >> 16,
-        (conv_int32_to_uint32(aux_sp_0) & 0xFFFF),
-        (conv_int32_to_uint32(aux_sp_1) & 0xFFFF0000) >> 16,
-        (conv_int32_to_uint32(aux_sp_1) & 0xFFFF),
-        (conv_int32_to_uint32(aux_sp_2) & 0xFFFF0000) >> 16,
-        (conv_int32_to_uint32(aux_sp_2) & 0xFFFF),
-        (conv_int32_to_uint32(aux_sp_3) & 0xFFFF0000) >> 16,
-        (conv_int32_to_uint32(aux_sp_3) & 0xFFFF)
+        two2dec(format((conv_int32_to_uint32(aux_sp_0) & 0xFFFF0000) >> 16, "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_0) & 0xFFFF), "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_1) & 0xFFFF0000) >> 16, "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_1) & 0xFFFF), "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_2) & 0xFFFF0000) >> 16, "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_2) & 0xFFFF), "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_3) & 0xFFFF0000) >> 16, "16b")),
+        two2dec(format((conv_int32_to_uint32(aux_sp_3) & 0xFFFF), "16b"))
         ))
   i = i + 1
