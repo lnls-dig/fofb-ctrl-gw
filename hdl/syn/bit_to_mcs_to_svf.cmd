@@ -7,6 +7,7 @@ create_hw_target flash_afcv4
 open_hw_target
 
 create_hw_device -part xc7a200t_0
+create_hw_device -part xc2c256_1
 create_hw_cfgmem -hw_device [lindex [get_hw_devices xc7a200t_0] 0] -mem_dev  [lindex [get_cfgmem_parts {mt25ql256-spi-x1_x2_x4}] 0]
 
 current_hw_device [get_hw_devices xc7a200t_0]
@@ -32,7 +33,7 @@ if {![string equal \
     };
 
 program_hw_cfgmem -hw_cfgmem [get_property PROGRAM.HW_CFGMEM [lindex [get_hw_devices xc7a200t_0] 0 ]]
-write_hw_svf "SYN_PROJECT.svf"
+write_hw_svf "SVF_NAME.svf"
 
 close_hw_target
 exit

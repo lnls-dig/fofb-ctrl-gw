@@ -11,16 +11,27 @@ AUX_FILES_PATH=../../..
 SVF_TO_NSVF_BIN=svf_to_nsvf-linux-x86.bin
 
 cd ${SYN_PROJECT}.runs/impl_1/
-awk -v var=$SYN_PROJECT '{gsub(/SYN_PROJECT/,var); print}' \
-  ${AUX_FILES_PATH}/bit_to_mcs_to_svf.cmd > bit_to_mcs_to_svf_${SYN_PROJECT}.cmd
+
+awk -v var=$SYN_PROJECT \
+  '{gsub(/SYN_PROJECT/,var); gsub(/SVF_NAME/,var"_with_fmc"); print}' \
+  ${AUX_FILES_PATH}/bit_to_mcs_to_svf.cmd > \
+    bit_to_mcs_to_svf_${SYN_PROJECT}_with_fmc.cmd
+
+awk -v var=$SYN_PROJECT \
+  '{gsub(/SYN_PROJECT/,var); gsub(/SVF_NAME/,var"_without_fmc"); \
+  gsub(/create_hw_device -part xc2c256_1/,""); print}' \
+  ${AUX_FILES_PATH}/bit_to_mcs_to_svf.cmd > \
+    bit_to_mcs_to_svf_${SYN_PROJECT}_without_fmc.cmd
 
 # .bit to .svf
-vivado -mode batch -source bit_to_mcs_to_svf_${SYN_PROJECT}.cmd
+vivado -mode batch -source bit_to_mcs_to_svf_${SYN_PROJECT}_with_fmc.cmd
+vivado -mode batch -source bit_to_mcs_to_svf_${SYN_PROJECT}_without_fmc.cmd
 
 # .svf to .nsvf
 if command -v ${SVF_TO_NSVF_BIN} &> /dev/null
 then
-  ${SVF_TO_NSVF_BIN} ${SYN_PROJECT}.svf
+  ${SVF_TO_NSVF_BIN} ${SYN_PROJECT}_with_fmc.svf
+  ${SVF_TO_NSVF_BIN} ${SYN_PROJECT}_without_fmc.svf
 else
   echo "${SVF_TO_NSVF_BIN} not found on PATH, .nsvf not generated"
 fi
