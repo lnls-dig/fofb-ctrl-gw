@@ -93,3 +93,9 @@ planAhead_run_*/
 *files.tcl
 *synthesis_descriptor_pkg.vhd
 *.xpr
+
+# NAT SVF stuff
+*.cmd
+*.mcs
+*.nsvf
+*.svf
