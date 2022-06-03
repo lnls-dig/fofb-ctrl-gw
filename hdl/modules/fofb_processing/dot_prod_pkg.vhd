@@ -21,8 +21,11 @@ use ieee.numeric_std.all;
 
 package dot_prod_pkg is
 
-    -- Output array
-    type t_dot_prod_array_signed is array (natural range <>) of signed(16-1 downto 0);
+    -- fofb_processing output array
+    -- NOTE:  c_Q_WIDTH must match with g_Q_WIDTH defined on
+    --        hdl/top/afc_ref_design_gen/afc_ref_fofb_ctrl_gen.vhd
+    constant c_Q_WIDTH         : natural := 16;
+    type t_arr_fofb_processing_output is array (natural range <>) of signed(c_Q_WIDTH-1 downto 0);
 
     -- RAM data output array
     type t_ram_data_out_array_logic_vector is array (natural range <>) of std_logic_vector(32-1 downto 0);
@@ -170,7 +173,10 @@ package dot_prod_pkg is
       g_OUT_FIXED                  : natural := 26;
 
       -- Extra bits for accumulator
-      g_EXTRA_WIDTH                : natural := 4
+      g_EXTRA_WIDTH                : natural := 4;
+
+      g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
+      g_ANTI_WINDUP_LOWER_LIMIT    : integer  -- anti-windup lower limit
     );
     port(
       ---------------------------------------------------------------------------
@@ -195,13 +201,9 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
       ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
-      -- Result output array
-      sp_o                         : out signed(g_C_WIDTH-1 downto 0);
-      sp_debug_o                   : out signed(g_C_WIDTH-1 downto 0);
-
-      -- Valid output
-      sp_valid_o                   : out std_logic;
-      sp_valid_debug_o             : out std_logic
+      -- Setpoint
+      q_o                          : out signed(g_C_WIDTH-1 downto 0);
+      valid_o                      : out std_logic
     );
   end component fofb_processing_channel;
 
@@ -237,7 +239,10 @@ package dot_prod_pkg is
       g_EXTRA_WIDTH                : natural := 4;
 
       -- Number of channels
-      g_CHANNELS                   : natural := 8
+      g_CHANNELS                   : natural := 8;
+
+      g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
+      g_ANTI_WINDUP_LOWER_LIMIT    : integer  -- anti-windup lower limit
     );
     port(
       ---------------------------------------------------------------------------
@@ -260,13 +265,9 @@ package dot_prod_pkg is
       ram_write_enable_i           : in std_logic;
       ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
-      -- Result output array
-      sp_o                         : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-      sp_debug_o                   : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-
-      -- Valid output
-      sp_valid_o                   : out std_logic_vector(g_CHANNELS-1 downto 0);
-      sp_valid_debug_o             : out std_logic_vector(g_CHANNELS-1 downto 0)
+      -- Setpoints
+      q_arr_o                      : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+      valid_arr_o                  : out std_logic_vector(g_CHANNELS-1 downto 0)
     );
   end component fofb_processing;
 

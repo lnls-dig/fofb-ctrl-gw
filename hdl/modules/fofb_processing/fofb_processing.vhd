@@ -57,7 +57,10 @@ entity fofb_processing is
     g_EXTRA_WIDTH                  : natural := 4;
 
     -- Number of channels
-    g_CHANNELS                     : natural := 8
+    g_CHANNELS                     : natural := 8;
+
+    g_ANTI_WINDUP_UPPER_LIMIT      : integer; -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT      : integer  -- anti-windup lower limit
   );
   port(
     ---------------------------------------------------------------------------
@@ -80,13 +83,9 @@ entity fofb_processing is
     ram_write_enable_i             : in std_logic;
     ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
-    -- Result output array
-    sp_o                           : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-    sp_debug_o                     : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-
-    -- Valid output
-    sp_valid_o                     : out std_logic_vector(g_CHANNELS-1 downto 0);
-    sp_valid_debug_o               : out std_logic_vector(g_CHANNELS-1 downto 0)
+    -- Setpoints
+    q_arr_o                        : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    valid_arr_o                    : out std_logic_vector(g_CHANNELS-1 downto 0)
   );
   end fofb_processing;
 
@@ -149,7 +148,10 @@ begin
         -- Fixed point representation for output
         g_OUT_FIXED                => g_OUT_FIXED,
         -- Extra bits for accumulator
-        g_EXTRA_WIDTH              => g_EXTRA_WIDTH
+        g_EXTRA_WIDTH              => g_EXTRA_WIDTH,
+
+        g_ANTI_WINDUP_UPPER_LIMIT  => g_ANTI_WINDUP_UPPER_LIMIT, -- anti-windup upper limit
+        g_ANTI_WINDUP_LOWER_LIMIT  => g_ANTI_WINDUP_LOWER_LIMIT  -- anti-windup lower limit
       )
       port map
       (
@@ -164,10 +166,8 @@ begin
         ram_addr_i                 => aa_s,
         ram_write_enable_i         => wea_s(i),
         ram_coeff_dat_o            => ram_coeff_dat_s(i),
-        sp_o                       => sp_o(i),
-        sp_debug_o                 => sp_debug_o(i),
-        sp_valid_o                 => sp_valid_o(i),
-        sp_valid_debug_o           => sp_valid_debug_o(i)
+        q_o                        => q_arr_o(i),
+        valid_o                    => valid_arr_o(i)
       );
     end generate;
 

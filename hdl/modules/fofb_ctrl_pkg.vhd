@@ -536,6 +536,9 @@ package fofb_ctrl_pkg is
     -- Number of channels
     g_CHANNELS                                 : natural := 8;
 
+    g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
+
     -- Wishbone parameters
     g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
     g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
@@ -559,13 +562,9 @@ package fofb_ctrl_pkg is
     dcc_time_frame_start_i                     : in std_logic;
     dcc_time_frame_end_i                       : in std_logic;
 
-    -- Result output array
-    sp_o                                       : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-    sp_debug_o                                 : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-
-    -- Valid output
-    sp_valid_o                                 : out std_logic_vector(g_CHANNELS-1 downto 0);
-    sp_valid_debug_o                           : out std_logic_vector(g_CHANNELS-1 downto 0);
+    -- Setpoints
+    q_arr_o                                    : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    valid_arr_o                                : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -619,6 +618,9 @@ package fofb_ctrl_pkg is
     -- Number of channels
     g_CHANNELS                                 : natural := 8;
 
+    g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
+
     -- Wishbone parameters
     g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
     g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
@@ -642,13 +644,9 @@ package fofb_ctrl_pkg is
     dcc_time_frame_start_i                     : in std_logic;
     dcc_time_frame_end_i                       : in std_logic;
 
-    -- Result output array
-    sp_o                                       : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-    sp_debug_o                                 : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-
-    -- Valid output
-    sp_valid_o                                 : out std_logic_vector(g_CHANNELS-1 downto 0);
-    sp_valid_debug_o                           : out std_logic_vector(g_CHANNELS-1 downto 0);
+    -- Setpoints
+    q_arr_o                                    : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    valid_arr_o                                : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
