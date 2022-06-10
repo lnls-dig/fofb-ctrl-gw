@@ -202,8 +202,8 @@ package dot_prod_pkg is
       ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Setpoint
-      q_o                          : out signed(g_C_WIDTH-1 downto 0);
-      valid_o                      : out std_logic
+      sp_o                         : out signed(g_C_WIDTH-1 downto 0);
+      sp_valid_o                   : out std_logic
     );
   end component fofb_processing_channel;
 
@@ -266,8 +266,8 @@ package dot_prod_pkg is
       ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Setpoints
-      q_arr_o                      : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
-      valid_arr_o                  : out std_logic_vector(g_CHANNELS-1 downto 0)
+      sp_arr_o                     : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+      sp_valid_arr_o               : out std_logic_vector(g_CHANNELS-1 downto 0)
     );
   end component fofb_processing;
 

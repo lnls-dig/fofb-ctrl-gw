@@ -76,9 +76,9 @@ architecture behave of fofb_processing_tb is
   signal dcc_fod_s                    :
     t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_DCC_FOD);
 
-  signal q_arr_s                      :
+  signal sp_arr_s                     :
     t_arr_fofb_processing_output(c_CHANNELS-1 downto 0);
-  signal valid_arr_s                  :
+  signal sp_valid_arr_s               :
     std_logic_vector(c_CHANNELS-1 downto 0);
 
 begin
@@ -212,8 +212,8 @@ begin
       ram_write_enable_i          => '0',
       ram_coeff_dat_o             => open,
 
-      q_arr_o                     => q_arr_s,
-      valid_arr_o                 => valid_arr_s
+      sp_arr_o                    => sp_arr_s,
+      sp_valid_arr_o              => sp_valid_arr_s
     );
 
 end architecture behave;

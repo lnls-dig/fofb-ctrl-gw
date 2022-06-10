@@ -91,8 +91,8 @@ entity wb_fofb_processing is
     dcc_time_frame_end_i         : in std_logic;
 
     -- Setpoints
-    q_arr_o                      : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
-    valid_arr_o                  : out std_logic_vector(g_CHANNELS-1 downto 0);
+    sp_arr_o                     : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    sp_valid_arr_o               : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -192,8 +192,8 @@ begin
     ram_coeff_dat_o              => ram_coeff_dat_o_s,
 
     -- Setpoints
-    q_arr_o                      => q_arr_o,
-    valid_arr_o                  => valid_arr_o
+    sp_arr_o                     => sp_arr_o,
+    sp_valid_arr_o               => sp_valid_arr_o
     );
 
   -----------------------------

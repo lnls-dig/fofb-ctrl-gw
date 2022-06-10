@@ -563,8 +563,8 @@ package fofb_ctrl_pkg is
     dcc_time_frame_end_i                       : in std_logic;
 
     -- Setpoints
-    q_arr_o                                    : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
-    valid_arr_o                                : out std_logic_vector(g_CHANNELS-1 downto 0);
+    sp_arr_o                                   : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    sp_valid_arr_o                             : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -645,8 +645,8 @@ package fofb_ctrl_pkg is
     dcc_time_frame_end_i                       : in std_logic;
 
     -- Setpoints
-    q_arr_o                                    : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
-    valid_arr_o                                : out std_logic_vector(g_CHANNELS-1 downto 0);
+    sp_arr_o                                   : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    sp_valid_arr_o                             : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals

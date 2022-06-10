@@ -84,8 +84,8 @@ entity fofb_processing is
     ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
     -- Setpoints
-    q_arr_o                        : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
-    valid_arr_o                    : out std_logic_vector(g_CHANNELS-1 downto 0)
+    sp_arr_o                       : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+    sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0)
   );
   end fofb_processing;
 
@@ -166,8 +166,8 @@ begin
         ram_addr_i                 => aa_s,
         ram_write_enable_i         => wea_s(i),
         ram_coeff_dat_o            => ram_coeff_dat_s(i),
-        q_o                        => q_arr_o(i),
-        valid_o                    => valid_arr_o(i)
+        sp_o                       => sp_arr_o(i),
+        sp_valid_o                 => sp_valid_arr_o(i)
       );
     end generate;
 

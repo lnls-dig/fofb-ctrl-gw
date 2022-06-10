@@ -446,7 +446,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -2**(c_SP_OUT_WIDTH - 1);
 
   signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
-  signal sp_s                                : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
+  signal sp_arr_s                            : t_arr_fofb_processing_output(c_CHANNELS-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- RTM signals
@@ -1753,11 +1753,9 @@ begin
     dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID),
     dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
 
-    -- Result output array
-    sp_o                                       => sp_s,
-
-    -- Valid output
-    sp_valid_o                                 => open,
+    -- Setpoints
+    sp_arr_o                                   => sp_arr_s,
+    sp_valid_arr_o                             => open,
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -2140,8 +2138,8 @@ begin
 
   -- DCC FMC
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(sp_s(0)) & std_logic_vector(sp_s(1)) & std_logic_vector(sp_s(2)) & std_logic_vector(sp_s(3)) &
-          std_logic_vector(sp_s(4)) & std_logic_vector(sp_s(5)) & std_logic_vector(sp_s(6)) & std_logic_vector(sp_s(7)) &
+          std_logic_vector(sp_arr_s(0)) & std_logic_vector(sp_arr_s(1)) & std_logic_vector(sp_arr_s(2)) & std_logic_vector(sp_arr_s(3)) &
+          std_logic_vector(sp_arr_s(4)) & std_logic_vector(sp_arr_s(5)) & std_logic_vector(sp_arr_s(6)) & std_logic_vector(sp_arr_s(7)) &
           fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;

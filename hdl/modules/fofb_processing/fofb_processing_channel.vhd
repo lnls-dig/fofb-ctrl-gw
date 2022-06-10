@@ -78,8 +78,8 @@ entity fofb_processing_channel is
     ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
     -- Setpoint
-    q_o                            : out signed(g_C_WIDTH-1 downto 0);
-    valid_o                        : out std_logic
+    sp_o                           : out signed(g_C_WIDTH-1 downto 0);
+    sp_valid_o                     : out std_logic
   );
   end fofb_processing_channel;
 
@@ -147,8 +147,8 @@ begin
       a_i                          => sp_s,                       -- input a
       clear_i                      => '0',                        -- clear
       sum_i                        => sp_valid_s,                 -- sum
-      q_o                          => q_o,                        -- output q
-      valid_o                      => valid_o                     -- valid
+      q_o                          => sp_o,                       -- output q
+      valid_o                      => sp_valid_o                  -- valid
     );
 
 end architecture behave;
