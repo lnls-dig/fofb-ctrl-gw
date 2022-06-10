@@ -442,6 +442,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
                                                                          data  => (others => '0'),
                                                                          addr  => (others => '0'));
 
+  constant c_ANTI_WINDUP_UPPER_LIMIT         : integer := 2**(c_SP_OUT_WIDTH - 1) - 1;
+  constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -2**(c_SP_OUT_WIDTH - 1);
+
   signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
   signal sp_s                                : t_dot_prod_array_signed(c_CHANNELS-1 downto 0);
 
@@ -1723,6 +1726,9 @@ begin
     g_EXTRA_WIDTH                              => c_EXTRA_WIDTH,
     -- Number of channels
     g_CHANNELS                                 => c_CHANNELS,
+
+    g_ANTI_WINDUP_UPPER_LIMIT                  => c_ANTI_WINDUP_UPPER_LIMIT,  -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT                  => c_ANTI_WINDUP_LOWER_LIMIT,  -- anti-windup lower limit
 
     -- Wishbone parameters
     g_INTERFACE_MODE                           => PIPELINED,
