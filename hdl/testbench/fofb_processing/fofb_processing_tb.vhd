@@ -77,7 +77,7 @@ architecture behave of fofb_processing_tb is
     t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_DCC_FOD);
 
   signal sp_arr_s                     :
-    t_arr_fofb_processing_output(c_CHANNELS-1 downto 0);
+    t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
   signal sp_valid_arr_s               :
     std_logic_vector(c_CHANNELS-1 downto 0);
 

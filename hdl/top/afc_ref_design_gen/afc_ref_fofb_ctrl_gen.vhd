@@ -446,7 +446,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -2**(c_SP_OUT_WIDTH - 1);
 
   signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
-  signal sp_arr_s                            : t_arr_fofb_processing_output(c_CHANNELS-1 downto 0);
+  signal sp_arr_s                            : t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- RTM signals

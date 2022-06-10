@@ -25,7 +25,7 @@ package dot_prod_pkg is
     -- NOTE:  c_Q_WIDTH must match with g_Q_WIDTH defined on
     --        hdl/top/afc_ref_design_gen/afc_ref_fofb_ctrl_gen.vhd
     constant c_Q_WIDTH         : natural := 16;
-    type t_arr_fofb_processing_output is array (natural range <>) of signed(c_Q_WIDTH-1 downto 0);
+    type t_fofb_processing_setpoints is array (natural range <>) of signed(c_Q_WIDTH-1 downto 0);
 
     -- RAM data output array
     type t_ram_data_out_array_logic_vector is array (natural range <>) of std_logic_vector(32-1 downto 0);
@@ -266,7 +266,7 @@ package dot_prod_pkg is
       ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Setpoints
-      sp_arr_o                     : out t_arr_fofb_processing_output(g_CHANNELS-1 downto 0);
+      sp_arr_o                     : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
       sp_valid_arr_o               : out std_logic_vector(g_CHANNELS-1 downto 0)
     );
   end component fofb_processing;
