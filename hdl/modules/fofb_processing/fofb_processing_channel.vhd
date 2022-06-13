@@ -49,7 +49,10 @@ entity fofb_processing_channel is
     g_EXTRA_WIDTH                  : natural := 4;
 
     -- Width for output
-    g_C_WIDTH                      : natural := 16
+    g_C_WIDTH                      : natural := 16;
+
+    g_ANTI_WINDUP_UPPER_LIMIT      : integer; -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT      : integer  -- anti-windup lower limit
   );
   port(
     ---------------------------------------------------------------------------
@@ -74,17 +77,15 @@ entity fofb_processing_channel is
     ram_write_enable_i             : in std_logic;
     ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
 
-    -- Result output array
+    -- Setpoint
     sp_o                           : out signed(g_C_WIDTH-1 downto 0);
-    sp_debug_o                     : out signed(g_C_WIDTH-1 downto 0);
-
-    -- Valid output
-    sp_valid_o                     : out std_logic;
-    sp_valid_debug_o               : out std_logic
+    sp_valid_o                     : out std_logic
   );
   end fofb_processing_channel;
 
 architecture behave of fofb_processing_channel is
+  signal sp_s                      : signed(g_C_WIDTH-1 downto 0);
+  signal sp_valid_s                : std_logic;
 
 begin
 
@@ -124,10 +125,30 @@ begin
       ram_addr_i                   => ram_addr_i,
       ram_write_enable_i           => ram_write_enable_i,
       ram_coeff_dat_o              => ram_coeff_dat_o,
-      sp_o                         => sp_o,
-      sp_debug_o                   => sp_debug_o,
-      sp_valid_o                   => sp_valid_o,
-      sp_valid_debug_o             => sp_valid_debug_o
+      sp_o                         => sp_s,
+      sp_debug_o                   => open,
+      sp_valid_o                   => sp_valid_s,
+      sp_valid_debug_o             => open
+    );
+
+  cmp_anti_windup_accumulator : entity work.anti_windup_accumulator
+    generic map
+    (
+      g_A_WIDTH                    => g_C_WIDTH,                  -- input width
+      g_Q_WIDTH                    => g_C_WIDTH,                  -- output width
+      g_ANTI_WINDUP_UPPER_LIMIT    => g_ANTI_WINDUP_UPPER_LIMIT,  -- anti-windup upper limit
+      g_ANTI_WINDUP_LOWER_LIMIT    => g_ANTI_WINDUP_LOWER_LIMIT   -- anti-windup lower limit
+    )
+    port map
+    (
+      clk_i                        => clk_i,                      -- clock
+      rst_n_i                      => rst_n_i,                    -- reset
+
+      a_i                          => sp_s,                       -- input a
+      clear_i                      => '0',                        -- clear
+      sum_i                        => sp_valid_s,                 -- sum
+      q_o                          => sp_o,                       -- output q
+      valid_o                      => sp_valid_o                  -- valid
     );
 
 end architecture behave;

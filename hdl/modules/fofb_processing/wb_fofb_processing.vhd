@@ -65,6 +65,9 @@ entity wb_fofb_processing is
     -- Number of channels
     g_CHANNELS                   : natural := 8;
 
+    g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT    : integer; -- anti-windup lower limit
+
     -- Wishbone parameters
     g_INTERFACE_MODE             : t_wishbone_interface_mode      := CLASSIC;
     g_ADDRESS_GRANULARITY        : t_wishbone_address_granularity := WORD;
@@ -87,13 +90,9 @@ entity wb_fofb_processing is
     dcc_time_frame_start_i       : in std_logic;
     dcc_time_frame_end_i         : in std_logic;
 
-    -- Result output array
-    sp_o                         : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-    sp_debug_o                   : out t_dot_prod_array_signed(g_CHANNELS-1 downto 0);
-
-    -- Valid output
-    sp_valid_o                   : out std_logic_vector(g_CHANNELS-1 downto 0);
-    sp_valid_debug_o             : out std_logic_vector(g_CHANNELS-1 downto 0);
+    -- Setpoints
+    sp_arr_o                     : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
+    sp_valid_arr_o               : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -169,7 +168,10 @@ begin
     -- Extra bits for accumulator
     g_EXTRA_WIDTH                => g_EXTRA_WIDTH,
     -- Number of channels
-    g_CHANNELS                   => g_CHANNELS
+    g_CHANNELS                   => g_CHANNELS,
+
+    g_ANTI_WINDUP_UPPER_LIMIT    => g_ANTI_WINDUP_UPPER_LIMIT,  -- anti-windup upper limit
+    g_ANTI_WINDUP_LOWER_LIMIT    => g_ANTI_WINDUP_LOWER_LIMIT   -- anti-windup lower limit
     )
     port map(
     -- Core clock
@@ -189,13 +191,9 @@ begin
     ram_write_enable_i           => ram_write_enable_s,
     ram_coeff_dat_o              => ram_coeff_dat_o_s,
 
-    -- Result output array
-    sp_o                         => sp_o,
-    sp_debug_o                   => sp_debug_o,
-
-    -- Valid output for debugging
-    sp_valid_o                   => sp_valid_o,
-    sp_valid_debug_o             => sp_valid_debug_o
+    -- Setpoints
+    sp_arr_o                     => sp_arr_o,
+    sp_valid_arr_o               => sp_valid_arr_o
     );
 
   -----------------------------
