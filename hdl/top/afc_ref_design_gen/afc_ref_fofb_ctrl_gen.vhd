@@ -72,10 +72,8 @@ generic (
   g_NUM_P2P_GTS                              : integer range 1 to 8 := 4;
   -- Starting index of used P2P GTs
   g_P2P_GT_START_ID                          : integer := 0;
-  -- Number of RTM LAMP ADC channels
-  g_ADC_CHANNELS                             : natural := 12;
-  -- Number of RTM LAMP DAC channels
-  g_DAC_CHANNELS                             : natural := 12
+  -- Number of RTM LAMP channels
+  g_RTMLAMP_CHANNELS                         : natural := 12
 );
 port (
   ---------------------------------------------------------------------------
@@ -312,7 +310,7 @@ port (
   rtmlamp_adc_octo_sdod_p_i                  : in    std_logic := '0';
   rtmlamp_adc_octo_sdod_n_i                  : in    std_logic := '1';
 
-  -- AFCv4. Only used when g_ADC_CHANNELS > 8
+  -- AFCv4. Only used when g_RTMLAMP_CHANNELS > 8
   rtmlamp_adc_quad_sck_p_o                   : out   std_logic;
   rtmlamp_adc_quad_sck_n_o                   : out   std_logic;
   rtmlamp_adc_quad_sck_ret_p_i               : in    std_logic := '0';
@@ -328,7 +326,7 @@ port (
   rtmlamp_dac_ldac_n_o                       : out  std_logic;
   rtmlamp_dac_cs_n_o                         : out  std_logic;
   rtmlamp_dac_sck_o                          : out  std_logic;
-  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_DAC_CHANNELS-1 downto 0);
+  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_RTMLAMP_CHANNELS-1 downto 0);
 
   ---------------------------------------------------------------------------
   -- RTM Serial registers interface
@@ -386,8 +384,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ADC_SCLK_FREQ                   : natural := 100000000;
   constant c_DAC_SCLK_FREQ                   : natural := 25000000;
   constant c_USE_REF_CLOCK                   : boolean := true;
-  constant c_ADC_CHANNELS                    : natural := g_ADC_CHANNELS;
-  constant c_DAC_CHANNELS                    : natural := g_DAC_CHANNELS;
+  constant c_RTMLAMP_CHANNELS                : natural := g_RTMLAMP_CHANNELS;
 
   constant c_NUM_USER_IRQ                    : natural := 1;
 
@@ -455,18 +452,13 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal clk_rtm_ref                         : std_logic;
   signal clk_rtm_ref_rstn                    : std_logic;
 
-  signal rtmlamp_adc_start                   : std_logic := '1';
-  signal rtmlamp_adc_data                    : t_16b_word_array(c_ADC_CHANNELS-1 downto 0);
-  signal rtmlamp_adc_valid                   : std_logic_vector(c_ADC_CHANNELS-1 downto 0);
+  signal rtmlamp_adc_data                    : t_16b_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
+  signal rtmlamp_data_valid                  : std_logic;
 
-  signal rtmlamp_dac_start                   : std_logic := '1';
-  signal rtmlamp_dac_data                    : t_16b_word_array(c_DAC_CHANNELS-1 downto 0);
-  signal rtmlamp_dac_ready                   : std_logic;
-  signal rtmlamp_dac_done_pp                 : std_logic;
+  signal rtmlamp_dac_data                    : t_16b_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
 
-  signal rtmlamp_dbg_dac_start               : std_logic;
-  signal rtmlamp_dbg_dac_data                : t_16b_word_array(c_DAC_CHANNELS-1 downto 0);
-  signal rtmlamp_dbg_pi_ctrl_sp              : t_pi_sp_word_array(c_DAC_CHANNELS-1 downto 0);
+  signal rtmlamp_dbg_dac_data                : t_16b_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
+  signal rtmlamp_dbg_pi_ctrl_sp              : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
 
 
   -----------------------------------------------------------------------------
@@ -1966,18 +1958,12 @@ begin
       g_CLK_FAST_SPI_FREQ                        => c_FAST_SPI_FREQ,
       -- ADC clock frequency [Hz]
       g_ADC_SCLK_FREQ                            => c_ADC_SCLK_FREQ,
-      -- Number of ADC channels
-      g_ADC_CHANNELS                             => c_ADC_CHANNELS,
+      -- Number of channels
+      g_CHANNELS                                 => c_RTMLAMP_CHANNELS,
       -- If the ADC inputs are inverted on RTM-LAMP or not
       g_ADC_FIX_INV_INPUTS                       => false,
       -- DAC clock frequency [Hz]
-      g_DAC_SCLK_FREQ                            => c_DAC_SCLK_FREQ,
-      -- Number of DAC channels
-      g_DAC_CHANNELS                             => c_DAC_CHANNELS,
-      -- Use Chipscope or not
-      g_WITH_CHIPSCOPE                           => false,
-      -- Use VIO or not
-      g_WITH_VIO                                 => false
+      g_DAC_SCLK_FREQ                            => c_DAC_SCLK_FREQ
     )
     port map
     (
@@ -2017,7 +2003,7 @@ begin
       adc_octo_sdod_p_i                          => rtmlamp_adc_octo_sdod_p_i,
       adc_octo_sdod_n_i                          => rtmlamp_adc_octo_sdod_n_i,
 
-      -- Only used when g_ADC_CHANNELS > 8
+      -- Only used when g_RTMLAMP_CHANNELS > 8
       adc_quad_sck_p_o                           => rtmlamp_adc_quad_sck_p_o,
       adc_quad_sck_n_o                           => rtmlamp_adc_quad_sck_n_o,
       adc_quad_sck_ret_p_i                       => rtmlamp_adc_quad_sck_ret_p_i,
@@ -2049,25 +2035,20 @@ begin
       ---------------------------------------------------------------------------
       -- FPGA interface
       ---------------------------------------------------------------------------
+      data_valid_o                                => rtmlamp_data_valid,
 
       ---------------------------------------------------------------------------
       -- ADC parallel interface
       ---------------------------------------------------------------------------
-      adc_start_i                                => rtmlamp_adc_start,
       adc_data_o                                 => rtmlamp_adc_data,
-      adc_valid_o                                => rtmlamp_adc_valid,
 
       ---------------------------------------------------------------------------
       -- DAC parallel interface
       ---------------------------------------------------------------------------
-      dac_start_i                                => rtmlamp_dac_start,
-      dac_data_i                                 => rtmlamp_dac_data,
-      dac_ready_o                                => rtmlamp_dac_ready,
-      dac_done_pp_o                              => rtmlamp_dac_done_pp,
-      dbg_dac_start_o                            => rtmlamp_dbg_dac_start,
-      dbg_dac_data_o                             => rtmlamp_dbg_dac_data,
+      pi_sp_eff_o                                => rtmlamp_dbg_pi_ctrl_sp,
+      dac_data_eff_o                             => rtmlamp_dbg_dac_data,
 
-      -- External PI setpoint data. It is used when ch_x_ctl.pi_sp_source is set to '1'
+      -- External PI setpoint data.
       pi_sp_ext_i                                => (others => (others => '0'))
     );
   end generate;
@@ -2094,31 +2075,31 @@ begin
 
   -- RTM_LAMP data
   gen_rtm_acq_adc_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    gen_rtm_acq_adc_channels : for j in 0 to c_ADC_CHANNELS-1 generate
+    gen_rtm_acq_adc_channels : for j in 0 to c_RTMLAMP_CHANNELS-1 generate
       acq_rtmlamp_data(i)(
         (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
         downto
         j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
       <= rtmlamp_adc_data(j);
     end generate;
-    acq_rtmlamp_data_valid(i) <= rtmlamp_adc_valid(0);
+    acq_rtmlamp_data_valid(i) <= rtmlamp_data_valid;
   end generate;
 
   gen_rtm_acq_dac_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    gen_rtm_acq_dac_data : for j in c_ADC_CHANNELS to c_ADC_CHANNELS+c_DAC_CHANNELS-1 generate
+    gen_rtm_acq_dac_data : for j in c_RTMLAMP_CHANNELS to c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS-1 generate
       acq_rtmlamp_data(i)(
         (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
         downto
         j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
-      <= rtmlamp_dbg_dac_data(j-c_ADC_CHANNELS);
+      <= rtmlamp_dbg_dac_data(j-c_RTMLAMP_CHANNELS);
     end generate;
   end generate;
 
   gen_rtm_ac_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
     acq_rtmlamp_data(i)(
-        (c_ADC_CHANNELS+c_DAC_CHANNELS+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
+        (c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
         downto
-        (c_ADC_CHANNELS+c_DAC_CHANNELS)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
+        (c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
       <= rtmlamp_dbg_pi_ctrl_sp(0);
   end generate;
 
@@ -2171,10 +2152,11 @@ begin
   trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
     timeframe_end(c_FOFB_CC_P2P_ID);
 
-  trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
-    rtmlamp_adc_start;
-  trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
-    rtmlamp_dac_start;
+  -- FIXME: remove it
+  -- trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
+  --   rtmlamp_adc_start;
+  -- trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
+  --   rtmlamp_dac_start;
 
   -- Assign intern triggers to trigger module
   trig_rcv_intern(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=

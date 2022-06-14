@@ -61,9 +61,7 @@ generic (
   -- Starting index of used P2P GTs
   g_P2P_GT_START_ID                          : integer := 0;
   -- Number of RTM LAMP ADC channels
-  g_ADC_CHANNELS                             : natural := 12;
-  -- Number of RTM LAMP DAC channels
-  g_DAC_CHANNELS                             : natural := 12
+  g_RTMLAMP_CHANNELS                         : natural := 12
 );
 port (
   ---------------------------------------------------------------------------
@@ -236,7 +234,7 @@ port (
   rtmlamp_adc_octo_sdod_p_i                  : in    std_logic;
   rtmlamp_adc_octo_sdod_n_i                  : in    std_logic;
 
-  -- Only used when g_ADC_CHANNELS > 8
+  -- Only used when g_RTMLAMP_CHANNELS > 8
   rtmlamp_adc_quad_sck_p_o                   : out   std_logic;
   rtmlamp_adc_quad_sck_n_o                   : out   std_logic;
   rtmlamp_adc_quad_sck_ret_p_i               : in    std_logic := '0';
@@ -252,7 +250,7 @@ port (
   rtmlamp_dac_ldac_n_o                       : out  std_logic;
   rtmlamp_dac_cs_n_o                         : out  std_logic;
   rtmlamp_dac_sck_o                          : out  std_logic;
-  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_DAC_CHANNELS-1 downto 0);
+  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_RTMLAMP_CHANNELS-1 downto 0);
 
   ---------------------------------------------------------------------------
   -- RTM Serial registers interface
@@ -281,9 +279,7 @@ begin
     -- Starting index of used P2P GTs
     g_P2P_GT_START_ID                          => g_P2P_GT_START_ID,
     -- Number of RTM LAMP ADC channels
-    g_ADC_CHANNELS                             => g_ADC_CHANNELS,
-    -- Number of RTM LAMP DAC channels
-    g_DAC_CHANNELS                             => g_DAC_CHANNELS
+    g_RTMLAMP_CHANNELS                         => g_RTMLAMP_CHANNELS
   )
   port map (
     ---------------------------------------------------------------------------
@@ -457,7 +453,7 @@ begin
     rtmlamp_adc_octo_sdod_p_i                  => rtmlamp_adc_octo_sdod_p_i,
     rtmlamp_adc_octo_sdod_n_i                  => rtmlamp_adc_octo_sdod_n_i,
 
-    -- AFCv4. Only used when g_ADC_CHANNELS > 8
+    -- AFCv4. Only used when g_RTMLAMP_CHANNELS > 8
     rtmlamp_adc_quad_sck_p_o                   => rtmlamp_adc_quad_sck_p_o,
     rtmlamp_adc_quad_sck_n_o                   => rtmlamp_adc_quad_sck_n_o,
     rtmlamp_adc_quad_sck_ret_p_i               => rtmlamp_adc_quad_sck_ret_p_i,
