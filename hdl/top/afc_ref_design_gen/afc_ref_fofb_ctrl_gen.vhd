@@ -2049,8 +2049,13 @@ begin
       dac_data_eff_o                             => rtmlamp_dbg_dac_data,
 
       -- External PI setpoint data.
-      pi_sp_ext_i                                => (others => (others => '0'))
+      pi_sp_ext_i                                => pi_sp_ext
     );
+  end generate;
+
+  -- Convert signed elements to std_logic_vector
+  gen_conv_pi_sp: for i in 0 to c_CHANNELS-1 generate
+    pi_sp_ext(i) <= std_logic_vector(sp_arr_s(i));
   end generate;
 
   ----------------------------------------------------------------------
