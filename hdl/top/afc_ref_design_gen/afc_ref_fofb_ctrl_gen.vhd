@@ -444,7 +444,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
   signal sp_arr_s                            : t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
-
+  signal pi_sp_ext                           : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
   -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
