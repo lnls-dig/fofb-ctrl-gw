@@ -56,10 +56,8 @@ generic (
   g_NUM_P2P_GTS                              : integer := 8;
   -- Starting index of used P2P GTs
   g_P2P_GT_START_ID                          : integer := 0;
-  -- Number of RTM LAMP ADC channels
-  g_ADC_CHANNELS                             : natural := 8;
-  -- Number of RTM LAMP DAC channels
-  g_DAC_CHANNELS                             : natural := 8
+  -- Number of RTM LAMP channels
+  g_RTMLAMP_CHANNELS                         : natural := 8
 );
 port (
   ---------------------------------------------------------------------------
@@ -252,7 +250,7 @@ port (
   rtmlamp_dac_ldac_n_o                       : out  std_logic;
   rtmlamp_dac_cs_n_o                         : out  std_logic;
   rtmlamp_dac_sck_o                          : out  std_logic;
-  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_DAC_CHANNELS-1 downto 0);
+  rtmlamp_dac_sdi_o                          : out  std_logic_vector(g_RTMLAMP_CHANNELS-1 downto 0);
 
   ---------------------------------------------------------------------------
   -- RTM Serial registers interface
@@ -281,10 +279,8 @@ begin
     g_NUM_P2P_GTS                              => g_NUM_P2P_GTS,
     -- Starting index of used P2P GTs
     g_P2P_GT_START_ID                          => g_P2P_GT_START_ID,
-    -- Number of RTM LAMP ADC channels
-    g_ADC_CHANNELS                             => g_ADC_CHANNELS,
-    -- Number of RTM LAMP DAC channels
-    g_DAC_CHANNELS                             => g_DAC_CHANNELS
+    -- Number of RTM LAMP channels
+    g_RTMLAMP_CHANNELS                         => g_RTMLAMP_CHANNELS
   )
   port map (
     ---------------------------------------------------------------------------
