@@ -81,6 +81,10 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
 
   constant c_ANTI_WINDUP_UPPER_LIMIT         : integer := 1000;
   constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -1000;
+  constant c_FOFB_PROCESSING_REGS_RAM_BANK_SIZE
+    : natural :=
+      c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_1 -
+      c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_0;
 
   -- 1.0 fixed-point representation based on c_OUT_FIXED
   constant c_DUMMY_RAM_COEFF                 :
@@ -115,7 +119,7 @@ begin
   -- main process
   process
     variable addr                            : natural := 0;
-    variable data                            : std_logic_vector(31 downto 0);
+    variable data                            : std_logic_vector(31 downto 0) := (others => '0');
 
     file fd_coeffs, fd_dcc                   : text;
     variable aux_line                        : line;
@@ -143,7 +147,11 @@ begin
 
     file_open(fd_coeffs, "../coeffs.txt", read_mode);
 
-    for i in 0 to ((c_WB_FOFB_PROCESSING_REGS_SIZE /
+    read32_pl(clk, wb_slave_i, wb_slave_o, c_ADDR_WB_FOFB_PROCESSING_REGS_FIXED_POINT_POS, data);
+    report "fixed-point position constant register: " & to_hstring(data)
+    severity note;
+
+    for i in 0 to ((c_CHANNELS*c_FOFB_PROCESSING_REGS_RAM_BANK_SIZE /
       c_WB_FOFB_PROCESSING_REGS_RAM_BANK_0_SIZE) - 1)
     loop
       readline(fd_coeffs, aux_line);

@@ -1,14 +1,30 @@
 memory-map:
   bus: wb-32-be
   name: wb_fofb_processing_regs
-  description: interface to coefficient ram banks
+  description: interface to internal regs and coefficient ram banks
   x-wbgen:
     hdl_entity: wb_fofb_processing_regs
   children:
+    - reg:
+        name: fixed_point_pos
+        width: 32
+        access: rw
+        address: 0x00000000
+        description: fixed-point position constant register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: fixed-point position constant value
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
     - memory:
         name: ram_bank_0
         memsize: 2k
-        address: 0x00000000
+        address: 0x00000800
         description: FOFB PROCESSING RAM bank for register map
         align: True
         x-wbgen:

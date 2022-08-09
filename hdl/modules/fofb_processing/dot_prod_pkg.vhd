@@ -267,6 +267,8 @@ package dot_prod_pkg is
       wb_ack_o             : out   std_logic;
       wb_stall_o           : out   std_logic;
       wb_fofb_processing_regs_clk_i : in    std_logic;
+      -- Port for asynchronous (clock: wb_fofb_processing_regs_clk_i) std_logic_vector field: 'fixed-point position constant value' in reg: 'fixed-point position constant register'
+      wb_fofb_processing_regs_fixed_point_pos_val_i : in    std_logic_vector(31 downto 0);
       -- Ports for RAM: FOFB PROCESSING RAM bank for register map
       wb_fofb_processing_regs_ram_bank_0_addr_i : in    std_logic_vector(8 downto 0);
       -- Read data output

@@ -670,12 +670,12 @@ package fofb_ctrl_pkg is
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
     addr_first    => x"0000000000000000",
-    addr_last     => x"0000000000006000",
+    addr_last     => x"0000000000006800",
     product => (
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"49681ca6",
     version       => x"00000001",
-    date          => x"20210819",
+    date          => x"20220809",
     name          => "FOFB_PROC_REGS     ")));
 
 end fofb_ctrl_pkg;

@@ -111,7 +111,8 @@ architecture rtl of wb_fofb_processing is
   constant c_PERIPH_ADDR_SIZE    : natural := 13+2;
 
   constant c_MAX_CHANNELS        : natural := 12;
-
+  constant c_FIXED_POINT_POS_VAL : std_logic_vector(31 downto 0) :=
+    std_logic_vector(to_unsigned(g_OUT_FIXED, 32));
   -----------------------------
   -- RAM signals
   -----------------------------
@@ -276,6 +277,10 @@ begin
       wb_stall_o                                  => wb_slv_adp_in.stall,
 
       wb_fofb_processing_regs_clk_i               => clk_i,
+
+      -- Port for asynchronous (clock: wb_fofb_processing_regs_clk_i) std_logic_vector field: 'fixed-point position constant value' in reg: 'fixed-point position constant register'
+      wb_fofb_processing_regs_fixed_point_pos_val_i
+                                                 => c_FIXED_POINT_POS_VAL,
 
       -- RAM bank 0
       -- Ports for RAM: FOFB PROCESSING RAM for register map
