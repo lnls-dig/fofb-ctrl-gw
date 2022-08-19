@@ -664,13 +664,13 @@ package fofb_ctrl_pkg is
   -- FOFB Processing
   constant c_xwb_fofb_processing_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
-    abi_ver_major => x"01",
+    abi_ver_major => x"02",
     abi_ver_minor => x"00",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
     addr_first    => x"0000000000000000",
-    addr_last     => x"0000000000006800",
+    addr_last     => x"0000000000007FFF",
     product => (
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"49681ca6",
