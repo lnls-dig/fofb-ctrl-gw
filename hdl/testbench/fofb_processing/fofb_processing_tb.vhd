@@ -8,8 +8,8 @@
 -- Description:  Testbench for the fofb_processing module.
 --
 --               Files usage:
---               * 'coeffs.txt' holds each of the 512 coefficients;
---               * 'dcc_packets.txt' holds [1 - 256] DCC packet fields
+--               * 'coeffs.dat' holds each of the 512 coefficients;
+--               * 'dcc_packets.dat' holds [1 - 256] DCC packet fields
 --                  organized at each 3 lines (BPM id, x measurement and y
 --                  measurement).
 -------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ begin
         natural'image(j) & ")"
       severity note;
 
-      file_open(fd_dcc, "../dcc_packets.txt", read_mode);
+      file_open(fd_dcc, "../dcc_packets.dat", read_mode);
 
       f_wait_cycles(clk, 1);
       dcc_time_frame_start <= '1';
@@ -237,7 +237,7 @@ begin
           g_SIZE                       => 512,
           g_WITH_BYTE_ENABLE           => false,
           g_ADDR_CONFLICT_RESOLUTION   => "read_first",
-          g_INIT_FILE                  => "../coeffs.txt",
+          g_INIT_FILE                  => "../coeffs.dat",
           g_DUAL_CLOCK                 => true,
           g_FAIL_IF_FILE_NOT_FOUND     => true
         )

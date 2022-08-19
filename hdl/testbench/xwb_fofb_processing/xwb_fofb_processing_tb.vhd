@@ -8,8 +8,8 @@
 -- Description:  Testbench for the xwb_fofb_processing_tb module.
 --
 --               Files usage:
---               * 'coeffs.txt' holds all of the 12x512=6144 coefficients;
---               * 'dcc_packets.txt' holds [1 - 256] DCC packet fields
+--               * 'coeffs.dat' holds all of the 12x512=6144 coefficients;
+--               * 'dcc_packets.dat' holds [1 - 256] DCC packet fields
 --                  organized at each 3 lines (BPM id, x measurement and y
 --                  measurement).
 -------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ begin
       "writing on coefficients rams via wishbone bus"
     severity note;
 
-    file_open(fd_coeffs, "../coeffs.txt", read_mode);
+    file_open(fd_coeffs, "../coeffs.dat", read_mode);
 
     read32_pl(clk, wb_slave_i, wb_slave_o, c_ADDR_WB_FOFB_PROCESSING_REGS_FIXED_POINT_POS, data);
     report "fixed-point position constant register: " & to_hstring(data)
@@ -182,7 +182,7 @@ begin
         natural'image(j) & ")"
       severity note;
 
-      file_open(fd_dcc, "../dcc_packets.txt", read_mode);
+      file_open(fd_dcc, "../dcc_packets.dat", read_mode);
 
       f_wait_cycles(clk, 1);
       dcc_time_frame_start <= '1';
