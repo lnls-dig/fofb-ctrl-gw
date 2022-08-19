@@ -504,25 +504,17 @@ package fofb_ctrl_pkg is
   component wb_fofb_processing
   generic
   (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     : natural := 512;
-    g_WITH_BYTE_ENABLE                         : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION                 : string  := "read_first";
-    g_INIT_FILE                                : string  := "";
-    g_DUAL_CLOCK                               : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND                   : boolean := true;
-
     -- Width for DCC input
     g_A_WIDTH                                  : natural := 32;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural := 32;
-
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural := 12;
-
     -- Width for DCC addr
     g_ID_WIDTH                                 : natural := 9;
+
+    -- Width for RAM coeff
+    g_B_WIDTH                                  : natural;
+
+    -- Width for RAM addr
+    g_K_WIDTH                                  : natural;
 
     -- Width for output
     g_C_WIDTH                                  : natural := 16;
@@ -534,7 +526,7 @@ package fofb_ctrl_pkg is
     g_EXTRA_WIDTH                              : natural := 4;
 
     -- Number of channels
-    g_CHANNELS                                 : natural := 8;
+    g_CHANNELS                                 : natural;
 
     g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
     g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
@@ -586,25 +578,17 @@ package fofb_ctrl_pkg is
   component xwb_fofb_processing
   generic
   (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     : natural := 512;
-    g_WITH_BYTE_ENABLE                         : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION                 : string  := "read_first";
-    g_INIT_FILE                                : string  := "";
-    g_DUAL_CLOCK                               : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND                   : boolean := true;
-
     -- Width for DCC input
     g_A_WIDTH                                  : natural := 32;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural := 32;
-
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural := 12;
-
     -- Width for DCC addr
     g_ID_WIDTH                                 : natural := 9;
+
+    -- Width for RAM coeff
+    g_B_WIDTH                                  : natural;
+
+    -- Width for RAM addr
+    g_K_WIDTH                                  : natural;
 
     -- Width for output
     g_C_WIDTH                                  : natural := 16;
@@ -616,7 +600,7 @@ package fofb_ctrl_pkg is
     g_EXTRA_WIDTH                              : natural := 4;
 
     -- Number of channels
-    g_CHANNELS                                 : natural := 8;
+    g_CHANNELS                                 : natural;
 
     g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
     g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
@@ -680,18 +664,18 @@ package fofb_ctrl_pkg is
   -- FOFB Processing
   constant c_xwb_fofb_processing_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
-    abi_ver_major => x"01",
+    abi_ver_major => x"02",
     abi_ver_minor => x"00",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
     addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000FF",
+    addr_last     => x"0000000000007FFF",
     product => (
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"49681ca6",
     version       => x"00000001",
-    date          => x"20210819",
+    date          => x"20220809",
     name          => "FOFB_PROC_REGS     ")));
 
 end fofb_ctrl_pkg;

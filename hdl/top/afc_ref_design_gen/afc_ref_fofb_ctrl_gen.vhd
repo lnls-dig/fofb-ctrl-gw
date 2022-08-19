@@ -15,6 +15,7 @@
 -- Date        Version  Author             Description
 -- 2021-06-02  1.0      lucas.russo        Created
 -- 2021-09-08  1.1      melissa.aguiar     FOFB Processing module added
+-- 2022-07-27  1.2      guilherme.ricioli  Changed coeffs RAMs' wb interface
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -429,8 +430,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
   constant c_CHANNELS                        : natural := 8;
-  constant c_ADDR_WIDTH                      : natural := NodeW + f_log2_size(c_CHANNELS);
-  constant c_RAM_SIZE                        : natural := 2**NodeW;
+  -- c_ADDR_WIDTH must agree with memory layout defined on
+  -- hdl/modules/fofb_processing/cheby/wb_fofb_processing_regs.cheby
+  constant c_ADDR_WIDTH                      : natural := 9;
   constant c_SP_OUT_WIDTH                    : natural := 16;
   constant c_OUT_FIXED                       : natural := 26;
   constant c_EXTRA_WIDTH                     : natural := 4;
@@ -1695,21 +1697,14 @@ begin
   cmp_fofb_processing : xwb_fofb_processing
   generic map
   (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     => c_RAM_SIZE,
-    g_WITH_BYTE_ENABLE                         => false,
-    g_ADDR_CONFLICT_RESOLUTION                 => "read_first",
-    g_INIT_FILE                                => "../../../../modules/fofb_processing/ram_col_h_Q26.txt",
-    g_DUAL_CLOCK                               => true,
-    g_FAIL_IF_FILE_NOT_FOUND                   => true,
     -- Width for inputs x and y
     g_A_WIDTH                                  => c_DATA_WIDTH,
+    -- Width for dcc addr
+    g_ID_WIDTH                                 => NodeW,
     -- Width for ram data
     g_B_WIDTH                                  => c_DATA_WIDTH,
     -- Width for ram addr
     g_K_WIDTH                                  => c_ADDR_WIDTH,
-    -- Width for dcc addr
-    g_ID_WIDTH                                 => NodeW,
     -- Width for output
     g_C_WIDTH                                  => c_SP_OUT_WIDTH,
     -- Fixed point representation for output

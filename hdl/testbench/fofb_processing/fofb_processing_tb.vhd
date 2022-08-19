@@ -1,18 +1,24 @@
 -------------------------------------------------------------------------------
--- Title      :  FOFB processing testbench
+-- Title      :  fofb_processing testbench
 -------------------------------------------------------------------------------
--- Author     :  Guilherme Ricioli
+-- Author     :  Guilherme Ricioli Cruz
 -- Company    :  CNPEM LNLS GCA
--- Platform   :  FPGA-generic
+-- Platform   :  Simulation
 -------------------------------------------------------------------------------
--- Description:  Testbench for the FOFB processing module.
+-- Description:  Testbench for the fofb_processing module.
+--
+--               Files usage:
+--               * 'coeffs.dat' holds each of the 512 coefficients;
+--               * 'dcc_packets.dat' holds [1 - 256] DCC packet fields
+--                  organized at each 3 lines (BPM id, x measurement and y
+--                  measurement).
 -------------------------------------------------------------------------------
 -- Copyright (c) 2022 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
--- 2022-05-31  1.0      guilherme.ricioli     Created
+-- 2022-07-27  1.0      guilherme.ricioli     Created
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -25,6 +31,8 @@ use std.textio.all;
 
 library work;
 use work.dot_prod_pkg.all;
+-- generic_dpram package
+use work.genram_pkg.all;
 
 entity fofb_processing_tb is
 end fofb_processing_tb;
@@ -52,12 +60,14 @@ architecture behave of fofb_processing_tb is
   -- constants
   constant c_SYS_CLOCK_FREQ           : natural := 156250000;
 
+  constant c_NUM_OF_TIME_FRAMES       : natural := 1;
+
   constant c_A_WIDTH                  : natural := 32;
-  constant c_B_WIDTH                  : natural := 32;
-  constant c_K_WIDTH                  : natural := 12;
   constant c_ID_WIDTH                 : natural := 9;
+  constant c_B_WIDTH                  : natural := 32;
+  constant c_K_WIDTH                  : natural := 9;
   constant c_C_WIDTH                  : natural := 16;
-  constant c_CHANNELS                 : natural := 8;
+  constant c_CHANNELS                 : natural := 12;
 
   constant c_DCC_FOD                  :
     t_dot_prod_record_fod := (valid => '0',
@@ -68,110 +78,123 @@ architecture behave of fofb_processing_tb is
   constant c_ANTI_WINDUP_LOWER_LIMIT  : integer := -1000;
 
   -- signals
-  signal clk_s                        : std_logic := '0';
-  signal rst_n_s                      : std_logic := '0';
+  signal clk                          : std_logic := '0';
+  signal rst_n                        : std_logic := '0';
 
-  signal dcc_time_frame_start_s       : std_logic := '0';
-  signal dcc_time_frame_end_s         : std_logic := '0';
-  signal dcc_fod_s                    :
-    t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_DCC_FOD);
+  signal dcc_time_frame_start         : std_logic := '0';
+  signal dcc_time_frame_end           : std_logic := '0';
+  signal dcc_fod                      :
+    t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0)
+      := (others => c_DCC_FOD);
 
-  signal sp_arr_s                     :
+  signal coeff_ram_data_arr           :
+    t_arr_coeff_ram_data(c_CHANNELS-1 downto 0);
+  signal coeff_ram_addr_arr           :
+    t_arr_coeff_ram_addr(c_CHANNELS-1 downto 0);
+
+  signal sp_arr                       :
     t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
-  signal sp_valid_arr_s               :
-    std_logic_vector(c_CHANNELS-1 downto 0);
+  signal sp_valid_arr                 :
+    std_logic_vector(c_CHANNELS-1 downto 0) := (others => '0');
 
 begin
-  f_gen_clk(c_SYS_CLOCK_FREQ, clk_s);
+  f_gen_clk(c_SYS_CLOCK_FREQ, clk);
 
   -- main process
   process
-    file BPM_x_file                   : text;
-    file BPM_y_file                   : text;
-    file k_file                       : text;
-    variable x_line, y_line, k_line   : line;
-    variable x_datain, y_datain       : integer;
-    variable k_datain                 : bit_vector(c_ID_WIDTH-1 downto 0);
-    variable i                        : natural := 0;
+    file fd_dcc                       : text;
+    variable aux_line                 : line;
+    variable bpm_id                   : natural;
+    variable bpm_x_reading,
+      bpm_y_reading                   : integer;
 
   begin
     -- resetting cores
     report "resetting cores"
     severity note;
 
-    rst_n_s <= '0';
-    f_wait_cycles(clk_s, 1);
-    rst_n_s <= '1';
-    f_wait_cycles(clk_s, 10);
+    rst_n <= '0';
+    f_wait_cycles(clk, 1);
+    rst_n <= '1';
+    f_wait_cycles(clk, 10);
 
-    while i < 10
+    for j in 0 to (c_NUM_OF_TIME_FRAMES - 1)
     loop
-      -- loading BPM readings
-      report "loading BPM readings"
+
+      -- loading BPM readings and performing dot product
+      report
+        "loading BPM readings and performing dot product (time frame: " &
+        natural'image(j) & ")"
       severity note;
 
-      file_open(BPM_x_file, "../BPM_x.txt", read_mode);
-      file_open(BPM_y_file, "../BPM_y.txt", read_mode);
-      file_open(k_file, "../k.txt", read_mode);
+      file_open(fd_dcc, "../dcc_packets.dat", read_mode);
 
-      f_wait_cycles(clk_s, 1);
-      dcc_time_frame_start_s <= '1';
-      f_wait_cycles(clk_s, 1);
-      dcc_time_frame_start_s <= '0';
+      f_wait_cycles(clk, 1);
+      dcc_time_frame_start <= '1';
+      f_wait_cycles(clk, 1);
+      dcc_time_frame_start <= '0';
 
-      while not endfile(k_file)
+      -- synthetic dcc data
+      while not endfile(fd_dcc)
       loop
-        f_wait_cycles(clk_s, 1);
+        f_wait_cycles(clk, 1);
 
-        readline(BPM_x_file, x_line);
-        read(x_line, x_datain);
+        readline(fd_dcc, aux_line);
+        read(aux_line, bpm_id);
 
-        readline(BPM_y_file, y_line);
-        read(y_line, y_datain);
+        readline(fd_dcc, aux_line);
+        read(aux_line, bpm_x_reading);
 
-        readline(k_file, k_line);
-        read(k_line, k_datain);
+        readline(fd_dcc, aux_line);
+        read(aux_line, bpm_y_reading);
 
-        -- synthetic dcc data
-        for j in 0 to (c_CHANNELS/2 - 1)
+        for i in 0 to (c_CHANNELS - 1)
         loop
-          -- data x goes to even channels
-          dcc_fod_s(2*j).data <=
-            std_logic_vector(to_signed(x_datain, dcc_fod_s(2*j).data'length));
-          dcc_fod_s(2*j).addr <=
-            to_stdlogicvector(k_datain);
+          -- bpm x reading
+          dcc_fod(i).data <=
+            std_logic_vector(to_signed(bpm_x_reading, dcc_fod(i).data'length));
+          dcc_fod(i).addr <=
+            std_logic_vector(to_unsigned(2*bpm_id, dcc_fod(i).addr'length));
 
-          -- data y goes to odd channels
-          dcc_fod_s(2*j + 1).data <=
-            std_logic_vector(
-              to_signed(y_datain, dcc_fod_s(2*j + 1).data'length)
-            );
-          dcc_fod_s(2*j + 1).addr <=
-            to_stdlogicvector(k_datain);
+          -- signalling a valid dcc data
+          dcc_fod(i).valid <= '1';
+          f_wait_cycles(clk, 1);
+          dcc_fod(i).valid <= '0';
+          f_wait_cycles(clk, 1);
 
-          -- signalling that dcc data has 'arrived'
-          dcc_fod_s(2*j).valid <= '1';
-          dcc_fod_s(2*j + 1).valid  <= '1';
+          -- bpm y reading
+          dcc_fod(i).data <=
+            std_logic_vector(to_signed(bpm_y_reading, dcc_fod(i).data'length));
+          dcc_fod(i).addr <=
+            std_logic_vector(to_unsigned(2*bpm_id + 1, dcc_fod(i).addr'length));
+
+          -- signalling a valid dcc data
+          dcc_fod(i).valid <= '1';
+          f_wait_cycles(clk, 1);
+          dcc_fod(i).valid <= '0';
+          f_wait_cycles(clk, 1);
         end loop;
 
-        f_wait_cycles(clk_s, 1);
-
-        for j in 0 to (c_CHANNELS - 1)
-        loop
-          dcc_fod_s(j).valid <= '0';
-        end loop;
       end loop;
 
-      f_wait_cycles(clk_s, 20);
-      dcc_time_frame_end_s <= '1';
-      f_wait_cycles(clk_s, 1);
-      dcc_time_frame_end_s <= '0';
+      -- NOTE:  This waiting has to be enough for dot_prod_coeff_vec to finish its
+      --        processing. It was defined empirically.
+      f_wait_cycles(clk, 11);
+      dcc_time_frame_end <= '1';
+      f_wait_cycles(clk, 1);
+      dcc_time_frame_end <= '0';
+      f_wait_cycles(clk, 2);
 
-      file_close(BPM_x_file);
-      file_close(BPM_y_file);
-      file_close(k_file);
+      file_close(fd_dcc);
 
-      i := i + 1;
+    end loop;
+
+    for i in 0 to (c_CHANNELS - 1)
+    loop
+      report
+        "fofb processing channel " & natural'image(i) & " result: " &
+        integer'image(to_integer(sp_arr(i)))
+      severity note;
     end loop;
 
     finish;
@@ -179,41 +202,62 @@ begin
 
   -- components
   cmp_fofb_processing : fofb_processing
-    generic map
-    (
-      g_SIZE                      => 512,
-      g_WITH_BYTE_ENABLE          => false,
-      g_ADDR_CONFLICT_RESOLUTION  => "read_first",
-      g_INIT_FILE                 => "../coeffs.txt",
-      g_DUAL_CLOCK                => true,
-      g_FAIL_IF_FILE_NOT_FOUND    => true,
+    generic map (
+      g_A_WIDTH                         => c_A_WIDTH,
+      g_ID_WIDTH                        => c_ID_WIDTH,
+      g_B_WIDTH                         => c_B_WIDTH,
+      g_K_WIDTH                         => c_K_WIDTH,
+      g_C_WIDTH                         => c_C_WIDTH,
+      g_CHANNELS                        => c_CHANNELS,
 
-      g_A_WIDTH                   => c_A_WIDTH,
-      g_B_WIDTH                   => c_B_WIDTH,
-      g_K_WIDTH                   => c_K_WIDTH,
-      g_ID_WIDTH                  => c_ID_WIDTH,
-      g_C_WIDTH                   => c_C_WIDTH,
-      g_CHANNELS                  => c_CHANNELS,
-
-      g_ANTI_WINDUP_UPPER_LIMIT   => c_ANTI_WINDUP_UPPER_LIMIT,
-      g_ANTI_WINDUP_LOWER_LIMIT   => c_ANTI_WINDUP_LOWER_LIMIT
+      g_ANTI_WINDUP_UPPER_LIMIT         => c_ANTI_WINDUP_UPPER_LIMIT,
+      g_ANTI_WINDUP_LOWER_LIMIT         => c_ANTI_WINDUP_LOWER_LIMIT
     )
-    port map
-    (
-      clk_i                       => clk_s,
-      rst_n_i                     => rst_n_s,
+    port map (
+      clk_i                             => clk,
+      rst_n_i                           => rst_n,
 
-      dcc_fod_i                   => dcc_fod_s,
-      dcc_time_frame_start_i      => dcc_time_frame_start_s,
-      dcc_time_frame_end_i        => dcc_time_frame_end_s,
+      dcc_fod_i                         => dcc_fod,
+      dcc_time_frame_start_i            => dcc_time_frame_start,
+      dcc_time_frame_end_i              => dcc_time_frame_end,
 
-      ram_coeff_dat_i             => (others => '0'),
-      ram_addr_i                  => (others => '0'),
-      ram_write_enable_i          => '0',
-      ram_coeff_dat_o             => open,
+      coeff_ram_addr_arr_o              => coeff_ram_addr_arr,
+      coeff_ram_data_arr_i              => coeff_ram_data_arr,
 
-      sp_arr_o                    => sp_arr_s,
-      sp_valid_arr_o              => sp_valid_arr_s
+      sp_arr_o                          => sp_arr,
+      sp_valid_arr_o                    => sp_valid_arr
     );
 
+  gen_cmps_generic_dpram :
+    for i in 0 to c_CHANNELS-1
+    generate
+      cmp_generic_dpram : generic_dpram
+        generic map (
+          g_DATA_WIDTH                 => c_B_WIDTH,
+          g_SIZE                       => 512,
+          g_WITH_BYTE_ENABLE           => false,
+          g_ADDR_CONFLICT_RESOLUTION   => "read_first",
+          g_INIT_FILE                  => "../coeffs.dat",
+          g_DUAL_CLOCK                 => true,
+          g_FAIL_IF_FILE_NOT_FOUND     => true
+        )
+        port map (
+          rst_n_i                      => '0',
+
+          clka_i                       => clk,
+          bwea_i                       => (others => '1'),
+          wea_i                        => '0',
+          aa_i                         => coeff_ram_addr_arr(i),
+          da_i                         => (others => '0'),
+          qa_o                         => coeff_ram_data_arr(i),
+
+          -- not used
+          clkb_i                       => '0',
+          bweb_i                       => (others => '1'),
+          web_i                        => '0',
+          ab_i                         => (others => '0'),
+          db_i                         => (others => '0'),
+          qb_o                         => open
+        );
+    end generate;
 end architecture behave;

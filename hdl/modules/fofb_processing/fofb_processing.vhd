@@ -13,6 +13,7 @@
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2021-08-26  1.0      melissa.aguiar        Created
+-- 2022-07-27  1.1      guilherme.ricioli     Changed coeffs RAMs' wb interface
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -22,30 +23,20 @@ use ieee.numeric_std.all;
 library work;
 -- Dot product package
 use work.dot_prod_pkg.all;
--- RAM package
-use work.genram_pkg.all;
 
 entity fofb_processing is
   generic(
-    -- Standard parameters of generic_dpram
-    g_SIZE                         : natural := 512;
-    g_WITH_BYTE_ENABLE             : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION     : string  := "read_first";
-    g_INIT_FILE                    : string  := "";
-    g_DUAL_CLOCK                   : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND       : boolean := true;
-
     -- Width for DCC input
     g_A_WIDTH                      : natural := 32;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                      : natural := 32;
-
-    -- Width for RAM addr
-    g_K_WIDTH                      : natural := 12;
-
     -- Width for DCC addr
     g_ID_WIDTH                     : natural := 9;
+
+    -- Width for RAM coeff
+    g_B_WIDTH                      : natural;
+
+    -- Width for RAM addr
+    g_K_WIDTH                      : natural;
 
     -- Width for output
     g_C_WIDTH                      : natural := 16;
@@ -57,7 +48,7 @@ entity fofb_processing is
     g_EXTRA_WIDTH                  : natural := 4;
 
     -- Number of channels
-    g_CHANNELS                     : natural := 8;
+    g_CHANNELS                     : natural;
 
     g_ANTI_WINDUP_UPPER_LIMIT      : integer; -- anti-windup upper limit
     g_ANTI_WINDUP_LOWER_LIMIT      : integer  -- anti-windup lower limit
@@ -78,10 +69,8 @@ entity fofb_processing is
     dcc_time_frame_end_i           : in std_logic;
 
     -- RAM interface
-    ram_coeff_dat_i                : in std_logic_vector(g_B_WIDTH-1 downto 0);
-    ram_addr_i                     : in std_logic_vector(g_K_WIDTH-1 downto 0);
-    ram_write_enable_i             : in std_logic;
-    ram_coeff_dat_o                : out std_logic_vector(g_B_WIDTH-1 downto 0);
+    coeff_ram_addr_arr_o           : out t_arr_coeff_ram_addr;
+    coeff_ram_data_arr_i           : in t_arr_coeff_ram_data;
 
     -- Setpoints
     sp_arr_o                       : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
@@ -90,9 +79,6 @@ entity fofb_processing is
   end fofb_processing;
 
 architecture behave of fofb_processing is
-  signal aa_s                      : std_logic_vector(g_ID_WIDTH-1 downto 0) := (others => '0');
-  signal wea_s                     : std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
-  signal ram_coeff_dat_s           : t_ram_data_out_array_logic_vector(g_CHANNELS-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- VIO/ILA signals
@@ -104,45 +90,18 @@ architecture behave of fofb_processing is
 
 begin
 
-  ram_write : process(clk_i)
-  begin
-    if (rising_edge(clk_i)) then
-
-      if dcc_time_frame_start_i = '1' then
-        aa_s                       <= (others => '0');
-        wea_s                      <= (others => '0');
-      else
-        aa_s                       <= ram_addr_i(g_K_WIDTH-f_log2_size(g_CHANNELS)-1 downto 0);
-
-        for i in 0 to g_CHANNELS-1 loop
-          if ram_addr_i(g_K_WIDTH-1 downto g_K_WIDTH-f_log2_size(g_CHANNELS)) = std_logic_vector(to_unsigned(i, f_log2_size(g_CHANNELS))) then
-            wea_s(i)               <= ram_write_enable_i;
-            ram_coeff_dat_o        <= ram_coeff_dat_s(i);
-          else
-            wea_s(i)               <= '0';
-          end if;
-        end loop;
-      end if; -- Clear
-    end if; -- Clock
-  end process ram_write;
-
   gen_channels : for i in 0 to g_CHANNELS-1 generate
     fofb_processing_channel_interface : fofb_processing_channel
       generic map
       (
-        -- Standard parameters of generic_dpram
-        g_SIZE                     => g_SIZE,
-        g_WITH_BYTE_ENABLE         => g_WITH_BYTE_ENABLE,
-        g_ADDR_CONFLICT_RESOLUTION => g_ADDR_CONFLICT_RESOLUTION,
-        g_INIT_FILE                => g_INIT_FILE,
-        g_DUAL_CLOCK               => g_DUAL_CLOCK,
-        g_FAIL_IF_FILE_NOT_FOUND   => g_FAIL_IF_FILE_NOT_FOUND,
         -- Width for inputs x and y
         g_A_WIDTH                  => g_A_WIDTH,
-        -- Width for ram data
-        g_B_WIDTH                  => g_B_WIDTH,
         -- Width for dcc addr
         g_ID_WIDTH                 => g_ID_WIDTH,
+        -- Width for ram data
+        g_B_WIDTH                  => g_B_WIDTH,
+        -- Width for ram addr
+        g_K_WIDTH                  => g_K_WIDTH,
         -- Width for output
         g_C_WIDTH                  => g_C_WIDTH,
         -- Fixed point representation for output
@@ -160,12 +119,10 @@ begin
         dcc_valid_i                => dcc_fod_i(i).valid,
         dcc_data_i                 => signed(dcc_fod_i(i).data),
         dcc_addr_i                 => dcc_fod_i(i).addr,
-        dcc_time_frame_start_i	   => dcc_time_frame_start_i,
+        dcc_time_frame_start_i     => dcc_time_frame_start_i,
         dcc_time_frame_end_i       => dcc_time_frame_end_i,
-        ram_coeff_dat_i            => ram_coeff_dat_i,
-        ram_addr_i                 => aa_s,
-        ram_write_enable_i         => wea_s(i),
-        ram_coeff_dat_o            => ram_coeff_dat_s(i),
+        coeff_ram_addr_o           => coeff_ram_addr_arr_o(i),
+        coeff_ram_data_i           => coeff_ram_data_arr_i(i),
         sp_o                       => sp_arr_o(i),
         sp_valid_o                 => sp_valid_arr_o(i)
       );
@@ -182,7 +139,7 @@ begin
 --
 --     trig0(0)            <= reset_s;
 --     trig0(1)            <= rst_n_i;
---     trig0(2)            <= wea_s(0);
+--     trig0(2)            <= '0';
 --     trig0(3)            <= '0';
 --     trig0(4)            <= '0';
 --     trig0(5)            <= '0';
@@ -191,11 +148,8 @@ begin
 --
 --     data(0)             <= reset_s;
 --     data(1)             <= rst_n_i;
---     data(10 downto 2)   <= aa_s;
---     data(11)            <= wea_s(0);
---     data(43 downto 12)  <= ram_coeff_dat_i;
---     data(75 downto 44)  <= ram_coeff_dat_s(0);
---
---     data(255 downto 76) <= (others => '0');
+--     data(9 downto 2)    <= coeff_ram_addr_arr_o(i);
+--     data(41 downto 10)  <= coeff_ram_data_arr_i(i);
+--     data(255 downto 42) <= (others => '0');
 
 end architecture behave;

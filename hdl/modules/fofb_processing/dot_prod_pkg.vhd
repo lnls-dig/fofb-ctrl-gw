@@ -13,6 +13,7 @@
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2021-07-30  1.0      melissa.aguiar        Created
+-- 2022-07-27  1.1      guilherme.ricioli     Changed coeffs RAMs' wb interface
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -21,24 +22,29 @@ use ieee.numeric_std.all;
 
 package dot_prod_pkg is
 
-    -- fofb_processing output array
-    -- NOTE:  c_Q_WIDTH must match with g_Q_WIDTH defined on
-    --        hdl/top/afc_ref_design_gen/afc_ref_fofb_ctrl_gen.vhd
-    constant c_Q_WIDTH         : natural := 16;
-    type t_fofb_processing_setpoints is array (natural range <>) of signed(c_Q_WIDTH-1 downto 0);
+  -- fofb_processing output array
+  -- NOTE:  c_Q_WIDTH must match with g_Q_WIDTH defined on
+  --        hdl/top/afc_ref_design_gen/afc_ref_fofb_ctrl_gen.vhd
+  constant c_Q_WIDTH               : natural := 16;
+  type t_fofb_processing_setpoints is array (natural range <>) of signed(c_Q_WIDTH-1 downto 0);
 
-    -- RAM data output array
-    type t_ram_data_out_array_logic_vector is array (natural range <>) of std_logic_vector(32-1 downto 0);
+  -- Input record
+  type t_dot_prod_record_fod is record
+    valid                        : std_logic;
+    data                         : std_logic_vector(32-1 downto 0);
+    addr                         : std_logic_vector(9-1 downto 0);
+  end record t_dot_prod_record_fod;
 
-    -- Input record
-    type t_dot_prod_record_fod is record
-      valid                        : std_logic;
-      data                         : std_logic_vector(32-1 downto 0);
-      addr                         : std_logic_vector(9-1 downto 0);
-    end record t_dot_prod_record_fod;
+  -- Input array of record
+  type t_dot_prod_array_record_fod is array (natural range <>) of t_dot_prod_record_fod;
 
-    -- Input array of record
-    type t_dot_prod_array_record_fod is array (natural range <>) of t_dot_prod_record_fod;
+  -- RAM interface arrays
+  -- NOTE:  These values must agree with c_ADDR_WIDTH and c_DATA_WIDTH defined on
+  --        hdl/top/afc_ref_design_gen/afc_ref_fofb_ctrl_gen.vhd
+  constant c_ADDR_WIDTH_cp         : natural := 9;
+  constant c_DATA_WIDTH_cp         : natural := 32;
+  type t_arr_coeff_ram_addr is array (natural range <>) of std_logic_vector(c_ADDR_WIDTH_cp-1 downto 0);
+  type t_arr_coeff_ram_data is array (natural range <>) of std_logic_vector(c_DATA_WIDTH_cp-1 downto 0);
 
   component dot_prod is
     generic(
@@ -91,22 +97,17 @@ package dot_prod_pkg is
 
   component dot_prod_coeff_vec is
     generic(
-      -- Standard parameters of generic_dpram
-      g_SIZE                       : natural := 512;
-      g_WITH_BYTE_ENABLE           : boolean := false;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
-      g_INIT_FILE                  : string  := "";
-      g_DUAL_CLOCK                 : boolean := true;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
-
       -- Width for DCC input
       g_A_WIDTH                    : natural := 32;
 
-      -- Width for RAM coeff
-      g_B_WIDTH                    : natural := 32;
-
       -- Width for DCC addr
       g_ID_WIDTH                   : natural := 9;
+
+      -- Width for RAM coeff
+      g_B_WIDTH                    : natural;
+
+      -- Width for RAM addr
+      g_K_WIDTH                    : natural;
 
       -- Width for output
       g_C_WIDTH                    : natural := 16;
@@ -132,10 +133,8 @@ package dot_prod_pkg is
       dcc_time_frame_end_i         : in std_logic;
 
       -- RAM interface
-      ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
-      ram_write_enable_i           : in std_logic;
-      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
+      coeff_ram_addr_o             : out std_logic_vector(g_K_WIDTH-1 downto 0);
+      coeff_ram_data_i             : in std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Result output array
       sp_o                         : out signed(g_C_WIDTH-1 downto 0);
@@ -149,22 +148,17 @@ package dot_prod_pkg is
 
   component fofb_processing_channel is
     generic(
-      -- Standard parameters of generic_dpram
-      g_SIZE                       : natural := 512;
-      g_WITH_BYTE_ENABLE           : boolean := false;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
-      g_INIT_FILE                  : string  := "";
-      g_DUAL_CLOCK                 : boolean := true;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
-
       -- Width for DCC input
       g_A_WIDTH                    : natural := 32;
 
-      -- Width for RAM coeff
-      g_B_WIDTH                    : natural := 32;
-
       -- Width for DCC addr
       g_ID_WIDTH                   : natural := 9;
+
+      -- Width for RAM coeff
+      g_B_WIDTH                    : natural;
+
+      -- Width for RAM addr
+      g_K_WIDTH                    : natural;
 
       -- Width for output
       g_C_WIDTH                    : natural := 16;
@@ -196,10 +190,8 @@ package dot_prod_pkg is
       dcc_time_frame_end_i         : in std_logic;
 
       -- RAM interface
-      ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
-      ram_write_enable_i           : in std_logic;
-      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
+      coeff_ram_addr_o             : out std_logic_vector(g_K_WIDTH-1 downto 0);
+      coeff_ram_data_i             : in std_logic_vector(g_B_WIDTH-1 downto 0);
 
       -- Setpoint
       sp_o                         : out signed(g_C_WIDTH-1 downto 0);
@@ -209,25 +201,17 @@ package dot_prod_pkg is
 
   component fofb_processing is
     generic(
-      -- Standard parameters of generic_dpram
-      g_SIZE                       : natural := 512;
-      g_WITH_BYTE_ENABLE           : boolean := false;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
-      g_INIT_FILE                  : string  := "";
-      g_DUAL_CLOCK                 : boolean := true;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
-
       -- Width for DCC input
       g_A_WIDTH                    : natural := 32;
 
-      -- Width for RAM coeff
-      g_B_WIDTH                    : natural := 32;
-
-      -- Width for RAM addr
-      g_K_WIDTH                    : natural := 12;
-
       -- Width for DCC addr
       g_ID_WIDTH                   : natural := 9;
+
+      -- Width for RAM coeff
+      g_B_WIDTH                    : natural;
+
+      -- Width for RAM addr
+      g_K_WIDTH                    : natural;
 
       -- Width for output
       g_C_WIDTH                    : natural := 16;
@@ -239,7 +223,7 @@ package dot_prod_pkg is
       g_EXTRA_WIDTH                : natural := 4;
 
       -- Number of channels
-      g_CHANNELS                   : natural := 8;
+      g_CHANNELS                   : natural;
 
       g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
       g_ANTI_WINDUP_LOWER_LIMIT    : integer  -- anti-windup lower limit
@@ -260,10 +244,8 @@ package dot_prod_pkg is
       dcc_time_frame_end_i    	   : in std_logic;
 
       -- RAM interface
-      ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
-      ram_write_enable_i           : in std_logic;
-      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
+      coeff_ram_addr_arr_o         : out t_arr_coeff_ram_addr;
+      coeff_ram_data_arr_i         : in t_arr_coeff_ram_data;
 
       -- Setpoints
       sp_arr_o                     : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
@@ -272,31 +254,141 @@ package dot_prod_pkg is
   end component fofb_processing;
 
   component wb_fofb_processing_regs is
-    port(
-      rst_n_i                      : in    std_logic;
-      clk_sys_i                    : in    std_logic;
-      wb_adr_i                     : in    std_logic_vector(1 downto 0);
-      wb_dat_i                     : in    std_logic_vector(31 downto 0);
-      wb_dat_o                     : out   std_logic_vector(31 downto 0);
-      wb_cyc_i                     : in    std_logic;
-      wb_sel_i                     : in    std_logic_vector(3 downto 0);
-      wb_stb_i                     : in    std_logic;
-      wb_we_i                      : in    std_logic;
-      wb_ack_o                     : out   std_logic;
-      wb_stall_o                   : out   std_logic;
-      fofb_processing_clk_reg_i    : in    std_logic;
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'RAM write enable bit' in reg: 'RAM write register'
-      wb_fofb_processing_regs_ram_write_enable_o
-                                   : out   std_logic;
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM data input' in reg: 'RAM data input register'
-      wb_fofb_processing_regs_ram_data_in_val_o
-                                   : out   std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM data output' in reg: 'RAM data output register'
-      wb_fofb_processing_regs_ram_data_out_val_i
-                                   : in    std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM address' in reg: 'RAM address register'
-      wb_fofb_processing_regs_ram_addr_val_o
-                                   : out   std_logic_vector(11 downto 0)
+    port (
+      rst_n_i              : in    std_logic;
+      clk_sys_i            : in    std_logic;
+      wb_adr_i             : in    std_logic_vector(12 downto 0);
+      wb_dat_i             : in    std_logic_vector(31 downto 0);
+      wb_dat_o             : out   std_logic_vector(31 downto 0);
+      wb_cyc_i             : in    std_logic;
+      wb_sel_i             : in    std_logic_vector(3 downto 0);
+      wb_stb_i             : in    std_logic;
+      wb_we_i              : in    std_logic;
+      wb_ack_o             : out   std_logic;
+      wb_stall_o           : out   std_logic;
+      wb_fofb_processing_regs_clk_i : in    std_logic;
+      -- Port for asynchronous (clock: wb_fofb_processing_regs_clk_i) std_logic_vector field: 'fixed-point position constant value' in reg: 'fixed-point position constant register'
+      wb_fofb_processing_regs_fixed_point_pos_val_i : in    std_logic_vector(31 downto 0);
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_0_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_0_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_0_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_0_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_0_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_1_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_1_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_1_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_1_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_1_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_2_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_2_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_2_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_2_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_2_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_3_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_3_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_3_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_3_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_3_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_4_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_4_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_4_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_4_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_4_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_5_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_5_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_5_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_5_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_5_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_6_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_6_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_6_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_6_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_6_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_7_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_7_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_7_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_7_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_7_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_8_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_8_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_8_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_8_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_8_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_9_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_9_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_9_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_9_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_9_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_10_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_10_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_10_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_10_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_10_wr_i : in    std_logic;
+      -- Ports for RAM: FOFB PROCESSING RAM bank for register map
+      wb_fofb_processing_regs_ram_bank_11_addr_i : in    std_logic_vector(8 downto 0);
+      -- Read data output
+      wb_fofb_processing_regs_ram_bank_11_data_o : out   std_logic_vector(31 downto 0);
+      -- Read strobe input (active high)
+      wb_fofb_processing_regs_ram_bank_11_rd_i : in    std_logic;
+      -- Write data input
+      wb_fofb_processing_regs_ram_bank_11_data_i : in    std_logic_vector(31 downto 0);
+      -- Write strobe (active high)
+      wb_fofb_processing_regs_ram_bank_11_wr_i : in    std_logic
     );
   end component wb_fofb_processing_regs;
 end package dot_prod_pkg;
