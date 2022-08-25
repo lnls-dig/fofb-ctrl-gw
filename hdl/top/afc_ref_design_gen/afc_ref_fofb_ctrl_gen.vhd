@@ -371,6 +371,16 @@ architecture top of afc_ref_fofb_ctrl_gen is
     max_fp_p2p_gts : integer;
   end record;
 
+  type t_serialize_data_state is
+  (
+    IDLE,
+    CONSUME,
+    DRIVE_X_DATA_OR_TIMEFRAME_END,
+    LOWER_VALID_X_DATA_OR_TIMEFRAME_END,
+    DRIVE_Y_DATA,
+    LOWER_VALID_Y_DATA
+  );
+
   function f_extract_gt_cfg(num_p2p : integer) return t_gt_cfg is
     variable rv : t_gt_cfg;
   begin
@@ -445,9 +455,13 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
-  constant c_FOFB_CHANNELS                        : natural := 8;
+  constant c_FOFB_CHANNELS                   : natural := 8;
 
   constant c_DOT_PROD_ACC_EXTRA_WIDTH        : natural := 4;
+
+  constant c_SERIALIZE_FIFO_DATA_SIZE        : natural := 1 + def_PacketSize*32;  -- dcc timeframe end + dcc packet
+  constant c_SERIALIZE_FIFO_SIZE             : natural := 32;
+  constant c_TIMEFRAME_END_POS               : natural := c_SERIALIZE_FIFO_DATA_SIZE - 1;  -- dcc timeframe end is the msb of q
 
   signal fofb_sp_arr                         : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
   signal fofb_sp_valid_arr                   : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
@@ -458,6 +472,11 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal fofb_proc_time_frame_end            : std_logic;
 
   signal pi_sp_ext                           : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
+
+  signal serialize_fifo_q                    : std_logic_vector(c_SERIALIZE_FIFO_DATA_SIZE-1 downto 0);
+  signal serialize_fifo_rd                   : std_logic := '0';
+  signal serialize_fifo_empty                : std_logic := '0';
+
   -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
@@ -1693,13 +1712,111 @@ begin
   ----------------------------------------------------------------------
   --                          FOFB PROCESSING                         --
   ----------------------------------------------------------------------
+  cmp_generic_async_fifo : generic_async_fifo
+    generic map (
+      g_data_width                            => c_SERIALIZE_FIFO_DATA_SIZE,
+      g_size                                  => c_SERIALIZE_FIFO_SIZE,
+      g_show_ahead                            => false,
+      g_with_rd_empty                         => true,
+      g_with_rd_full                          => false,
+      g_with_rd_almost_empty                  => false,
+      g_with_rd_almost_full                   => false,
+      g_with_rd_count                         => false,
+      g_with_wr_empty                         => false,
+      g_with_wr_full                          => true,
+      g_with_wr_almost_empty                  => false,
+      g_with_wr_almost_full                   => false,
+      g_with_wr_count                         => false,
+      g_with_fifo_inferred                    => false,
+      g_almost_empty_threshold                => 0,
+      g_almost_full_threshold                 => 0
+    )
+    port map (
+      rst_n_i                                 => clk_sys_rstn,
+      clk_wr_i                                => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
+      d_i                                     => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) & fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID),
+      we_i                                    => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) and fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0), -- it could be any valid (they're the same)
+      wr_empty_o                              => open,
+      wr_full_o                               => open,
+      wr_almost_empty_o                       => open,
+      wr_almost_full_o                        => open,
+      wr_count_o                              => open,
+      clk_rd_i                                => clk_sys,
+      q_o                                     => serialize_fifo_q,
+      rd_i                                    => serialize_fifo_rd,
+      rd_empty_o                              => serialize_fifo_empty,
+      rd_full_o                               => open,
+      rd_almost_empty_o                       => open,
+      rd_almost_full_o                        => open,
+      rd_count_o                              => open
+    );
 
-  -- TODO: Use a asynchronous FIFO to cross the fofb_userclk(c_FOFB_CC_P2P_ID)
-  -- clock domain to clk_sys, convert the BPM ID to fofb_proc_bpm_pos_index for
-  -- horizontal and vertical measurements, pulse fofb_proc_time_frame_end after
-  -- the DCC timeframe has eneded and the dada FIFO is empty, respect
-  -- fofb_proc_busy (don't push new BPM positions if the fofb_processing core
-  -- is busy).
+  p_serialize_data : process(clk_sys)
+    variable v_state : t_serialize_data_state := IDLE;
+  begin
+    if rising_edge(clk_sys) then
+      if clk_sys_rstn = '0' then
+        v_state := IDLE;
+      else
+        case v_state is
+          when IDLE =>
+            if fofb_proc_busy /= '1' and serialize_fifo_empty /= '1' then
+              serialize_fifo_rd <= '1';
+
+              v_state := CONSUME;
+            end if;
+          when CONSUME =>
+            serialize_fifo_rd <= '0';
+
+            v_state := DRIVE_X_DATA_OR_TIMEFRAME_END;
+          when DRIVE_X_DATA_OR_TIMEFRAME_END =>
+            if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- drive timeframe end
+              fofb_proc_time_frame_end <= '1';
+            else                                                -- drive x data
+              for i in 0 to c_FOFB_CHANNELS-1
+              loop
+                fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
+                fofb_proc_bpm_pos_index <= unsigned(serialize_fifo_q(def_PacketIDMSB downto def_PacketIDLSB));
+
+                fofb_proc_bpm_pos_valid <= '1';
+              end loop;
+            end if;
+
+            v_state := LOWER_VALID_X_DATA_OR_TIMEFRAME_END;
+          when LOWER_VALID_X_DATA_OR_TIMEFRAME_END =>
+            if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- lower timeframe end
+              fofb_proc_time_frame_end <= '0';
+
+              v_state := IDLE;
+            else                                                -- lower valid
+              for i in 0 to c_FOFB_CHANNELS-1
+              loop
+                fofb_proc_bpm_pos_valid <= '0';
+              end loop;
+
+              v_state := DRIVE_Y_DATA;
+            end if;
+          when DRIVE_Y_DATA =>
+            for i in 0 to c_FOFB_CHANNELS-1
+            loop
+              fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataYMSB downto def_PacketDataYLSB));
+              fofb_proc_bpm_pos_index(fofb_proc_bpm_pos_index'left) <= '1'; -- y FOFB coeffs start at the middle of SRAM
+
+              fofb_proc_bpm_pos_valid <= '1';
+            end loop;
+
+            v_state := LOWER_VALID_Y_DATA;
+          when LOWER_VALID_Y_DATA =>
+            for i in 0 to c_FOFB_CHANNELS-1
+            loop
+              fofb_proc_bpm_pos_valid <= '0';
+            end loop;
+
+            v_state := IDLE;
+        end case;
+      end if;
+    end if;
+  end process p_serialize_data;
 
   cmp_fofb_processing : xwb_fofb_processing
     generic map (
