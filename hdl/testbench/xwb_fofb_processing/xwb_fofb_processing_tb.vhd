@@ -114,8 +114,8 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
 
   constant c_FOFB_PROCESSING_REGS_RAM_BANK_SIZE
     : natural :=
-      c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_1 -
-      c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_0;
+      c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_1 -
+      c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0;
 
   -- signals
   signal clk                    : std_logic := '0';
@@ -170,20 +170,21 @@ begin
 
     file_open(fd_coeffs, g_COEFF_RAM_FILE, read_mode);
 
-    read32_pl(clk, wb_slave_i, wb_slave_o, c_ADDR_WB_FOFB_PROCESSING_REGS_FIXED_POINT_POS, data);
+    read32_pl(clk, wb_slave_i, wb_slave_o,
+      c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_FIXED_POINT_POS, data);
     report "fixed-point position constant register: " & to_hstring(data)
     severity note;
 
     for i in 0 to ((c_CHANNELS*c_FOFB_PROCESSING_REGS_RAM_BANK_SIZE /
-      c_WB_FOFB_PROCESSING_REGS_RAM_BANK_0_SIZE) - 1)
+      c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE) - 1)
     loop
       readline(fd_coeffs, aux_line);
       read(aux_line, coeff);
 
-      -- address should jump c_WB_FOFB_PROCESSING_REGS_RAM_BANK_0_SIZE on each
-      -- iteration (wishbone bus is using byte-granularity)
-      addr := c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_0 +
-        i * c_WB_FOFB_PROCESSING_REGS_RAM_BANK_0_SIZE;
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE
+      -- on each iteration (wishbone bus is using byte-granularity)
+      addr := c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0 +
+        i * c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE;
 
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, coeff);
       read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
