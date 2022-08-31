@@ -39,4 +39,7 @@ package wb_fofb_processing_regs_consts_pkg is
   constant c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_11 : natural := 16#6000#;
   constant c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_11_SIZE : natural := 4;
   constant c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_11_DATA : natural := 16#0#;
+  constant c_ADDR_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK : natural := 16#6800#;
+  constant c_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_SIZE : natural := 4;
+  constant c_ADDR_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_DATA : natural := 16#0#;
 end package wb_fofb_processing_regs_consts_pkg;

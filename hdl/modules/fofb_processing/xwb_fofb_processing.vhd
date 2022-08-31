@@ -352,7 +352,12 @@ begin
       wb_fofb_processing_regs_coeffs_ram_bank_11_data_o     => coeff_ram_data_arr(11),
       wb_fofb_processing_regs_coeffs_ram_bank_11_rd_i       => '0',
       wb_fofb_processing_regs_coeffs_ram_bank_11_data_i     => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_11_wr_i       => '0'
+      wb_fofb_processing_regs_coeffs_ram_bank_11_wr_i       => '0',
+      wb_fofb_processing_regs_setpoints_ram_bank_addr_i     => (others => '0'),
+      wb_fofb_processing_regs_setpoints_ram_bank_data_o     => open,
+      wb_fofb_processing_regs_setpoints_ram_bank_rd_i       => '0',
+      wb_fofb_processing_regs_setpoints_ram_bank_data_i     => (others => '0'),
+      wb_fofb_processing_regs_setpoints_ram_bank_wr_i       => '0'
     );
 
 end architecture rtl;
