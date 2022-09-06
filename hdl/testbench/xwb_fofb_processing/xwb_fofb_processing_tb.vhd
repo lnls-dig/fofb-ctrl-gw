@@ -4,6 +4,7 @@
 -- Author     : Guilherme Ricioli Cruz
 -- Company    : CNPEM LNLS-GCA
 -- Platform   : Simulation
+-- Standard   : VHDL 2008
 -------------------------------------------------------------------------------
 -- Description:  Testbench for the xwb_fofb_processing_tb module.
 --
@@ -19,6 +20,8 @@
 -- Revisions  :
 -- Date        Version  Author             Description
 -- 2022-07-26  1.0      guilherme.ricioli  Created
+-- 2022-09-05  2.0      augusto.fraga      Update testbench to match the new
+--                                         xwb_fofb_processing interface
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -41,8 +44,46 @@ use work.wishbone_pkg.all;
 use work.sim_wishbone.all;
 -- wb_fofb_processing register constants
 use work.wb_fofb_processing_regs_consts_pkg.all;
+use work.fofb_tb_pkg.all;
 
 entity xwb_fofb_processing_tb is
+  generic (
+    -- Integer width for the inverse responce matrix coefficient input
+    g_COEFF_INT_WIDTH              : natural := 0;
+
+    -- Fractionary width for the inverse responce matrix coefficient input
+    g_COEFF_FRAC_WIDTH             : natural := 17;
+
+    -- Integer width for the BPM position error input
+    g_BPM_POS_INT_WIDTH            : natural := 20;
+
+    -- Fractionary width for the BPM position error input
+    g_BPM_POS_FRAC_WIDTH           : natural := 0;
+
+    -- Extra bits for the dot product accumulator
+    g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
+
+    -- Dot product multiply pipeline stages
+    g_DOT_PROD_MUL_PIPELINE_STAGES : natural := 2;
+
+    -- Dot product accumulator pipeline stages
+    g_DOT_PROD_ACC_PIPELINE_STAGES : natural := 2;
+
+    -- Gain multiplication pipeline stages
+    g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2;
+
+    -- Number of FOFB cycles to simulate
+    g_FOFB_NUM_CYC                 : natural := 4;
+
+    -- Inverse response matrix coefficients file (in binary)
+    g_COEFF_RAM_FILE               : string  := "../coeff_norm_q31.dat";
+
+    -- DCC packets file
+    g_DCC_PACKETS_FILE             : string  := "../dcc_packets.dat";
+
+    -- BPM reference orbit data (set-point)
+    g_FOFB_BPM_REF_FILE            : string  := "../fofb_bpm_ref.dat"
+  );
 end entity xwb_fofb_processing_tb;
 
 architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
@@ -65,53 +106,35 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   end procedure f_wait_cycles;
 
   -- constants
-  constant c_SYS_CLOCK_FREQ                  : natural := 156250000;
+  constant c_SYS_CLOCK_FREQ     : natural := 100_000_000;
 
-  constant c_NUM_OF_TIME_FRAMES              : natural := 1;
+  constant c_NUM_OF_TIME_FRAMES : natural := 1;
 
-  constant c_A_WIDTH                         : natural := 32;
-  constant c_ID_WIDTH                        : natural := 9;
-  constant c_B_WIDTH                         : natural := 32;
-  constant c_K_WIDTH                         : natural := 9;
-  constant c_C_WIDTH                         : natural := 16;
-  constant c_CHANNELS                        : natural := 12;
+  constant c_CHANNELS           : natural := 12;
 
-  constant c_OUT_FIXED                       : natural := 26;
-  constant c_EXTRA_WIDTH                     : natural := 4;
-
-  constant c_ANTI_WINDUP_UPPER_LIMIT         : integer := 1000;
-  constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -1000;
   constant c_FOFB_PROCESSING_REGS_RAM_BANK_SIZE
     : natural :=
       c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_1 -
       c_ADDR_WB_FOFB_PROCESSING_REGS_RAM_BANK_0;
 
-  -- 1.0 fixed-point representation based on c_OUT_FIXED
-  constant c_DUMMY_RAM_COEFF                 :
-    std_logic_vector(c_B_WIDTH-1 downto 0) :=
-      std_logic_vector(shift_left(to_unsigned(1, c_B_WIDTH), c_OUT_FIXED));
-
-  constant c_DCC_FOD_RESET                   :
-    t_dot_prod_record_fod :=
-      (valid => '0', data => (others => '0'), addr => (others => '0'));
-
   -- signals
-  signal clk                                 : std_logic := '0';
-  signal rst_n                               : std_logic := '0';
+  signal clk                    : std_logic := '0';
+  signal rst_n                  : std_logic := '0';
 
-  signal dcc_fod                             :
-    t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) :=
-      (others => c_DCC_FOD_RESET);
-  signal dcc_time_frame_start                : std_logic := '0';
-  signal dcc_time_frame_end                  : std_logic := '0';
+  signal dcc_time_frame_end     : std_logic := '0';
 
   signal sp_arr                              :
-    t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
+    t_fofb_processing_sp_arr(c_CHANNELS-1 downto 0);
   signal sp_valid_arr                        :
     std_logic_vector(c_CHANNELS-1 downto 0):= (others => '0');
 
-  signal wb_slave_i                          : t_wishbone_slave_in;
-  signal wb_slave_o                          : t_wishbone_slave_out;
+  signal busy                   : std_logic;
+  signal bpm_pos                : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal bpm_pos_index          : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)  := (others => '0');
+  signal bpm_pos_valid          : std_logic := '0';
+
+  signal wb_slave_i             : t_wishbone_slave_in;
+  signal wb_slave_o             : t_wishbone_slave_out;
 
 begin
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
@@ -145,7 +168,7 @@ begin
       "writing on coefficients rams via wishbone bus"
     severity note;
 
-    file_open(fd_coeffs, "../coeffs.dat", read_mode);
+    file_open(fd_coeffs, g_COEFF_RAM_FILE, read_mode);
 
     read32_pl(clk, wb_slave_i, wb_slave_o, c_ADDR_WB_FOFB_PROCESSING_REGS_FIXED_POINT_POS, data);
     report "fixed-point position constant register: " & to_hstring(data)
@@ -182,12 +205,7 @@ begin
         natural'image(j) & ")"
       severity note;
 
-      file_open(fd_dcc, "../dcc_packets.dat", read_mode);
-
-      f_wait_cycles(clk, 1);
-      dcc_time_frame_start <= '1';
-      f_wait_cycles(clk, 1);
-      dcc_time_frame_start <= '0';
+      file_open(fd_dcc, g_DCC_PACKETS_FILE, read_mode);
 
       -- synthetic dcc data
       while not endfile(fd_dcc)
@@ -203,45 +221,36 @@ begin
         readline(fd_dcc, aux_line);
         read(aux_line, bpm_y_reading);
 
-        for i in 0 to (c_CHANNELS - 1)
-        loop
           -- bpm x reading
-          dcc_fod(i).data <=
-            std_logic_vector(to_signed(bpm_x_reading, dcc_fod(i).data'length));
-          dcc_fod(i).addr <=
-            std_logic_vector(to_unsigned(2*bpm_id, dcc_fod(i).addr'length));
+        bpm_pos <= to_signed(bpm_x_reading, bpm_pos'length);
+        bpm_pos_index <= to_unsigned(bpm_id, bpm_pos_index);
 
-          -- signalling a valid dcc data
-          dcc_fod(i).valid <= '1';
-          f_wait_cycles(clk, 1);
-          dcc_fod(i).valid <= '0';
-          f_wait_cycles(clk, 1);
+        -- signalling a valid dcc data
+        bpm_pos_valid <= '1';
+        f_wait_cycles(clk, 1);
+        bpm_pos_valid <= '0';
+        f_wait_cycles(clk, 1);
 
-          -- bpm y reading
-          dcc_fod(i).data <=
-            std_logic_vector(to_signed(bpm_y_reading, dcc_fod(i).data'length));
-          dcc_fod(i).addr <=
-            std_logic_vector(to_unsigned(2*bpm_id + 1, dcc_fod(i).addr'length));
+        bpm_pos <= to_signed(bpm_y_reading, bpm_pos'length);
+        bpm_pos_index <= to_unsigned(bpm_id + 256, bpm_pos_index);
 
-          -- signalling a valid dcc data
-          dcc_fod(i).valid <= '1';
-          f_wait_cycles(clk, 1);
-          dcc_fod(i).valid <= '0';
-          f_wait_cycles(clk, 1);
-        end loop;
-
+        -- signalling a valid dcc data
+        bpm_pos_valid <= '1';
+        f_wait_cycles(clk, 1);
+        bpm_pos_valid <= '0';
+        f_wait_cycles(clk, 1);
       end loop;
 
-      -- NOTE:  This waiting has to be enough for dot_prod_coeff_vec to finish its
-      --        processing. It was defined empirically.
-      f_wait_cycles(clk, 11);
+      -- Time frame ended
       dcc_time_frame_end <= '1';
       f_wait_cycles(clk, 1);
       dcc_time_frame_end <= '0';
-      f_wait_cycles(clk, 2);
+      f_wait_cycles(clk, 1);
+
+      -- Wait until the new set-point is ready
+      f_wait_clocked_signal(clk, sp_valid_arr(0), '1');
 
       file_close(fd_dcc);
-
     end loop;
 
     for i in 0 to (c_CHANNELS - 1)
@@ -258,39 +267,31 @@ begin
   -- components
   cmp_xwb_fofb_processing : xwb_fofb_processing
     generic map (
-      g_A_WIDTH                              => c_A_WIDTH,
-      g_ID_WIDTH                             => c_ID_WIDTH,
-      g_B_WIDTH                              => c_B_WIDTH,
-      g_K_WIDTH                              => c_K_WIDTH,
-      g_C_WIDTH                              => c_C_WIDTH,
-
-      g_OUT_FIXED                            => c_OUT_FIXED,
-      g_EXTRA_WIDTH                          => c_EXTRA_WIDTH,
-
-      g_CHANNELS                             => c_CHANNELS,
-
-      g_ANTI_WINDUP_UPPER_LIMIT              => c_ANTI_WINDUP_UPPER_LIMIT,
-      g_ANTI_WINDUP_LOWER_LIMIT              => c_ANTI_WINDUP_LOWER_LIMIT,
-
-      g_INTERFACE_MODE                       => PIPELINED,
-      g_ADDRESS_GRANULARITY                  => BYTE,
-      g_WITH_EXTRA_WB_REG                    => false
+      g_COEFF_INT_WIDTH              => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH             => g_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH            => g_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH           => g_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_CHANNELS                     => c_CHANNELS,
+      g_INTERFACE_MODE               => PIPELINED,
+      g_ADDRESS_GRANULARITY          => BYTE,
+      g_WITH_EXTRA_WB_REG            => false
     )
     port map (
-      clk_i                                  => clk,
-      rst_n_i                                => rst_n,
-      clk_sys_i                              => clk,
-      rst_sys_n_i                            => rst_n,
-
-      dcc_fod_i                              => dcc_fod,
-      dcc_time_frame_start_i                 => dcc_time_frame_start,
-      dcc_time_frame_end_i                   => dcc_time_frame_end,
-
-      sp_arr_o                               => sp_arr,
-      sp_valid_arr_o                         => sp_valid_arr,
-
-      wb_slv_i                               => wb_slave_i,
-      wb_slv_o                               => wb_slave_o
+      clk_i                          => clk,
+      rst_n_i                        => rst_n,
+      busy_o                         => busy,
+      bpm_pos_i                      => bpm_pos,
+      bpm_pos_index_i                => bpm_pos_index,
+      bpm_pos_valid_i                => bpm_pos_valid,
+      bpm_time_frame_end_i           => dcc_time_frame_end,
+      sp_arr_o                       => sp_arr,
+      sp_valid_arr_o                 => sp_valid_arr,
+      wb_slv_i                       => wb_slave_i,
+      wb_slv_o                       => wb_slave_o
     );
 
 end architecture xwb_fofb_processing_tb_arch;

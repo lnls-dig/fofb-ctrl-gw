@@ -1,46 +1,57 @@
 -------------------------------------------------------------------------------
--- Title      :  Dot product module
+-- Title      : Dot product module
 -------------------------------------------------------------------------------
--- Author     :  Melissa Aguiar
--- Company    :  CNPEM LNLS-DIG
--- Platform   :  FPGA-generic
+-- Author     : Melissa Aguiar
+-- Company    : CNPEM LNLS-DIG
+-- Platform   : FPGA-generic
+-- Standard   : VHDL 2008
 -------------------------------------------------------------------------------
--- Description:  Dot product module for the Fast Orbit Feedback
+-- Description: Calculates de dot product of two vectors
 -------------------------------------------------------------------------------
--- Copyright (c) 2020 CNPEM
+-- Copyright (c) 2020-2022 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2021-08-11  1.0      melissa.aguiar        Created
+-- 2022-08-22  2.0      augusto.fraga         Refactored using VHDL 2008
 -------------------------------------------------------------------------------
 
 library ieee;
-use ieee.std_logic_1164.ALL;
+use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.fixed_pkg.all;
 
 library work;
--- Dot product package
 use work.dot_prod_pkg.all;
 
 entity dot_prod is
-  generic(
-    -- Width for input a[k]
-    g_A_WIDTH                      : natural := 32;
+  generic (
+    -- Integer width for input a[k]
+    g_A_INT_WIDTH                  : natural := 7;
 
-    -- Width for input b[k]
-    g_B_WIDTH                      : natural := 32;
+    -- Fractionary width for input a[k]
+    g_A_FRAC_WIDTH                 : natural := 10;
 
-    -- Width for output
-    g_C_WIDTH                      : natural := 16;
+    -- Integer width for input b[k]
+    g_B_INT_WIDTH                  : natural := 7;
 
-    -- Fixed point representation for output
-    g_OUT_FIXED                    : natural := 26;
+    -- Fractionary width for input b[k]
+    g_B_FRAC_WIDTH                 : natural := 10;
 
     -- Extra bits for accumulator
-    g_EXTRA_WIDTH                  : natural := 4
+    g_ACC_EXTRA_WIDTH              : natural := 4;
+
+    -- Use registered inputs
+    g_REG_INPUTS                   : boolean := false;
+
+    -- Number of multiplier pipeline stages
+    g_MULT_PIPELINE_STAGES         : natural := 1;
+
+    -- Number of accumulator pipeline stages
+    g_ACC_PIPELINE_STAGES          : natural := 1
   );
-  port(
+  port (
     -- Core clock
     clk_i                          : in std_logic;
 
@@ -53,229 +64,111 @@ entity dot_prod is
     -- Data valid input
     valid_i                        : in std_logic;
 
-    -- Time frame end
-    time_frame_end_i               : in std_logic;
-
     -- Input a[k]
-    a_i                            : in signed(g_A_WIDTH-1 downto 0);
+    a_i                            : in sfixed(g_A_INT_WIDTH downto -g_A_FRAC_WIDTH);
 
     -- Input b[k]
-    b_i                            : in signed(g_B_WIDTH-1 downto 0);
+    b_i                            : in sfixed(g_B_INT_WIDTH downto -g_B_FRAC_WIDTH);
+
+    -- No ongoing operations, all pipeline stages idle
+    idle_o                         : out std_logic;
 
     -- Result output
-    result_o                       : out signed(g_C_WIDTH-1 downto 0);
-    result_debug_o                 : out signed(g_C_WIDTH-1 downto 0);
-
-	-- Data valid output
-    result_valid_end_o             : out std_logic;
-    result_valid_debug_o           : out std_logic
+    result_o                       : out sfixed(g_A_INT_WIDTH + g_B_INT_WIDTH + g_ACC_EXTRA_WIDTH + 1
+                                                downto
+                                                -(g_A_FRAC_WIDTH + g_B_FRAC_WIDTH))
   );
 end dot_prod;
 
 architecture behave of dot_prod is
 
-  constant c_REGS_MSB              : natural                        := g_A_WIDTH + g_B_WIDTH + g_EXTRA_WIDTH - 1;
-  signal result_s                  : signed(g_C_WIDTH-1 downto 0)   := (others =>'0');
+  constant c_t_mult_res_int_width : natural := g_A_INT_WIDTH + g_B_INT_WIDTH + 1;
+  constant c_t_mult_res_frac_width : natural := g_A_FRAC_WIDTH + g_B_FRAC_WIDTH;
+  constant c_t_acc_int_width : natural := g_A_INT_WIDTH + g_B_INT_WIDTH + g_ACC_EXTRA_WIDTH + 1;
+  constant c_t_acc_frac_width : natural := g_A_FRAC_WIDTH + g_B_FRAC_WIDTH;
+  type t_mult_res_arr is array (natural range <>) of sfixed(c_t_mult_res_int_width downto -c_t_mult_res_frac_width);
+  -- Can't use result_o'subtype here due to a Vivado 2018.3 bug that complains
+  -- that about acc_pipe as if it was a unconstrained array
+  type t_acc_arr is array (natural range <>) of sfixed(c_t_acc_int_width downto -c_t_acc_frac_width);
 
   -- Registers for input values
-  signal a_reg_s                   : signed(g_A_WIDTH-1 downto 0)   := (others =>'0');
-  signal b_reg_s                   : signed(g_B_WIDTH-1 downto 0)   := (others =>'0');
+  signal a_reg_s                   : a_i'subtype;
+  signal b_reg_s                   : b_i'subtype;
+  signal ab_reg_valid              : std_logic;
 
   -- Registers for intermediate values
-  signal mult_reg_s                : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal adder_out_s               : signed(c_REGS_MSB downto 0)    := (others =>'0');
-  signal adder_reg1_s              : signed(c_REGS_MSB downto 0)    := (others =>'0');
-  signal adder_reg2_s              : signed(c_REGS_MSB-g_OUT_FIXED downto 0)
-                                                                    := (others =>'0');
+  signal mult_res_pipe             : t_mult_res_arr(g_MULT_PIPELINE_STAGES-1 downto 0);
+  signal mult_res_pipe_valid       : std_logic_vector(g_MULT_PIPELINE_STAGES-1 downto 0);
 
-  -- Registers for bit valid
-  signal valid_reg1_s              : std_logic                      := '0';
-  signal valid_reg2_s              : std_logic                      := '0';
-  signal valid_reg3_s              : std_logic                      := '0';
-  signal valid_reg4_s              : std_logic                      := '0';
-  signal valid_reg5_s              : std_logic                      := '0';
-
-  -- Registers for the correct DSP48 inference
-  signal mult_dsp1_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal mult_dsp2_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal mult_dsp3_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal mult_dsp4_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal mult_dsp5_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal mult_dsp6_s               : signed(g_A_WIDTH+g_B_WIDTH-1 downto 0)
-                                                                    := (others =>'0');
-  signal valid_dsp1_s              : std_logic                      := '0';
-  signal valid_dsp2_s              : std_logic                      := '0';
-  signal valid_dsp3_s              : std_logic                      := '0';
-  signal valid_dsp4_s              : std_logic                      := '0';
-  signal valid_dsp5_s              : std_logic                      := '0';
-  signal valid_dsp6_s              : std_logic                      := '0';
-
-  function vector_OR(x : std_logic_vector)
-    return std_logic
-  is
-    constant len : integer := x'length;
-    constant mid : integer := len / 2;
-    alias y      : std_logic_vector(len-1 downto 0) is x;
-  begin
-    if len = 1
-    then return y(0);
-    else return vector_OR(y(len-1 downto mid)) or
-                vector_OR(y(mid-1 downto 0));
-    end if;
-  end vector_OR;
-
-  function vector_AND(x : std_logic_vector)
-    return std_logic
-  is
-    constant len : integer := x'length;
-    constant mid : integer := len / 2;
-    alias y      : std_logic_vector(len-1 downto 0) is x;
-  begin
-    if len = 1
-    then return y(0);
-    else return vector_AND(y(len-1 downto mid)) and
-                vector_AND(y(mid-1 downto 0));
-    end if;
-  end vector_AND;
-
-  function f_replicate(x : std_logic; len : natural)
-    return std_logic_vector
-  is
-    variable v_ret : std_logic_vector(len-1 downto 0) := (others => x);
-  begin
-    return v_ret;
-  end f_replicate;
-
-  function f_saturate(x : std_logic_vector; x_new_msb : natural)
-    return std_logic_vector
-  is
-    constant x_old_msb     : natural := x'left;
-    variable v_is_in_range : std_logic;
-    variable v_x_sat       : std_logic_vector(x_new_msb downto 0);
-  begin
-    -- Check if signed overflow (all bits 0) or signed underflow (all bits 1)
-    v_is_in_range := (not vector_OR(x(x_old_msb downto x_new_msb)) or
-                (vector_AND(x(x_old_msb downto x_new_msb))));
-
-    if v_is_in_range = '1' then
-      -- just drop the redundant MSB bits
-      v_x_sat := x(x_new_msb downto 0);
-    else
-      -- saturate negative 10...0 or positive 01...1
-      v_x_sat := x(x_old_msb) & f_replicate(not x(x_old_msb), x_new_msb);
-    end if;
-
-    return v_x_sat;
-  end f_saturate;
-
+  signal acc_pipe                  : t_acc_arr(g_ACC_PIPELINE_STAGES-1 downto 0);
+  signal acc_pipe_valid            : std_logic_vector(g_ACC_PIPELINE_STAGES-1 downto 0);
 begin
 
-  MAC : process (clk_i)
+  -- Is idle if all pipeline stages are themselves idle
+  -- TODO: This logic wastes an extra clock cycle due to acc_pipe last
+  -- element
+  idle_o <= not(or(ab_reg_valid & mult_res_pipe_valid & acc_pipe_valid));
+
+  p_dot_product : process(clk_i)
   begin
-    if (rising_edge(clk_i)) then
+    if rising_edge(clk_i) then
       if rst_n_i = '0' then
         -- Clear all registers
         a_reg_s                    <= (others => '0');
         b_reg_s                    <= (others => '0');
-        mult_reg_s                 <= (others => '0');
-        adder_out_s                <= (others => '0');
-        adder_reg1_s               <= (others => '0');
-        adder_reg2_s               <= (others => '0');
-        valid_reg1_s               <= '0';
-        valid_reg2_s               <= '0';
-        valid_reg3_s               <= '0';
-        valid_reg4_s               <= '0';
-        valid_reg5_s               <= '0';
-        mult_dsp1_s                <= (others => '0');
-        mult_dsp2_s                <= (others => '0');
-        mult_dsp3_s                <= (others => '0');
-        mult_dsp4_s                <= (others => '0');
-        mult_dsp5_s                <= (others => '0');
-        mult_dsp6_s                <= (others => '0');
-        valid_dsp1_s               <= '0';
-        valid_dsp2_s               <= '0';
-        valid_dsp3_s               <= '0';
-        valid_dsp4_s               <= '0';
-        valid_dsp5_s               <= '0';
-        valid_dsp6_s               <= '0';
-
+        mult_res_pipe              <= (others => (others => '0'));
+        mult_res_pipe_valid        <= (others => '0');
+        acc_pipe                   <= (others => (others => '0'));
+        acc_pipe_valid             <= (others => '0');
+        ab_reg_valid               <= '0';
       elsif (clear_acc_i = '1') then
-        -- Clear data from accumulator
-        adder_out_s                <= (others => '0');
-        adder_reg1_s               <= (others => '0');
-        adder_reg2_s               <= (others => '0');
-
+        -- Clear the accumulator and pipeline valid bits
+        mult_res_pipe_valid        <= (others => '0');
+        acc_pipe_valid             <= (others => '0');
+        acc_pipe                   <= (others => (others => '0'));
       else
-        -- Store the inputs in a register
-        a_reg_s                    <= a_i;
-        b_reg_s                    <= b_i;
-
-        -- Store the valid bit in a register
-        valid_reg1_s               <= valid_i;
-
-        -- Store multiplication result in a register (it's necessary to use 6 pipeline stages)
-        mult_dsp1_s                <= a_reg_s * b_reg_s;
-        mult_dsp2_s                <= mult_dsp1_s;
-        mult_dsp3_s                <= mult_dsp2_s;
-        mult_dsp4_s                <= mult_dsp3_s;
-        mult_dsp5_s                <= mult_dsp4_s;
-        mult_dsp6_s                <= mult_dsp5_s;
-
-        mult_reg_s                 <= mult_dsp6_s;
-
-        -- Store the valid bit in a register for the 6 pipeline stages
-        valid_dsp1_s               <= valid_reg1_s;
-        valid_dsp2_s               <= valid_dsp1_s;
-        valid_dsp3_s               <= valid_dsp2_s;
-        valid_dsp4_s               <= valid_dsp3_s;
-        valid_dsp5_s               <= valid_dsp4_s;
-        valid_dsp6_s               <= valid_dsp5_s;
-
-        valid_reg2_s               <= valid_dsp6_s;
-
-        if (valid_reg2_s = '1') then
-          -- Store accumulation result in a register
-          adder_out_s              <= adder_out_s + mult_reg_s;
-        end if;
-
-        -- Store the valid bit in a register
-        valid_reg3_s               <= valid_reg2_s;
-
-        -- Register the accumulation to fully pipeline the DSP cascade
-        adder_reg1_s               <= adder_out_s;
-
-        -- Store the valid bit in a register
-        valid_reg4_s               <= valid_reg3_s;
-
-        -- Register the accumulation to fully pipeline the DSP cascade
-        adder_reg2_s               <= adder_reg1_s(c_REGS_MSB downto g_OUT_FIXED);
-
-        -- Store the valid bit in a register
-        valid_reg5_s               <= valid_reg4_s;
-
-        -- Store the valid bit output
-        result_valid_debug_o       <= valid_reg5_s;
-
-        -- Truncate the output
-        result_debug_o             <= result_s;
-
-				-- End of the FOFB cycle
-        if (time_frame_end_i = '1') then
-          result_o                 <= result_s;
-          result_valid_end_o       <= '1';
+        if g_REG_INPUTS then
+          -- Store the a_i and b_i inputs in a register
+          a_reg_s                    <= a_i;
+          b_reg_s                    <= b_i;
+          mult_res_pipe(0)           <= a_reg_s * b_reg_s;
+          ab_reg_valid               <= valid_i;
+          mult_res_pipe_valid(0)     <= ab_reg_valid;
         else
-          result_valid_end_o       <= '0';
+          -- Multiply a_i and b_i directly
+          mult_res_pipe(0)           <= a_i * b_i;
+          mult_res_pipe_valid(0)     <= valid_i;
         end if;
+
+        -- Add more intermediate registers to the multiply result
+        if g_MULT_PIPELINE_STAGES > 1 then
+          for i in 1 to g_MULT_PIPELINE_STAGES-1 loop
+            mult_res_pipe_valid(i) <= mult_res_pipe_valid(i - 1);
+            mult_res_pipe(i) <= mult_res_pipe(i - 1);
+          end loop;
+        end if;
+
+        -- Pass pipeline valid
+        acc_pipe_valid(0) <= mult_res_pipe_valid(g_MULT_PIPELINE_STAGES-1);
+
+        if (mult_res_pipe_valid(g_MULT_PIPELINE_STAGES-1) = '1') then
+          -- Store accumulation result in a register
+          acc_pipe(0) <= resize(acc_pipe(0) + mult_res_pipe(g_MULT_PIPELINE_STAGES-1), c_t_acc_int_width, -c_t_acc_frac_width);
+        end if;
+
+        -- Add more intermediate registers to the accumulator sum result
+        if g_ACC_PIPELINE_STAGES > 1 then
+          for i in 1 to g_ACC_PIPELINE_STAGES-1 loop
+            acc_pipe_valid(i) <= acc_pipe_valid(i - 1);
+            acc_pipe(i) <= acc_pipe(i - 1);
+          end loop;
+        end if;
+
       end if; -- Reset
     end if; -- Clock
-  end process MAC;
 
-  result_s                         <= signed(f_saturate(std_logic_vector(adder_reg2_s), g_C_WIDTH-1));
+    -- Result is the last register of the accumulator pipeline array
+    result_o <= acc_pipe(g_ACC_PIPELINE_STAGES-1);
+  end process p_dot_product;
 
 end architecture behave;

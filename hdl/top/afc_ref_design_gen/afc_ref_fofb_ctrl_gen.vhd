@@ -62,19 +62,35 @@ use work.genram_pkg.all;
 
 entity afc_ref_fofb_ctrl_gen is
 generic (
-  g_BOARD                                    : string  := "AFCv4";
+  g_BOARD                             : string  := "AFCv4";
   -- Select RTM LAMP or RTM SFP
-  g_RTM                                      : string  := "RTMLAMP";
+  g_RTM                               : string  := "RTMLAMP";
   -- Number of SFP GTs
-  g_NUM_SFPS                                 : integer range 1 to 4 := 4;
+  g_NUM_SFPS                          : integer range 1 to 4 := 4;
   -- Starting index of used SFP GTs
-  g_SFP_START_ID                             : integer := 4;
+  g_SFP_START_ID                      : integer := 4;
   -- Number of P2P GTs
-  g_NUM_P2P_GTS                              : integer range 1 to 8 := 4;
+  g_NUM_P2P_GTS                       : integer range 1 to 8 := 4;
   -- Starting index of used P2P GTs
-  g_P2P_GT_START_ID                          : integer := 0;
+  g_P2P_GT_START_ID                   : integer := 0;
   -- Number of RTM LAMP channels
-  g_RTMLAMP_CHANNELS                         : natural := 12
+  g_RTMLAMP_CHANNELS                  : natural := 12;
+  -- Integer width for the inverse responce matrix coefficient input
+  g_FOFB_COEFF_INT_WIDTH              : natural := 0;
+  -- Fractionary width for the inverse responce matrix coefficient input
+  g_FOFB_COEFF_FRAC_WIDTH             : natural := 17;
+  -- Integer width for the BPM position error input
+  g_FOFB_BPM_POS_INT_WIDTH            : natural := 20;
+  -- Fractionary width for the BPM position error input
+  g_FOFB_BPM_POS_FRAC_WIDTH           : natural := 0;
+  -- Extra bits for the dot product accumulator
+  g_FOFB_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
+  -- Dot product multiply pipeline stages
+  g_FOFB_DOT_PROD_MUL_PIPELINE_STAGES : natural := 2;
+  -- Dot product accumulator pipeline stages
+  g_FOFB_DOT_PROD_ACC_PIPELINE_STAGES : natural := 2;
+  -- Gain multiplication pipeline stages
+  g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2
 );
 port (
   ---------------------------------------------------------------------------
@@ -429,23 +445,18 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
-  constant c_CHANNELS                        : natural := 8;
-  -- c_ADDR_WIDTH must agree with memory layout defined on
-  -- hdl/modules/fofb_processing/cheby/wb_fofb_processing_regs.cheby
-  constant c_ADDR_WIDTH                      : natural := 9;
-  constant c_SP_OUT_WIDTH                    : natural := 16;
-  constant c_OUT_FIXED                       : natural := 26;
-  constant c_EXTRA_WIDTH                     : natural := 4;
+  constant c_FOFB_CHANNELS                        : natural := 8;
 
-  constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
-                                                                         data  => (others => '0'),
-                                                                         addr  => (others => '0'));
+  constant c_DOT_PROD_ACC_EXTRA_WIDTH        : natural := 4;
 
-  constant c_ANTI_WINDUP_UPPER_LIMIT         : integer := 2**(c_SP_OUT_WIDTH - 1) - 1;
-  constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -2**(c_SP_OUT_WIDTH - 1);
+  signal fofb_sp_arr                         : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_sp_valid_arr                   : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_proc_busy                      : std_logic;
+  signal fofb_proc_bpm_pos                   : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal fofb_proc_bpm_pos_index             : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal fofb_proc_bpm_pos_valid             : std_logic;
+  signal fofb_proc_time_frame_end            : std_logic;
 
-  signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
-  signal sp_arr_s                            : t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
   signal pi_sp_ext                           : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
   -----------------------------------------------------------------------------
   -- RTM signals
@@ -1682,74 +1693,42 @@ begin
   ----------------------------------------------------------------------
   --                          FOFB PROCESSING                         --
   ----------------------------------------------------------------------
-  gen_dcc_fod_data: for i in 0 to c_CHANNELS/2-1 generate
-   -- Data xpos
-    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
-    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
 
-    -- Data ypos
-    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
-    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
-  end generate;
+  -- TODO: Use a asynchronous FIFO to cross the fofb_userclk(c_FOFB_CC_P2P_ID)
+  -- clock domain to clk_sys, convert the BPM ID to fofb_proc_bpm_pos_index for
+  -- horizontal and vertical measurements, pulse fofb_proc_time_frame_end after
+  -- the DCC timeframe has eneded and the dada FIFO is empty, respect
+  -- fofb_proc_busy (don't push new BPM positions if the fofb_processing core
+  -- is busy).
 
   cmp_fofb_processing : xwb_fofb_processing
-  generic map
-  (
-    -- Width for inputs x and y
-    g_A_WIDTH                                  => c_DATA_WIDTH,
-    -- Width for dcc addr
-    g_ID_WIDTH                                 => NodeW,
-    -- Width for ram data
-    g_B_WIDTH                                  => c_DATA_WIDTH,
-    -- Width for ram addr
-    g_K_WIDTH                                  => c_ADDR_WIDTH,
-    -- Width for output
-    g_C_WIDTH                                  => c_SP_OUT_WIDTH,
-    -- Fixed point representation for output
-    g_OUT_FIXED                                => c_OUT_FIXED,
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                              => c_EXTRA_WIDTH,
-    -- Number of channels
-    g_CHANNELS                                 => c_CHANNELS,
-
-    g_ANTI_WINDUP_UPPER_LIMIT                  => c_ANTI_WINDUP_UPPER_LIMIT,  -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT                  => c_ANTI_WINDUP_LOWER_LIMIT,  -- anti-windup lower limit
-
-    -- Wishbone parameters
-    g_INTERFACE_MODE                           => PIPELINED,
-    g_ADDRESS_GRANULARITY                      => BYTE,
-    g_WITH_EXTRA_WB_REG                        => false
-  )
-  port map
-  (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
-    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID),
-    clk_sys_i                                  => clk_sys,
-    rst_sys_n_i                                => clk_sys_rstn,
-
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  => dcc_fod_s,
-    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID),
-    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
-
-    -- Setpoints
-    sp_arr_o                                   => sp_arr_s,
-    sp_valid_arr_o                             => open,
-
-    ---------------------------------------------------------------------------
-    -- Wishbone Control Interface signals
-    ---------------------------------------------------------------------------
-    wb_slv_i                                   => user_wb_out(c_FOFB_PROCESSING_ID),
-    wb_slv_o                                   => user_wb_in(c_FOFB_PROCESSING_ID)
-  );
+    generic map (
+      g_COEFF_INT_WIDTH              => g_FOFB_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH             => g_FOFB_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH            => g_FOFB_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH           => g_FOFB_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH     => g_FOFB_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES => g_FOFB_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES => g_FOFB_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES => g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_CHANNELS                     => c_FOFB_CHANNELS,
+      g_INTERFACE_MODE               => PIPELINED,
+      g_ADDRESS_GRANULARITY          => BYTE,
+      g_WITH_EXTRA_WB_REG            => false
+    )
+    port map (
+      clk_i                          => clk_sys,
+      rst_n_i                        => clk_sys_rstn,
+      busy_o                         => fofb_proc_busy,
+      bpm_pos_i                      => fofb_proc_bpm_pos,
+      bpm_pos_index_i                => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i                => fofb_proc_bpm_pos_valid,
+      bpm_time_frame_end_i           => fofb_proc_time_frame_end,
+      sp_arr_o                       => fofb_sp_arr,
+      sp_valid_arr_o                 => fofb_sp_valid_arr,
+      wb_slv_i                       => user_wb_out(c_FOFB_PROCESSING_ID),
+      wb_slv_o                       => user_wb_in(c_FOFB_PROCESSING_ID)
+    );
 
   ----------------------------------------------------------------------
   --                          RTM 8SFP OHWR                           --
@@ -2049,8 +2028,8 @@ begin
   end generate;
 
   -- Convert signed elements to std_logic_vector
-  gen_conv_pi_sp: for i in 0 to c_CHANNELS-1 generate
-    pi_sp_ext(i) <= std_logic_vector(sp_arr_s(i));
+  gen_conv_pi_sp: for i in 0 to c_FOFB_CHANNELS-1 generate
+    pi_sp_ext(i) <= std_logic_vector(fofb_sp_arr(i));
   end generate;
 
   ----------------------------------------------------------------------
@@ -2119,8 +2098,8 @@ begin
 
   -- DCC FMC
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(sp_arr_s(0)) & std_logic_vector(sp_arr_s(1)) & std_logic_vector(sp_arr_s(2)) & std_logic_vector(sp_arr_s(3)) &
-          std_logic_vector(sp_arr_s(4)) & std_logic_vector(sp_arr_s(5)) & std_logic_vector(sp_arr_s(6)) & std_logic_vector(sp_arr_s(7)) &
+          std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) &
+          std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) & std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) &
           fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;

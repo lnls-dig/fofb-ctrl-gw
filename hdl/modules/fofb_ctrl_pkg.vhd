@@ -501,142 +501,76 @@ package fofb_ctrl_pkg is
   );
   end component;
 
-  component wb_fofb_processing
-  generic
-  (
-    -- Width for DCC input
-    g_A_WIDTH                                  : natural := 32;
-
-    -- Width for DCC addr
-    g_ID_WIDTH                                 : natural := 9;
-
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural;
-
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural;
-
-    -- Width for output
-    g_C_WIDTH                                  : natural := 16;
-
-    -- Fixed point representation for output
-    g_OUT_FIXED                                : natural := 26;
-
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                              : natural := 4;
-
-    -- Number of channels
-    g_CHANNELS                                 : natural;
-
-    g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
-
-    -- Wishbone parameters
-    g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
-    g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
-    g_WITH_EXTRA_WB_REG                        : boolean := false
-  );
-  port
-  (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      : in std_logic;
-    rst_n_i                                    : in std_logic;
-    clk_sys_i                                  : in std_logic;
-    rst_sys_n_i                                : in std_logic;
-
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  : in t_dot_prod_array_record_fod(g_CHANNELS-1 downto 0);
-    dcc_time_frame_start_i                     : in std_logic;
-    dcc_time_frame_end_i                       : in std_logic;
-
-    -- Setpoints
-    sp_arr_o                                   : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
-    sp_valid_arr_o                             : out std_logic_vector(g_CHANNELS-1 downto 0);
-
-    ---------------------------------------------------------------------------
-    -- Wishbone Control Interface signals
-    ---------------------------------------------------------------------------
-    wb_adr_i                                   : in  std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
-    wb_dat_i                                   : in  std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0) := (others => '0');
-    wb_dat_o                                   : out std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
-    wb_sel_i                                   : in  std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0) := (others => '0');
-    wb_we_i                                    : in  std_logic := '0';
-    wb_cyc_i                                   : in  std_logic := '0';
-    wb_stb_i                                   : in  std_logic := '0';
-    wb_ack_o                                   : out std_logic;
-    wb_err_o                                   : out std_logic;
-    wb_rty_o                                   : out std_logic;
-    wb_stall_o                                 : out std_logic
-  );
-  end component;
-
   component xwb_fofb_processing
   generic
   (
-    -- Width for DCC input
-    g_A_WIDTH                                  : natural := 32;
+    -- Integer width for the inverse responce matrix coefficient input
+    g_COEFF_INT_WIDTH              : natural := 0;
 
-    -- Width for DCC addr
-    g_ID_WIDTH                                 : natural := 9;
+    -- Fractionary width for the inverse responce matrix coefficient input
+    g_COEFF_FRAC_WIDTH             : natural := 17;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural;
+    -- Integer width for the BPM position error input
+    g_BPM_POS_INT_WIDTH            : natural := 20;
 
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural;
+    -- Fractionary width for the BPM position error input
+    g_BPM_POS_FRAC_WIDTH           : natural := 0;
 
-    -- Width for output
-    g_C_WIDTH                                  : natural := 16;
+    -- Extra bits for the dot product accumulator
+    g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
 
-    -- Fixed point representation for output
-    g_OUT_FIXED                                : natural := 26;
+    -- Dot product multiply pipeline stages
+    g_DOT_PROD_MUL_PIPELINE_STAGES : natural := 1;
 
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                              : natural := 4;
+    -- Dot product accumulator pipeline stages
+    g_DOT_PROD_ACC_PIPELINE_STAGES : natural := 1;
+
+    -- Gain multiplication pipeline stages
+    g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
 
     -- Number of channels
-    g_CHANNELS                                 : natural;
-
-    g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
+    g_CHANNELS                     : natural;
 
     -- Wishbone parameters
-    g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
-    g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
-    g_WITH_EXTRA_WB_REG                        : boolean := false
+    g_INTERFACE_MODE               : t_wishbone_interface_mode      := CLASSIC;
+    g_ADDRESS_GRANULARITY          : t_wishbone_address_granularity := WORD;
+    g_WITH_EXTRA_WB_REG            : boolean := false
   );
   port
   (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      : in std_logic;
-    rst_n_i                                    : in std_logic;
-    clk_sys_i                                  : in std_logic;
-    rst_sys_n_i                                : in std_logic;
+    -- Clock
+    clk_i                          : in  std_logic;
 
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  : in t_dot_prod_array_record_fod(g_CHANNELS-1 downto 0);
-    dcc_time_frame_start_i                     : in std_logic;
-    dcc_time_frame_end_i                       : in std_logic;
+    -- Reset
+    rst_n_i                        : in  std_logic;
 
-    -- Setpoints
-    sp_arr_o                                   : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
-    sp_valid_arr_o                             : out std_logic_vector(g_CHANNELS-1 downto 0);
+    -- If busy_o = '1', core is busy, can't receive new data
+    busy_o                         : out std_logic;
+
+    -- BPM position measurement (either horizontal or vertical)
+    bpm_pos_i                      : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+    -- BPM index, 0 to 255 for horizontal measurements, 256 to 511 for vertical
+    -- measurements
+    bpm_pos_index_i                : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+    -- BPM position valid
+    bpm_pos_valid_i                : in  std_logic;
+
+    -- End of time frame, computes the next set-point
+    bpm_time_frame_end_i           : in  std_logic;
+
+    -- Set-points output array (for each channel)
+    sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+    -- Set-point valid array (for each channel)
+    sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    wb_slv_i                                   : in t_wishbone_slave_in;
-    wb_slv_o                                   : out t_wishbone_slave_out
+    wb_slv_i                     : in t_wishbone_slave_in;
+    wb_slv_o                     : out t_wishbone_slave_out
   );
   end component;
 

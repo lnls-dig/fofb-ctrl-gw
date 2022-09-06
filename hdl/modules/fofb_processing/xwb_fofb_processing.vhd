@@ -1,19 +1,21 @@
 -------------------------------------------------------------------------------
--- Title      :  Wishbone matmul wrapper with structs
+-- Title      :  Wishbone fofb processing wrapper
 -------------------------------------------------------------------------------
 -- Author     :  Melissa Aguiar
 -- Company    :  CNPEM LNLS-DIG
 -- Platform   :  FPGA-generic
 -------------------------------------------------------------------------------
--- Description:  Wishbone matmul wrapper for the Fast Orbit Feedback
+-- Description:  Wishbone fofb processing wrapper
 -------------------------------------------------------------------------------
--- Copyright (c) 2020 CNPEM
+-- Copyright (c) 2020-2022 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2021-08-19  1.0      melissa.aguiar        Created
 -- 2022-07-27  1.1      guilherme.ricioli     Changed coeffs RAMs' wb interface
+-- 2022-09-05  2.0      augusto.fraga         Update to match the new
+--                                            fofb_processing API
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -32,58 +34,66 @@ use work.fofb_ctrl_pkg.all;
 
 entity xwb_fofb_processing is
   generic (
-    -- Width for DCC input
-    g_A_WIDTH                    : natural := 32;
+    -- Integer width for the inverse responce matrix coefficient input
+    g_COEFF_INT_WIDTH              : natural := 0;
 
-    -- Width for DCC addr
-    g_ID_WIDTH                   : natural := 9;
+    -- Fractionary width for the inverse responce matrix coefficient input
+    g_COEFF_FRAC_WIDTH             : natural := 17;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                    : natural;
+    -- Integer width for the BPM position error input
+    g_BPM_POS_INT_WIDTH            : natural := 20;
 
-    -- Width for RAM addr
-    g_K_WIDTH                    : natural;
+    -- Fractionary width for the BPM position error input
+    g_BPM_POS_FRAC_WIDTH           : natural := 0;
 
-    -- Width for output
-    g_C_WIDTH                    : natural := 16;
+    -- Extra bits for the dot product accumulator
+    g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
 
-    -- Fixed point representation for output
-    g_OUT_FIXED                  : natural := 26;
+    -- Dot product multiply pipeline stages
+    g_DOT_PROD_MUL_PIPELINE_STAGES : natural := 1;
 
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                : natural := 4;
+    -- Dot product accumulator pipeline stages
+    g_DOT_PROD_ACC_PIPELINE_STAGES : natural := 1;
+
+    -- Gain multiplication pipeline stages
+    g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
 
     -- Number of channels
-    g_CHANNELS                   : natural;
-
-    g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT    : integer; -- anti-windup lower limit
+    g_CHANNELS                     : natural;
 
     -- Wishbone parameters
-    g_INTERFACE_MODE             : t_wishbone_interface_mode      := CLASSIC;
-    g_ADDRESS_GRANULARITY        : t_wishbone_address_granularity := WORD;
-    g_WITH_EXTRA_WB_REG          : boolean := false
+    g_INTERFACE_MODE               : t_wishbone_interface_mode      := CLASSIC;
+    g_ADDRESS_GRANULARITY          : t_wishbone_address_granularity := WORD;
+    g_WITH_EXTRA_WB_REG            : boolean := false
   );
   port (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                        : in std_logic;
-    rst_n_i                      : in std_logic;
-    clk_sys_i                    : in std_logic;
-    rst_sys_n_i                  : in std_logic;
+    -- Clock
+    clk_i                          : in  std_logic;
 
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                    : in t_dot_prod_array_record_fod(g_CHANNELS-1 downto 0);
-    dcc_time_frame_start_i       : in std_logic;
-    dcc_time_frame_end_i         : in std_logic;
+    -- Reset
+    rst_n_i                        : in  std_logic;
 
-    -- Setpoints
-    sp_arr_o                     : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
-    sp_valid_arr_o               : out std_logic_vector(g_CHANNELS-1 downto 0);
+    -- If busy_o = '1', core is busy, can't receive new data
+    busy_o                         : out std_logic;
+
+    -- BPM position measurement (either horizontal or vertical)
+    bpm_pos_i                      : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+    -- BPM index, 0 to 255 for horizontal measurements, 256 to 511 for vertical
+    -- measurements
+    bpm_pos_index_i                : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+    -- BPM position valid
+    bpm_pos_valid_i                : in  std_logic;
+
+    -- End of time frame, computes the next set-point
+    bpm_time_frame_end_i           : in  std_logic;
+
+    -- Set-points output array (for each channel)
+    sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+    -- Set-point valid array (for each channel)
+    sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
@@ -94,71 +104,344 @@ entity xwb_fofb_processing is
   end xwb_fofb_processing;
 
 architecture rtl of xwb_fofb_processing is
+  -----------------------------
+  -- General contants
+  -----------------------------
+
+  -- Number of bits in Wishbone register interface. Plus 2 to account for BYTE addressing
+  constant c_PERIPH_ADDR_SIZE    : natural := 13+2;
+
+  -- The wishbone interface can't be parameterized via generics, so it contains
+  -- the maximum fofb processing channels supported, g_CHANNELS should be less
+  -- or equal to c_MAX_CHANNELS
+  constant c_MAX_CHANNELS        : natural := 12;
+
+  -- Coefficient fixed point position, used indicate to the upper software
+  -- layers how to convert a floating point number to fixed point. In this
+  -- particular case, we only take in consideration the most significant bits,
+  -- so the fixed point number is aligned to the left
+  constant c_COEFF_FIXED_POINT_POS_VAL : std_logic_vector(31 downto 0) :=
+      std_logic_vector(to_unsigned(31 - g_COEFF_INT_WIDTH, 32));
+
+  -- Gain fixed point position, used indicate to the upper software
+  -- layers how to convert a floating point number to fixed point. In this
+  -- particular case, we only take in consideration the most significant bits,
+  -- so the fixed point number is aligned to the left
+  constant c_GAIN_FIXED_POINT_POS_VAL : std_logic_vector(31 downto 0) :=
+      std_logic_vector(to_unsigned(31 - c_FOFB_GAIN_INT_WIDTH, 32));
+
+  -----------------------------
+  -- Signals
+  -----------------------------
+
+  -- Accumulator clear bit array (for each fofb channel)
+  signal clear_acc_arr        : std_logic_vector(c_MAX_CHANNELS-1 downto 0) := (others => '0');
+  -- Accumulator freeze bit array  (for each fofb channel)
+  signal freeze_acc_arr       : std_logic_vector(c_MAX_CHANNELS-1 downto 0) := (others => '0');
+
+  -----------------------------
+  -- Set-point RAM signals
+  -----------------------------
+  signal sp_pos_ram_addr      : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal sp_pos_ram_data      : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+  -- Gain array
+  signal gain_arr             : t_fofb_processing_gain_arr(g_CHANNELS-1 downto 0);
+
+  -----------------------------
+  -- Coefficients RAM signals
+  -----------------------------
+  signal coeff_ram_addr_arr      : t_arr_coeff_ram_addr(c_MAX_CHANNELS-1 downto 0);
+  signal coeff_ram_data_arr      : t_arr_coeff_ram_data(c_MAX_CHANNELS-1 downto 0);
+
+  -----------------------------
+  -- Wishbone slave adapter signals/structures
+  -----------------------------
+  signal wb_slv_adp_out          : t_wishbone_master_out;
+  signal wb_slv_adp_in           : t_wishbone_master_in;
+  signal resized_addr            : std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0);
+
+  -- Extra Wishbone registering stage
+  signal wb_slave_in             : t_wishbone_slave_in_array (0 downto 0);
+  signal wb_slave_out            : t_wishbone_slave_out_array(0 downto 0);
+  signal wb_slave_in_reg0        : t_wishbone_slave_in_array (0 downto 0);
+  signal wb_slave_out_reg0       : t_wishbone_slave_out_array(0 downto 0);
 
 begin
 
-  cmp_wb_fofb_processing : wb_fofb_processing
-  generic map(
-    -- Width for inputs x and y
-    g_A_WIDTH                    => g_A_WIDTH,
-    -- Width for dcc addr
-    g_ID_WIDTH                   => g_ID_WIDTH,
-    -- Width for ram data
-    g_B_WIDTH                    => g_B_WIDTH,
-    -- Width for ram addr
-    g_K_WIDTH                    => g_K_WIDTH,
-    -- Width for output c
-    g_C_WIDTH                    => g_C_WIDTH,
-    -- Fixed point representation for output
-    g_OUT_FIXED                  => g_OUT_FIXED,
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                => g_EXTRA_WIDTH,
-    -- Number of channels
-    g_CHANNELS                   => g_CHANNELS,
+  -----------------------------
+  -- Insert extra Wishbone registering stage for ease timing.
+  -- It effectively cuts the bandwidth in half!
+  -----------------------------
+  gen_with_extra_wb_reg : if g_WITH_EXTRA_WB_REG generate
+    cmp_register_link : xwb_register_link -- puts a register of delay between crossbars
+      port map (
+        clk_sys_i                => clk_i,
+        rst_n_i                  => rst_n_i,
+        slave_i                  => wb_slave_in_reg0(0),
+        slave_o                  => wb_slave_out_reg0(0),
+        master_i                 => wb_slave_out(0),
+        master_o                 => wb_slave_in(0)
+      );
 
-    g_ANTI_WINDUP_UPPER_LIMIT    => g_ANTI_WINDUP_UPPER_LIMIT,  -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT    => g_ANTI_WINDUP_LOWER_LIMIT,  -- anti-windup lower limit
+      wb_slave_in_reg0(0)        <= wb_slv_i;
+      wb_slv_o                   <= wb_slave_out_reg0(0);
+    end generate;
 
-    -- Wishbone parameters
-    g_INTERFACE_MODE             => g_INTERFACE_MODE,
-    g_ADDRESS_GRANULARITY        => g_ADDRESS_GRANULARITY,
-    g_WITH_EXTRA_WB_REG          => g_WITH_EXTRA_WB_REG
-  )
-  port map(
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                        => clk_i,
-    rst_n_i                      => rst_n_i,
-    clk_sys_i                    => clk_sys_i,
-    rst_sys_n_i                  => rst_sys_n_i,
+  gen_without_extra_wb_reg : if not g_WITH_EXTRA_WB_REG generate
+    -- External master connection
+    wb_slave_in(0)           <= wb_slv_i;
+    wb_slv_o                 <= wb_slave_out(0);
+  end generate;
 
-    ---------------------------------------------------------------------------
-    -- Matmul Top Level Interface Signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                    => dcc_fod_i,
-    dcc_time_frame_start_i       => dcc_time_frame_start_i,
-    dcc_time_frame_end_i         => dcc_time_frame_end_i,
+  cmp_fofb_processing: fofb_processing
+    generic map (
+      g_COEFF_INT_WIDTH              => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH             => g_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH            => g_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH           => g_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_CHANNELS                     => g_CHANNELS
+    )
+    port map (
+      clk_i                        => clk_i,
+      rst_n_i                      => rst_n_i,
 
-    -- Setpoints
-    sp_arr_o                     => sp_arr_o,
-    sp_valid_arr_o               => sp_valid_arr_o,
+      busy_o                       => busy_o,
 
-    ---------------------------------------------------------------------------
-    -- Wishbone Control Interface signals
-    ---------------------------------------------------------------------------
-    wb_adr_i                     => wb_slv_i.adr,
-    wb_dat_i                     => wb_slv_i.dat,
-    wb_dat_o                     => wb_slv_o.dat,
-    wb_sel_i                     => wb_slv_i.sel,
-    wb_we_i                      => wb_slv_i.we,
-    wb_cyc_i                     => wb_slv_i.cyc,
-    wb_stb_i                     => wb_slv_i.stb,
-    wb_ack_o                     => wb_slv_o.ack,
-    wb_err_o                     => wb_slv_o.err,
-    wb_rty_o                     => wb_slv_o.rty,
-    wb_stall_o                   => wb_slv_o.stall
+      bpm_pos_i                    => bpm_pos_i,
+      bpm_pos_index_i              => bpm_pos_index_i,
+      bpm_pos_valid_i              => bpm_pos_valid_i,
+      bpm_time_frame_end_i         => bpm_time_frame_end_i,
+
+      coeff_ram_addr_arr_o         => coeff_ram_addr_arr(g_CHANNELS-1 downto 0),
+      coeff_ram_data_arr_i         => coeff_ram_data_arr(g_CHANNELS-1 downto 0),
+
+      sp_pos_ram_addr_o            => sp_pos_ram_addr,
+      sp_pos_ram_data_i            => sp_pos_ram_data,
+
+      gain_arr_i                   => gain_arr(g_CHANNELS-1 downto 0),
+
+      clear_acc_arr_i              => clear_acc_arr(g_CHANNELS-1 downto 0),
+      freeze_acc_arr_i             => freeze_acc_arr(g_CHANNELS-1 downto 0),
+
+      sp_arr_o                     => sp_arr_o,
+      sp_valid_arr_o               => sp_valid_arr_o
+    );
+
+  -----------------------------
+  -- Slave adapter for Wishbone Register Interface
+  -----------------------------
+  cmp_slave_adapter : wb_slave_adapter
+    generic map (
+      g_master_use_struct        => true,
+      g_master_mode              => PIPELINED,
+      g_master_granularity       => WORD,
+      g_slave_use_struct         => false,
+      g_slave_mode               => g_INTERFACE_MODE,
+      g_slave_granularity        => g_ADDRESS_GRANULARITY
+    )
+    port map (
+      clk_sys_i                  => clk_i,
+      rst_n_i                    => rst_n_i,
+      master_i                   => wb_slv_adp_in,
+      master_o                   => wb_slv_adp_out,
+      sl_adr_i                   => resized_addr,
+      sl_dat_i                   => wb_slave_in(0).dat,
+      sl_sel_i                   => wb_slave_in(0).sel,
+      sl_cyc_i                   => wb_slave_in(0).cyc,
+      sl_stb_i                   => wb_slave_in(0).stb,
+      sl_we_i                    => wb_slave_in(0).we,
+      sl_dat_o                   => wb_slave_out(0).dat,
+      sl_ack_o                   => wb_slave_out(0).ack,
+      sl_rty_o                   => wb_slave_out(0).rty,
+      sl_err_o                   => wb_slave_out(0).err,
+      sl_stall_o                 => wb_slave_out(0).stall
+    );
+    -- By doing this zeroing we avoid the issue related to BYTE -> WORD  conversion
+    -- slave addressing (possibly performed by the slave adapter component)
+    -- in which a bit in the MSB of the peripheral addressing part (31 downto c_PERIPH_ADDR_SIZE in our case)
+    -- is shifted to the internal register adressing part (c_PERIPH_ADDR_SIZE-1 downto 0 in our case).
+    -- Therefore, possibly changing the these bits!
+    resized_addr(c_PERIPH_ADDR_SIZE-1 downto 0)
+                                 <= wb_slave_in(0).adr(c_PERIPH_ADDR_SIZE-1 downto 0);
+    resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
+                                 <= (others => '0');
+
+  -- TODO: Update wishbone interface to include the set-point RAM, gains,
+  -- gain fixed point position, accumulator freeze and clear (strobe)
+  clear_acc_arr   <= (others => '0');
+  freeze_acc_arr  <= (others => '0');
+  sp_pos_ram_data <= (others => '0');
+  gain_arr        <= (others => x"1000");
+
+  cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
+  port map (
+    rst_n_i                                    => rst_n_i,
+    clk_sys_i                                  => clk_i,
+
+    wb_adr_i                                   => wb_slv_adp_out.adr(12 downto 0),
+    wb_dat_i                                   => wb_slv_adp_out.dat(31 downto 0),
+    wb_dat_o                                   => wb_slv_adp_in.dat(31 downto 0),
+    wb_cyc_i                                   => wb_slv_adp_out.cyc,
+    wb_sel_i                                   => wb_slv_adp_out.sel(3 downto 0),
+    wb_stb_i                                   => wb_slv_adp_out.stb,
+    wb_we_i                                    => wb_slv_adp_out.we,
+    wb_ack_o                                   => wb_slv_adp_in.ack,
+    wb_stall_o                                 => wb_slv_adp_in.stall,
+
+    wb_fofb_processing_regs_clk_i              => clk_i,
+
+    -- Port for asynchronous (clock: wb_fofb_processing_regs_clk_i) std_logic_vector field: 'fixed-point position constant value' in reg: 'fixed-point position constant register'
+    wb_fofb_processing_regs_fixed_point_pos_val_i
+                                               => c_COEFF_FIXED_POINT_POS_VAL,
+
+    -- RAM bank 0
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_0_addr_i  => coeff_ram_addr_arr(0),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_0_data_o  => coeff_ram_data_arr(0),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_0_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_0_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_0_wr_i    => '0',
+
+    -- RAM bank 1
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_1_addr_i  => coeff_ram_addr_arr(1),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_1_data_o  => coeff_ram_data_arr(1),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_1_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_1_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_1_wr_i    => '0',
+
+    -- RAM bank 2
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_2_addr_i  => coeff_ram_addr_arr(2),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_2_data_o  => coeff_ram_data_arr(2),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_2_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_2_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_2_wr_i    => '0',
+
+    -- RAM bank 3
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_3_addr_i  => coeff_ram_addr_arr(3),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_3_data_o  => coeff_ram_data_arr(3),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_3_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_3_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_3_wr_i    => '0',
+
+    -- RAM bank 4
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_4_addr_i  => coeff_ram_addr_arr(4),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_4_data_o  => coeff_ram_data_arr(4),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_4_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_4_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_4_wr_i    => '0',
+
+    -- RAM bank 5
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_5_addr_i  => coeff_ram_addr_arr(5),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_5_data_o  => coeff_ram_data_arr(5),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_5_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_5_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_5_wr_i    => '0',
+
+    -- RAM bank 6
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_6_addr_i  => coeff_ram_addr_arr(6),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_6_data_o  => coeff_ram_data_arr(6),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_6_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_6_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_6_wr_i    => '0',
+
+    -- RAM bank 7
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_7_addr_i  => coeff_ram_addr_arr(7),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_7_data_o  => coeff_ram_data_arr(7),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_7_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_7_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_7_wr_i    => '0',
+
+    -- RAM bank 8
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_8_addr_i  => coeff_ram_addr_arr(8),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_8_data_o  => coeff_ram_data_arr(8),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_8_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_8_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_8_wr_i    => '0',
+
+    -- RAM bank 9
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_9_addr_i  => coeff_ram_addr_arr(9),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_9_data_o  => coeff_ram_data_arr(9),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_9_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_9_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_9_wr_i    => '0',
+
+    -- RAM bank 10
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_10_addr_i  => coeff_ram_addr_arr(10),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_10_data_o  => coeff_ram_data_arr(10),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_10_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_10_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_10_wr_i    => '0',
+
+    -- RAM bank 11
+    -- Ports for RAM: FOFB PROCESSING RAM for register map
+    wb_fofb_processing_regs_ram_bank_11_addr_i  => coeff_ram_addr_arr(11),
+    -- Read data output
+    wb_fofb_processing_regs_ram_bank_11_data_o  => coeff_ram_data_arr(11),
+    -- Read strobe input (active high)
+    wb_fofb_processing_regs_ram_bank_11_rd_i    => '0',
+    -- Write data input
+    wb_fofb_processing_regs_ram_bank_11_data_i  => (others => '0'),
+    -- Write strobe (active high)
+    wb_fofb_processing_regs_ram_bank_11_wr_i    => '0'
   );
 
 end architecture rtl;

@@ -1,5 +1,5 @@
 files = [
-    "dot_prod_coeff_vec_tb.vhd",
+    "dot_prod_tb.vhd",
 ]
 
 modules = {

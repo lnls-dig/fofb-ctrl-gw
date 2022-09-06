@@ -1,5 +1,5 @@
 files = [
-    "fofb_processing_tb.vhd",
+    "fofb_processing_channel_tb.vhd",
     "../fofb_tb_pkg.vhd",
 ]
 
