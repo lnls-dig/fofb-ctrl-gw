@@ -34,12 +34,17 @@ board = "afcv4"
 # For appending the afc_ref_design.xdc to synthesis
 afc_base_xdc = ['acq']
 
+files = []
+
 import os
 import sys
 if os.path.isfile("synthesis_descriptor_pkg.vhd"):
-    files = ["synthesis_descriptor_pkg.vhd"]
+    files.append("synthesis_descriptor_pkg.vhd")
 else:
     sys.exit("Generate the SDB descriptor before using HDLMake (./build_synthesis_sdb.sh)")
+
+# TCL commands file
+files.append("commands.tcl")
 
 # Pass more XDC to afc-gw so it will merge it last with
 # other .xdc. We need this as we depend on variables defined
