@@ -374,7 +374,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
   type t_serialize_data_state is
   (
     IDLE,
-    CONSUME,
     DRIVE_X_DATA_OR_TIMEFRAME_END,
     LOWER_VALID_X_DATA_OR_TIMEFRAME_END,
     DRIVE_Y_DATA,
@@ -1760,57 +1759,47 @@ begin
       else
         case v_state is
           when IDLE =>
-            if fofb_proc_busy /= '1' and serialize_fifo_empty /= '1' then
+            if serialize_fifo_empty /= '1' then
               serialize_fifo_rd <= '1';
 
-              v_state := CONSUME;
+              v_state := DRIVE_X_DATA_OR_TIMEFRAME_END;
             end if;
-          when CONSUME =>
+          when DRIVE_X_DATA_OR_TIMEFRAME_END =>
             serialize_fifo_rd <= '0';
 
-            v_state := DRIVE_X_DATA_OR_TIMEFRAME_END;
-          when DRIVE_X_DATA_OR_TIMEFRAME_END =>
-            if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- drive timeframe end
-              fofb_proc_time_frame_end <= '1';
-            else                                                -- drive x data
-              for i in 0 to c_FOFB_CHANNELS-1
-              loop
+            if fofb_proc_busy /= '1' then
+              if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- drive timeframe end
+                fofb_proc_time_frame_end <= '1';
+              else                                                -- drive x data
                 fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
                 fofb_proc_bpm_pos_index <= unsigned(serialize_fifo_q(def_PacketIDMSB downto def_PacketIDLSB));
 
                 fofb_proc_bpm_pos_valid <= '1';
-              end loop;
-            end if;
+              end if;
 
-            v_state := LOWER_VALID_X_DATA_OR_TIMEFRAME_END;
+              v_state := LOWER_VALID_X_DATA_OR_TIMEFRAME_END;
+            end if;
           when LOWER_VALID_X_DATA_OR_TIMEFRAME_END =>
             if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- lower timeframe end
               fofb_proc_time_frame_end <= '0';
 
               v_state := IDLE;
             else                                                -- lower valid
-              for i in 0 to c_FOFB_CHANNELS-1
-              loop
-                fofb_proc_bpm_pos_valid <= '0';
-              end loop;
+              fofb_proc_bpm_pos_valid <= '0';
 
               v_state := DRIVE_Y_DATA;
             end if;
           when DRIVE_Y_DATA =>
-            for i in 0 to c_FOFB_CHANNELS-1
-            loop
+            if fofb_proc_busy /= '1' then
               fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataYMSB downto def_PacketDataYLSB));
               fofb_proc_bpm_pos_index(fofb_proc_bpm_pos_index'left) <= '1'; -- y FOFB coeffs start at the middle of SRAM
 
               fofb_proc_bpm_pos_valid <= '1';
-            end loop;
 
-            v_state := LOWER_VALID_Y_DATA;
+              v_state := LOWER_VALID_Y_DATA;
+            end if;
           when LOWER_VALID_Y_DATA =>
-            for i in 0 to c_FOFB_CHANNELS-1
-            loop
-              fofb_proc_bpm_pos_valid <= '0';
-            end loop;
+            fofb_proc_bpm_pos_valid <= '0';
 
             v_state := IDLE;
         end case;
