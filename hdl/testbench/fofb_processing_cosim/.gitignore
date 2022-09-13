@@ -1,0 +1,6 @@
+fofb_processing_cosim
+fofb_processing_cosim.ghw
+*.cf
+*.o
+target/
+Cargo.lock
