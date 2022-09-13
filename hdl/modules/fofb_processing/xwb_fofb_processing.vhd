@@ -271,177 +271,92 @@ begin
     resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
                                  <= (others => '0');
 
-  -- TODO: Update wishbone interface to include the set-point RAM, gains,
+  -- TODO: Update wishbone interface to include the gains,
   -- gain fixed point position, accumulator freeze and clear (strobe)
   clear_acc_arr   <= (others => '0');
   freeze_acc_arr  <= (others => '0');
-  sp_pos_ram_data <= (others => '0');
   gain_arr        <= (others => x"1000");
 
   cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
-  port map (
-    rst_n_i                                    => rst_n_i,
-    clk_sys_i                                  => clk_i,
-
-    wb_adr_i                                   => wb_slv_adp_out.adr(12 downto 0),
-    wb_dat_i                                   => wb_slv_adp_out.dat(31 downto 0),
-    wb_dat_o                                   => wb_slv_adp_in.dat(31 downto 0),
-    wb_cyc_i                                   => wb_slv_adp_out.cyc,
-    wb_sel_i                                   => wb_slv_adp_out.sel(3 downto 0),
-    wb_stb_i                                   => wb_slv_adp_out.stb,
-    wb_we_i                                    => wb_slv_adp_out.we,
-    wb_ack_o                                   => wb_slv_adp_in.ack,
-    wb_stall_o                                 => wb_slv_adp_in.stall,
-
-    wb_fofb_processing_regs_clk_i              => clk_i,
-
-    -- Port for asynchronous (clock: wb_fofb_processing_regs_clk_i) std_logic_vector field: 'fixed-point position constant value' in reg: 'fixed-point position constant register'
-    wb_fofb_processing_regs_fixed_point_pos_val_i
-                                               => c_COEFF_FIXED_POINT_POS_VAL,
-
-    -- RAM bank 0
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_0_addr_i  => coeff_ram_addr_arr(0),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_0_data_o  => coeff_ram_data_arr(0),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_0_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_0_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_0_wr_i    => '0',
-
-    -- RAM bank 1
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_1_addr_i  => coeff_ram_addr_arr(1),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_1_data_o  => coeff_ram_data_arr(1),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_1_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_1_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_1_wr_i    => '0',
-
-    -- RAM bank 2
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_2_addr_i  => coeff_ram_addr_arr(2),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_2_data_o  => coeff_ram_data_arr(2),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_2_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_2_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_2_wr_i    => '0',
-
-    -- RAM bank 3
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_3_addr_i  => coeff_ram_addr_arr(3),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_3_data_o  => coeff_ram_data_arr(3),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_3_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_3_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_3_wr_i    => '0',
-
-    -- RAM bank 4
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_4_addr_i  => coeff_ram_addr_arr(4),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_4_data_o  => coeff_ram_data_arr(4),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_4_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_4_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_4_wr_i    => '0',
-
-    -- RAM bank 5
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_5_addr_i  => coeff_ram_addr_arr(5),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_5_data_o  => coeff_ram_data_arr(5),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_5_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_5_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_5_wr_i    => '0',
-
-    -- RAM bank 6
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_6_addr_i  => coeff_ram_addr_arr(6),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_6_data_o  => coeff_ram_data_arr(6),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_6_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_6_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_6_wr_i    => '0',
-
-    -- RAM bank 7
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_7_addr_i  => coeff_ram_addr_arr(7),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_7_data_o  => coeff_ram_data_arr(7),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_7_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_7_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_7_wr_i    => '0',
-
-    -- RAM bank 8
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_8_addr_i  => coeff_ram_addr_arr(8),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_8_data_o  => coeff_ram_data_arr(8),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_8_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_8_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_8_wr_i    => '0',
-
-    -- RAM bank 9
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_9_addr_i  => coeff_ram_addr_arr(9),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_9_data_o  => coeff_ram_data_arr(9),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_9_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_9_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_9_wr_i    => '0',
-
-    -- RAM bank 10
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_10_addr_i  => coeff_ram_addr_arr(10),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_10_data_o  => coeff_ram_data_arr(10),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_10_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_10_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_10_wr_i    => '0',
-
-    -- RAM bank 11
-    -- Ports for RAM: FOFB PROCESSING RAM for register map
-    wb_fofb_processing_regs_ram_bank_11_addr_i  => coeff_ram_addr_arr(11),
-    -- Read data output
-    wb_fofb_processing_regs_ram_bank_11_data_o  => coeff_ram_data_arr(11),
-    -- Read strobe input (active high)
-    wb_fofb_processing_regs_ram_bank_11_rd_i    => '0',
-    -- Write data input
-    wb_fofb_processing_regs_ram_bank_11_data_i  => (others => '0'),
-    -- Write strobe (active high)
-    wb_fofb_processing_regs_ram_bank_11_wr_i    => '0'
-  );
+    port map (
+      rst_n_i                                               => rst_n_i,
+      clk_sys_i                                             => clk_i,
+      wb_adr_i                                              => wb_slv_adp_out.adr(12 downto 0),
+      wb_dat_i                                              => wb_slv_adp_out.dat(31 downto 0),
+      wb_dat_o                                              => wb_slv_adp_in.dat(31 downto 0),
+      wb_cyc_i                                              => wb_slv_adp_out.cyc,
+      wb_sel_i                                              => wb_slv_adp_out.sel(3 downto 0),
+      wb_stb_i                                              => wb_slv_adp_out.stb,
+      wb_we_i                                               => wb_slv_adp_out.we,
+      wb_ack_o                                              => wb_slv_adp_in.ack,
+      wb_stall_o                                            => wb_slv_adp_in.stall,
+      wb_fofb_processing_regs_clk_i                         => clk_i,
+      wb_fofb_processing_regs_coeffs_fixed_point_pos_val_i  => c_COEFF_FIXED_POINT_POS_VAL,
+      wb_fofb_processing_regs_coeffs_ram_bank_0_addr_i      => coeff_ram_addr_arr(0),
+      wb_fofb_processing_regs_coeffs_ram_bank_0_data_o      => coeff_ram_data_arr(0),
+      wb_fofb_processing_regs_coeffs_ram_bank_0_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_0_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_0_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_1_addr_i      => coeff_ram_addr_arr(1),
+      wb_fofb_processing_regs_coeffs_ram_bank_1_data_o      => coeff_ram_data_arr(1),
+      wb_fofb_processing_regs_coeffs_ram_bank_1_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_1_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_1_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_2_addr_i      => coeff_ram_addr_arr(2),
+      wb_fofb_processing_regs_coeffs_ram_bank_2_data_o      => coeff_ram_data_arr(2),
+      wb_fofb_processing_regs_coeffs_ram_bank_2_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_2_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_2_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_3_addr_i      => coeff_ram_addr_arr(3),
+      wb_fofb_processing_regs_coeffs_ram_bank_3_data_o      => coeff_ram_data_arr(3),
+      wb_fofb_processing_regs_coeffs_ram_bank_3_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_3_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_3_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_4_addr_i      => coeff_ram_addr_arr(4),
+      wb_fofb_processing_regs_coeffs_ram_bank_4_data_o      => coeff_ram_data_arr(4),
+      wb_fofb_processing_regs_coeffs_ram_bank_4_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_4_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_4_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_5_addr_i      => coeff_ram_addr_arr(5),
+      wb_fofb_processing_regs_coeffs_ram_bank_5_data_o      => coeff_ram_data_arr(5),
+      wb_fofb_processing_regs_coeffs_ram_bank_5_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_5_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_5_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_6_addr_i      => coeff_ram_addr_arr(6),
+      wb_fofb_processing_regs_coeffs_ram_bank_6_data_o      => coeff_ram_data_arr(6),
+      wb_fofb_processing_regs_coeffs_ram_bank_6_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_6_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_6_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_7_addr_i      => coeff_ram_addr_arr(7),
+      wb_fofb_processing_regs_coeffs_ram_bank_7_data_o      => coeff_ram_data_arr(7),
+      wb_fofb_processing_regs_coeffs_ram_bank_7_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_7_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_7_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_8_addr_i      => coeff_ram_addr_arr(8),
+      wb_fofb_processing_regs_coeffs_ram_bank_8_data_o      => coeff_ram_data_arr(8),
+      wb_fofb_processing_regs_coeffs_ram_bank_8_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_8_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_8_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_9_addr_i      => coeff_ram_addr_arr(9),
+      wb_fofb_processing_regs_coeffs_ram_bank_9_data_o      => coeff_ram_data_arr(9),
+      wb_fofb_processing_regs_coeffs_ram_bank_9_rd_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_9_data_i      => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_9_wr_i        => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_10_addr_i     => coeff_ram_addr_arr(10),
+      wb_fofb_processing_regs_coeffs_ram_bank_10_data_o     => coeff_ram_data_arr(10),
+      wb_fofb_processing_regs_coeffs_ram_bank_10_rd_i       => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_10_data_i     => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_10_wr_i       => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_11_addr_i     => coeff_ram_addr_arr(11),
+      wb_fofb_processing_regs_coeffs_ram_bank_11_data_o     => coeff_ram_data_arr(11),
+      wb_fofb_processing_regs_coeffs_ram_bank_11_rd_i       => '0',
+      wb_fofb_processing_regs_coeffs_ram_bank_11_data_i     => (others => '0'),
+      wb_fofb_processing_regs_coeffs_ram_bank_11_wr_i       => '0',
+      wb_fofb_processing_regs_setpoints_ram_bank_addr_i     => sp_pos_ram_addr,
+      wb_fofb_processing_regs_setpoints_ram_bank_data_o     => sp_pos_ram_data,
+      wb_fofb_processing_regs_setpoints_ram_bank_rd_i       => '0',
+      wb_fofb_processing_regs_setpoints_ram_bank_data_i     => (others => '0'),
+      wb_fofb_processing_regs_setpoints_ram_bank_wr_i       => '0'
+    );
 
 end architecture rtl;

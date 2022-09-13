@@ -6,11 +6,11 @@ memory-map:
     hdl_entity: wb_fofb_processing_regs
   children:
     - reg:
-        name: fixed_point_pos
+        name: coeffs_fixed_point_pos
         width: 32
         access: rw
         address: 0x00000000
-        description: fixed-point position constant register
+        description: fofb processing coefficients fixed-point position constant
         children:
           - field:
               name: val
@@ -22,10 +22,10 @@ memory-map:
                 access_bus: READ_ONLY
                 clock: wb_fofb_processing_regs_clk_i
     - memory:
-        name: ram_bank_0
+        name: coeffs_ram_bank_0
         memsize: 2k
         address: 0x00000800
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -40,10 +40,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_1
+        name: coeffs_ram_bank_1
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -58,10 +58,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_2
+        name: coeffs_ram_bank_2
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -76,10 +76,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_3
+        name: coeffs_ram_bank_3
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -94,10 +94,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_4
+        name: coeffs_ram_bank_4
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -112,10 +112,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_5
+        name: coeffs_ram_bank_5
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -130,10 +130,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_6
+        name: coeffs_ram_bank_6
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -148,10 +148,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_7
+        name: coeffs_ram_bank_7
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -166,10 +166,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_8
+        name: coeffs_ram_bank_8
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -184,10 +184,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_9
+        name: coeffs_ram_bank_9
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -202,10 +202,10 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_10
+        name: coeffs_ram_bank_10
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
         align: True
         x-wbgen:
           kind: ram
@@ -220,10 +220,28 @@ memory-map:
               width: 32
               access: rw
     - memory:
-        name: ram_bank_11
+        name: coeffs_ram_bank_11
         memsize: 2k
         address: next
-        description: FOFB PROCESSING RAM bank for register map
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: setpoints_ram_bank
+        memsize: 2k
+        address: next
+        description: fofb processing setpoints ram bank
         align: True
         x-wbgen:
           kind: ram
