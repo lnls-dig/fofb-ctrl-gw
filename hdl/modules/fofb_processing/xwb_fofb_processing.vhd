@@ -271,11 +271,10 @@ begin
     resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
                                  <= (others => '0');
 
-  -- TODO: Update wishbone interface to include the set-point RAM, gains,
+  -- TODO: Update wishbone interface to include the gains,
   -- gain fixed point position, accumulator freeze and clear (strobe)
   clear_acc_arr   <= (others => '0');
   freeze_acc_arr  <= (others => '0');
-  sp_pos_ram_data <= (others => '0');
   gain_arr        <= (others => x"1000");
 
   cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
@@ -353,8 +352,8 @@ begin
       wb_fofb_processing_regs_coeffs_ram_bank_11_rd_i       => '0',
       wb_fofb_processing_regs_coeffs_ram_bank_11_data_i     => (others => '0'),
       wb_fofb_processing_regs_coeffs_ram_bank_11_wr_i       => '0',
-      wb_fofb_processing_regs_setpoints_ram_bank_addr_i     => (others => '0'),
-      wb_fofb_processing_regs_setpoints_ram_bank_data_o     => open,
+      wb_fofb_processing_regs_setpoints_ram_bank_addr_i     => sp_pos_ram_addr,
+      wb_fofb_processing_regs_setpoints_ram_bank_data_o     => sp_pos_ram_data,
       wb_fofb_processing_regs_setpoints_ram_bank_rd_i       => '0',
       wb_fofb_processing_regs_setpoints_ram_bank_data_i     => (others => '0'),
       wb_fofb_processing_regs_setpoints_ram_bank_wr_i       => '0'
