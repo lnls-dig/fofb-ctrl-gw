@@ -99,10 +99,10 @@ package dot_prod_pkg is
 
   component fofb_processing_channel is
     generic (
-      -- Integer width for the inverse responce matrix coefficient input
+      -- Integer width for the inverse response matrix coefficient input
       g_COEFF_INT_WIDTH              : natural := 0;
 
-      -- Fractionary width for the inverse responce matrix coefficient input
+      -- Fractionary width for the inverse response matrix coefficient input
       g_COEFF_FRAC_WIDTH             : natural := 17;
 
       -- Integer width for the BPM position error input
@@ -190,10 +190,10 @@ package dot_prod_pkg is
 
   component fofb_processing is
     generic (
-      -- Integer width for the inverse responce matrix coefficient input
+      -- Integer width for the inverse response matrix coefficient input
       g_COEFF_INT_WIDTH              : natural := 0;
 
-      -- Fractionary width for the inverse responce matrix coefficient input
+      -- Fractionary width for the inverse response matrix coefficient input
       g_COEFF_FRAC_WIDTH             : natural := 17;
 
       -- Integer width for the BPM position error input

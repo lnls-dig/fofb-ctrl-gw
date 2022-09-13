@@ -75,9 +75,9 @@ generic (
   g_P2P_GT_START_ID                   : integer := 0;
   -- Number of RTM LAMP channels
   g_RTMLAMP_CHANNELS                  : natural := 12;
-  -- Integer width for the inverse responce matrix coefficient input
+  -- Integer width for the inverse response matrix coefficient input
   g_FOFB_COEFF_INT_WIDTH              : natural := 0;
-  -- Fractionary width for the inverse responce matrix coefficient input
+  -- Fractionary width for the inverse response matrix coefficient input
   g_FOFB_COEFF_FRAC_WIDTH             : natural := 17;
   -- Integer width for the BPM position error input
   g_FOFB_BPM_POS_INT_WIDTH            : natural := 20;

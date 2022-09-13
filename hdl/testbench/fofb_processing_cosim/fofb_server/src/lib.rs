@@ -177,7 +177,7 @@ pub struct FOFBServer {
 /// # Arguments
 /// * `port` - Local TCP port to listen to
 /// * `gain_frac_width` - Fractionary part width in bits of the Gain
-/// * `coeffs_frac_width` - Fractionary part width in bits of the inverse responce matrix coefficients'
+/// * `coeffs_frac_width` - Fractionary part width in bits of the inverse response matrix coefficients'
 /// * `bpm_frac_width` - Fractionary part width in bits of the BPM set-point and position data
 #[no_mangle]
 pub extern fn new_fofb_server(port: u32, gain_frac_width: i32, coeffs_frac_width: i32, bpm_frac_width: i32) -> *mut FOFBServer {

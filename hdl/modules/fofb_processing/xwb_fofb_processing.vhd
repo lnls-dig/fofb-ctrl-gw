@@ -34,10 +34,10 @@ use work.fofb_ctrl_pkg.all;
 
 entity xwb_fofb_processing is
   generic (
-    -- Integer width for the inverse responce matrix coefficient input
+    -- Integer width for the inverse response matrix coefficient input
     g_COEFF_INT_WIDTH              : natural := 0;
 
-    -- Fractionary width for the inverse responce matrix coefficient input
+    -- Fractionary width for the inverse response matrix coefficient input
     g_COEFF_FRAC_WIDTH             : natural := 17;
 
     -- Integer width for the BPM position error input
