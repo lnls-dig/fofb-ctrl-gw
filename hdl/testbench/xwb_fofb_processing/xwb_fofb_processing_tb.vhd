@@ -87,8 +87,8 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   constant c_SYS_CLOCK_FREQ             : natural := 100_000_000;
 
   constant c_RAM_BANK_SIZE              : natural :=
-    (c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_1 -
-      c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0);
+    (c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_1_ADDR -
+      c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_ADDR);
 
   constant c_NUM_OF_COEFFS_PER_CHANNEL  : natural :=
     c_RAM_BANK_SIZE / c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE;
@@ -163,11 +163,11 @@ begin
     severity note;
 
     read32_pl(clk, wb_slave_i, wb_slave_o,
-      c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_FIXED_POINT_POS, data);
+      c_WB_FOFB_PROCESSING_REGS_COEFFS_FIXED_POINT_POS_ADDR, data);
     report "coefficients fixed-point position: " & to_hstring(data)
     severity note;
 
-    addr := c_ADDR_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0;
+    addr := c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_ADDR;
     for i in 0 to (g_CHANNELS - 1)
     loop
       for j in 0 to (c_NUM_OF_COEFFS_PER_CHANNEL - 1)
@@ -189,7 +189,7 @@ begin
     report "writing on setpoints ram via wishbone bus"
     severity note;
 
-    addr := c_ADDR_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK;
+    addr := c_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_ADDR;
     for i in 0 to (c_NUM_OF_SETPOINTS - 1)
     loop
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, sp_ram.get_sp(i));
