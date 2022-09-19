@@ -60,6 +60,11 @@ package fofb_tb_pkg is
     procedure read_bpm_pos(bpm_x : out integer; bpm_y : out integer);
   end protected t_bpm_pos_reader;
 
+  type t_accs_gains_reader is protected
+    procedure open_accs_gains_file(fname : string);
+    procedure read_accs_gain(gain_real : out real);
+  end protected t_accs_gains_reader;
+
 end package fofb_tb_pkg;
 
 package body fofb_tb_pkg is
@@ -228,4 +233,25 @@ package body fofb_tb_pkg is
     end procedure;
   end protected body t_bpm_pos_reader;
 
+  type t_accs_gains_reader is protected body
+    file fin : text;
+    -- Open accumulators gains file
+    procedure open_accs_gains_file(fname : string) is
+    begin
+      file_open(fin, fname, read_mode);
+    end procedure;
+
+    -- Reads the next accumulator gain (it is assumed that each line represents
+    -- a gain)
+    procedure read_accs_gain(gain_real : out real) is
+      variable lin : line;
+    begin
+      if not endfile(fin) then
+        readline(fin, lin);
+        read(lin, gain_real);
+      else
+        report "File ended!" severity error;
+      end if;
+    end procedure;
+  end protected body t_accs_gains_reader;
 end package body fofb_tb_pkg;
