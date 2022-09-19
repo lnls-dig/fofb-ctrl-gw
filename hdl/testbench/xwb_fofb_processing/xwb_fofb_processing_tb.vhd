@@ -16,10 +16,11 @@
 -- 2022-07-26  1.0      guilherme.ricioli  Created
 -- 2022-09-05  2.0      augusto.fraga      Update testbench to match the new
 --                                         xwb_fofb_processing interface
-
 -- 2022-09-13  2.1      guilherme.ricioli  Include reference ram and compute/
 --                                         check xwb_fofb_processing expected
 --                                         output
+-- 2022-09-19  2.2      guilherme.ricioli  Test wishbone interface for
+--                                         accumulators regs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -77,8 +78,11 @@ entity xwb_fofb_processing_tb is
     -- bpm reference orbit data (set-point)
     g_FOFB_BPM_REF_FILE            : string  := "../fofb_bpm_ref.dat";
 
+    -- accumulators gains
+    g_FOFB_GAINS_FILE              : string  := "../fofb_gains.dat";
+
     -- number of fofb processing channels
-    g_CHANNELS                : natural := 12
+    g_CHANNELS                     : natural := 12
   );
 end entity xwb_fofb_processing_tb;
 
@@ -110,15 +114,19 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
 
   signal sp_arr                         :
     t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+  signal frozen_sp_arr                  :
+    t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
   signal sp_valid_arr                   :
     std_logic_vector(g_CHANNELS-1 downto 0):= (others => '0');
 
   signal wb_slave_i                     : t_wishbone_slave_in;
   signal wb_slave_o                     : t_wishbone_slave_out;
 
-  -- shared variables
-  shared variable coeff_ram             : t_coeff_ram_data;
-  shared variable sp_ram                : t_sp_ram_data;
+  -- TODO: used to solve 'actual signal must be a static name' error
+  signal valid_to_check                 : std_logic := '0';
+
+  shared variable freeze_flag_arr       :
+    std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
 
 begin
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
@@ -132,6 +140,16 @@ begin
     variable bpm_pos_reader               : t_bpm_pos_reader;
     variable bpm_x, bpm_y                 : integer;
     variable bpm_x_err, bpm_y_err         : integer;
+
+    variable accs_gains_reader            : t_accs_gains_reader;
+    variable real_gain_arr                :
+      real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
+    variable wb_gain                      :
+      std_logic_vector(c_FOFB_WB_GAIN_WIDTH-1 downto 0);
+
+    variable coeff_ram                    : t_coeff_ram_data;
+    variable sp_ram                       : t_sp_ram_data;
+
     variable expec_dot_prod_arr           :
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable expec_fofb_proc_sp_arr       :
@@ -145,6 +163,12 @@ begin
 
     coeff_ram.load_coeff_from_file(g_COEFF_RAM_FILE);
     sp_ram.load_sp_from_file(g_FOFB_BPM_REF_FILE);
+
+    -- opening accumulators gains file
+    report "opening accumulators gains file"
+    severity note;
+
+    accs_gains_reader.open_accs_gains_file(g_FOFB_GAINS_FILE);
 
     -- resetting cores
     report "resetting cores"
@@ -204,6 +228,37 @@ begin
       addr := addr + c_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_SIZE;
     end loop;
 
+    -- setting gains via wishbone bus
+    report "setting gains via wishbone bus"
+    severity note;
+
+    read32_pl(clk, wb_slave_i, wb_slave_o,
+      c_WB_FOFB_PROCESSING_REGS_ACCS_GAINS_FIXED_POINT_POS_ADDR, data);
+    report "gains fixed-point position: " & to_hstring(data)
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR;
+    for i in 0 to (g_CHANNELS - 1)
+    loop
+      accs_gains_reader.read_accs_gain(real_gain_arr(i));
+      wb_gain := std_logic_vector(
+        shift_left(
+          to_signed(integer(real_gain_arr(i) * 2.0**c_FOFB_GAIN_FRAC_WIDTH),
+            c_FOFB_WB_GAIN_WIDTH), c_FOFB_WB_GAIN_WIDTH-c_FOFB_GAIN_WIDTH));
+
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, wb_gain);
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      assert (data = wb_gain)
+        report "wrong gain at " & natural'image(addr)
+        severity error;
+
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_1_ADDR -
+      -- c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR on each iteration
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_1_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR;
+    end loop;
+
     -- opening bpm positions file
     report "opening bpm positions file"
     severity note;
@@ -256,7 +311,7 @@ begin
       for i in 0 to g_CHANNELS-1
       loop
         expec_fofb_proc_sp_arr(i) := expec_fofb_proc_sp_arr(i) +
-          expec_dot_prod_arr(i);
+          real_gain_arr(i) * expec_dot_prod_arr(i);
       end loop;
       -- ########## computing expected fofb processing setpoint ##########
 
@@ -278,28 +333,136 @@ begin
         sp_err := abs((real(to_integer(sp_arr(i))) /
           floor(expec_fofb_proc_sp_arr(i))) - 1.0);
 
-        report "channel: " & to_string(i)
-        severity note;
-
-        report "expected setpoint: " &
-          to_string(integer(floor(expec_fofb_proc_sp_arr(i))))
-        severity note;
-
-        report "setpoint: " & to_string(to_integer(sp_arr(i)))
+        report "channel " & to_string(i) & ": " &
+          "setpoint: " & to_string(to_integer(sp_arr(i))) & " (expected: " &
+          to_string(integer(floor(expec_fofb_proc_sp_arr(i)))) & ")"
         severity note;
 
         if sp_err > 0.01 then
-          report "setpoint error: " & to_string(sp_err) & ", too large (> 1%)!"
+          report "error: " & to_string(sp_err) & " is too large (> 1%)!"
           severity error;
         else
-          report "setpoint error: " & to_string(sp_err) & ", ok!"
+          report "error: " & to_string(sp_err) & " is ok!"
           severity note;
         end if;
       end loop;
     end loop;
 
+    -- freezing accumulators via wishbone bus
+    report "freezing accumulators via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+    for i in 0 to (g_CHANNELS - 1)
+    loop
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+      data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_FREEZE_OFFSET) := '1';
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      freeze_flag_arr(i) := '1';
+
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
+      -- c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR on each iteration
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+    end loop;
+
+    -- ########## performing an extra fofb processing cycle ##########
+    report "performing an extra fofb processing cycle"
+    severity note;
+
+    for i in 0 to 159 loop
+      -- wait for the fofb_processing core to be ready to receive new data
+      f_wait_clocked_signal(clk, busy, '0');
+
+      -- new data available (serves the next two clock cycles)
+      bpm_pos_valid <= '1';
+
+      -- send bpm x position
+      bpm_pos_index <= to_unsigned(i, c_SP_COEFF_RAM_ADDR_WIDTH);
+      bpm_pos <= to_signed(i, c_SP_POS_RAM_DATA_WIDTH);
+      f_wait_cycles(clk, 1);
+
+      -- send bpm y position
+      bpm_pos_index <= to_unsigned(i + 256, c_SP_COEFF_RAM_ADDR_WIDTH);
+      bpm_pos <= to_signed(i + 256, c_SP_POS_RAM_DATA_WIDTH);
+      f_wait_cycles(clk, 1);
+
+      -- data ended
+      bpm_pos_valid <= '0';
+    end loop;
+
+    -- time frame ended
+    bpm_time_frame_end <= '1';
+    f_wait_cycles(clk, 1);
+    bpm_time_frame_end <= '0';
+    f_wait_cycles(clk, 1);
+
+    -- wait until the new set-point is ready
+    f_wait_clocked_signal(clk, sp_valid_arr(0), '1');
+
+    for i in 0 to g_CHANNELS-1
+    loop
+      if (sp_arr(i) = frozen_sp_arr(i)) then
+        report "accumulator from channel " & to_string(i) & " was frozen!"
+        severity note;
+      else
+        report "accumulator from channel " & to_string(i) & " was not frozen!"
+        severity error;
+      end if;
+    end loop;
+    -- ########## end of: performing an extra fofb processing cycle ##########
+
+    -- clearing accumulators via wishbone bus
+    report "clearing accumulators via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+    for i in 0 to (g_CHANNELS - 1)
+    loop
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+      data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_CLEAR_OFFSET) := '1';
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      valid_to_check <= sp_valid_arr(i);
+      -- wait until the new setpoint (hopefully 0) is ready
+      f_wait_clocked_signal(clk, valid_to_check, '1', 100);
+
+      if (to_integer(sp_arr(i)) = 0) then
+        report "accumulator from channel " & to_string(i) & " was cleared!"
+        severity note;
+      else
+        report "accumulator from channel " & to_string(i) & " was not cleared!" &
+          " (sp = " & to_string(to_integer(sp_arr(i))) & ")"
+        severity error;
+      end if;
+
+      -- checking if autoclear is working
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      assert (data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_CLEAR_OFFSET) = '0')
+        report "autoclear not working at " & natural'image(addr)
+        severity error;
+
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
+      -- c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR on each iteration
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+    end loop;
+
     finish;
   end process;
+
+  p_store_frozen_sps: process(clk)
+  begin
+    for i in 0 to (g_CHANNELS-1)
+    loop
+      if (freeze_flag_arr(i) = '1') then
+        frozen_sp_arr(i) <= sp_arr(i);
+        freeze_flag_arr(i) := '0';
+      end if;
+    end loop;
+  end process p_store_frozen_sps;
 
   -- components
   cmp_xwb_fofb_processing : xwb_fofb_processing
