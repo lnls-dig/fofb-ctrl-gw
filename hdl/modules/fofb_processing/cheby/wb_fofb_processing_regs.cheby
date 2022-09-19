@@ -21,6 +21,586 @@ memory-map:
                 access_dev: WRITE_ONLY
                 access_bus: READ_ONLY
                 clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: accs_gains_fixed_point_pos
+        width: 32
+        access: ro
+        address: 0x00000004
+        description: fofb processing accumulators' gains fixed-point position register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_0
+        width: 32
+        access: rw
+        address: 0x00000008
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_0
+        width: 32
+        access: rw
+        address: 0x0000000C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_1
+        width: 32
+        access: rw
+        address: 0x00000010
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_1
+        width: 32
+        access: rw
+        address: 0x00000014
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_2
+        width: 32
+        access: rw
+        address: 0x00000018
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_2
+        width: 32
+        access: rw
+        address: 0x0000001C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_3
+        width: 32
+        access: rw
+        address: 0x00000020
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_3
+        width: 32
+        access: rw
+        address: 0x00000024
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_4
+        width: 32
+        access: rw
+        address: 0x00000028
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_4
+        width: 32
+        access: rw
+        address: 0x0000002C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_5
+        width: 32
+        access: rw
+        address: 0x00000030
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_5
+        width: 32
+        access: rw
+        address: 0x00000034
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_6
+        width: 32
+        access: rw
+        address: 0x00000038
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_6
+        width: 32
+        access: rw
+        address: 0x0000003C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_7
+        width: 32
+        access: rw
+        address: 0x00000040
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_7
+        width: 32
+        access: rw
+        address: 0x00000044
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_8
+        width: 32
+        access: rw
+        address: 0x00000048
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_8
+        width: 32
+        access: rw
+        address: 0x0000004C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_9
+        width: 32
+        access: rw
+        address: 0x00000050
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_9
+        width: 32
+        access: rw
+        address: 0x00000054
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_10
+        width: 32
+        access: rw
+        address: 0x00000058
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_10
+        width: 32
+        access: rw
+        address: 0x0000005C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_11
+        width: 32
+        access: rw
+        address: 0x00000060
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_11
+        width: 32
+        access: rw
+        address: 0x00000064
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
     - memory:
         name: coeffs_ram_bank_0
         memsize: 2k
