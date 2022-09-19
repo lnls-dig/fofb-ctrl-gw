@@ -1752,6 +1752,8 @@ begin
 
   p_serialize_data : process(clk_sys)
     variable v_state : t_serialize_data_state := IDLE;
+    -- these are 1 bit larger than fofb_proc_bpm_pos
+    variable v_x_bpm_pos_aux, v_y_bpm_pos_aux : signed(fofb_proc_bpm_pos'length downto 0) := (others => '0');
   begin
     if rising_edge(clk_sys) then
       if clk_sys_rstn = '0' then
@@ -1771,7 +1773,10 @@ begin
               if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- drive timeframe end
                 fofb_proc_time_frame_end <= '1';
               else                                                -- drive x data
-                fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
+                -- x bpm position moving average
+                v_x_bpm_pos_aux := v_x_bpm_pos_aux + signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
+                fofb_proc_bpm_pos <= v_x_bpm_pos_aux(v_x_bpm_pos_aux'left downto 1);
+
                 fofb_proc_bpm_pos_index <= unsigned(serialize_fifo_q(def_PacketIDMSB downto def_PacketIDLSB));
 
                 fofb_proc_bpm_pos_valid <= '1';
@@ -1787,11 +1792,18 @@ begin
             else                                                -- lower valid
               fofb_proc_bpm_pos_valid <= '0';
 
+              -- storing x bpm position
+              v_x_bpm_pos_aux(v_x_bpm_pos_aux'left) := '0';
+              v_x_bpm_pos_aux(v_x_bpm_pos_aux'left-1 downto 0) := signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
+
               v_state := DRIVE_Y_DATA;
             end if;
           when DRIVE_Y_DATA =>
             if fofb_proc_busy /= '1' then
-              fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataYMSB downto def_PacketDataYLSB));
+              -- y bpm position moving average
+              v_y_bpm_pos_aux := v_y_bpm_pos_aux + signed(serialize_fifo_q(def_PacketDataYMSB downto def_PacketDataYLSB));
+              fofb_proc_bpm_pos <= v_y_bpm_pos_aux(v_y_bpm_pos_aux'left downto 1);
+
               fofb_proc_bpm_pos_index(fofb_proc_bpm_pos_index'left) <= '1'; -- y FOFB coeffs start at the middle of SRAM
 
               fofb_proc_bpm_pos_valid <= '1';
@@ -1800,6 +1812,10 @@ begin
             end if;
           when LOWER_VALID_Y_DATA =>
             fofb_proc_bpm_pos_valid <= '0';
+
+            -- storing y bpm position
+            v_y_bpm_pos_aux(v_y_bpm_pos_aux'left) := '0';
+            v_y_bpm_pos_aux(v_y_bpm_pos_aux'left-1 downto 0) := signed(serialize_fifo_q(def_PacketDataYMSB downto def_PacketDataYLSB));
 
             v_state := IDLE;
         end case;
