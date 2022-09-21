@@ -63,6 +63,9 @@ entity fofb_processing_tb is
     -- Gain multiplication pipeline stages
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2;
 
+    -- If true, take the average of the last 2 positions for each BPM
+    g_USE_MOVING_AVG               : boolean := true;
+
     -- Number of FOFB cycles to simulate
     g_FOFB_NUM_CYC                 : natural := 4;
 
@@ -127,6 +130,8 @@ begin
     variable bpm_err_x, bpm_err_y : integer;
     variable dot_prod_acc_simu    : real_vector(g_FOFB_CHANNELS-1 downto 0) := (others => 0.0);
     variable fofb_proc_acc_simu   : real_vector(g_FOFB_CHANNELS-1 downto 0) := (others => 0.0);
+    variable bpm_prev_x           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
+    variable bpm_prev_y           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable sp_err               : real := 0.0;
   begin
     -- Load BPM position, set-point and coefficients files
@@ -167,8 +172,19 @@ begin
         bpm_pos_valid <= '0';
 
         -- Compute the BPM position error
-        bpm_err_x := bpm_x - sp_ram.get_sp_integer(i);
-        bpm_err_y := bpm_y - sp_ram.get_sp_integer(i + 256);
+        if g_USE_MOVING_AVG then
+          -- Take the average with the BPM position from the last time frame
+          bpm_err_x := ((bpm_x + bpm_prev_x(i)) / 2) - sp_ram.get_sp_integer(i);
+          bpm_err_y := ((bpm_y + bpm_prev_y(i)) / 2) - sp_ram.get_sp_integer(i + 256);
+        else
+          bpm_err_x := bpm_x - sp_ram.get_sp_integer(i);
+          bpm_err_y := bpm_y - sp_ram.get_sp_integer(i + 256);
+        end if;
+
+        -- Store the current BPM position for computing the average in the next
+        -- time frame
+        bpm_prev_x(i) := bpm_x;
+        bpm_prev_y(i) := bpm_y;
 
         -- Compute the simulated dot product
         for j in 0 to g_FOFB_CHANNELS-1 loop
@@ -251,6 +267,7 @@ begin
     g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
     g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
     g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+    g_USE_MOVING_AVG               => g_USE_MOVING_AVG,
     g_CHANNELS                     => g_FOFB_CHANNELS
     )
     port map (

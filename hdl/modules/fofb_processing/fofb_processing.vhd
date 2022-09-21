@@ -53,6 +53,9 @@ entity fofb_processing is
     -- Gain multiplication pipeline stages
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
 
+    -- If true, take the average of the last 2 positions for each BPM
+    g_USE_MOVING_AVG               : boolean := false;
+
     -- Number of channels
     g_CHANNELS                     : natural
   );
@@ -109,6 +112,8 @@ entity fofb_processing is
 end fofb_processing;
 
 architecture behave of fofb_processing is
+  type t_bpm_pos_data is array(natural range <>) of signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal bpm_pos_tmp_arr        : t_bpm_pos_data(511 downto 0) := (others => x"00000000");
   signal bpm_pos_err            : signed((g_BPM_POS_INT_WIDTH + g_BPM_POS_FRAC_WIDTH) downto 0);
   signal bpm_pos_err_valid      : std_logic;
   signal bpm_pos_tmp            : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
@@ -166,6 +171,7 @@ begin
   busy_o <= busy;
 
   process(clk_i)
+    variable bpm_pos_avg_sum: signed(bpm_pos_i'length downto 0);
   begin
     if rising_edge(clk_i) then
       if rst_n_i = '0' then
@@ -182,8 +188,20 @@ begin
         -- read from the set-point RAM
         bpm_pos_valid_tmp <= bpm_pos_valid_i;
         bpm_index_tmp <= bpm_pos_index_i;
-        bpm_pos_tmp <= bpm_pos_i;
         bpm_time_frame_end_tmp <= bpm_time_frame_end_i;
+
+        if g_USE_MOVING_AVG then
+          -- Sum the received BPM position with the position in the last time
+          -- frame, assuming that you never receive more than one measurement
+          -- from the same BPM in the same time frame
+          bpm_pos_avg_sum := resize(bpm_pos_i, bpm_pos_avg_sum'length) + bpm_pos_tmp_arr(to_integer(bpm_pos_index_i));
+          -- Dived by 2 (take the average)
+          bpm_pos_tmp <= bpm_pos_avg_sum(bpm_pos_avg_sum'left downto 1);
+          -- Store the BPM position
+          bpm_pos_tmp_arr(to_integer(bpm_pos_index_i)) <= bpm_pos_i;
+        else
+          bpm_pos_tmp <= bpm_pos_i;
+        end if;
 
         -- Add an extra clock cycle to ease timing for the subtraction
         -- operation between the received BPM position data and the orbit

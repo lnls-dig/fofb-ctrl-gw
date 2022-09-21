@@ -528,6 +528,9 @@ package fofb_ctrl_pkg is
     -- Gain multiplication pipeline stages
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
 
+    -- If true, take the average of the last 2 positions for each BPM
+    g_USE_MOVING_AVG               : boolean := false;
+
     -- Number of channels
     g_CHANNELS                     : natural;
 

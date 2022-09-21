@@ -58,6 +58,9 @@ entity xwb_fofb_processing is
     -- Gain multiplication pipeline stages
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
 
+    -- If true, take the average of the last 2 positions for each BPM
+    g_USE_MOVING_AVG               : boolean := false;
+
     -- Number of channels
     g_CHANNELS                     : natural;
 
@@ -205,6 +208,7 @@ begin
       g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
       g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
       g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_USE_MOVING_AVG               => g_USE_MOVING_AVG,
       g_CHANNELS                     => g_CHANNELS
     )
     port map (
