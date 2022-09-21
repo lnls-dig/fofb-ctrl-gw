@@ -1736,7 +1736,7 @@ begin
       rst_n_i                                 => clk_sys_rstn,
       clk_wr_i                                => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
       d_i                                     => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) & fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID),
-      we_i                                    => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) and fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0), -- it could be any valid (they're the same)
+      we_i                                    => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) or fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0), -- it could be any valid (they're the same)
       wr_empty_o                              => open,
       wr_full_o                               => open,
       wr_almost_empty_o                       => open,
