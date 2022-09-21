@@ -476,6 +476,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal serialize_fifo_rd                   : std_logic := '0';
   signal serialize_fifo_empty                : std_logic := '0';
 
+  signal acq_dcc_fmc_valid                   : std_logic := '0';
+
   -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
@@ -1771,6 +1773,8 @@ begin
               if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- drive timeframe end
                 fofb_proc_time_frame_end <= '1';
               else                                                -- drive x data
+                acq_dcc_fmc_valid <= '1';
+
                 fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
                 fofb_proc_bpm_pos_index <= unsigned(serialize_fifo_q(def_PacketIDMSB downto def_PacketIDLSB));
 
@@ -1780,6 +1784,8 @@ begin
               v_state := LOWER_VALID_X_DATA_OR_TIMEFRAME_END;
             end if;
           when LOWER_VALID_X_DATA_OR_TIMEFRAME_END =>
+            acq_dcc_fmc_valid <= '0';
+
             if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- lower timeframe end
               fofb_proc_time_frame_end <= '0';
 
@@ -2142,8 +2148,8 @@ begin
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
-  fs_clk_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID)   <= fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID);
-  fs_rst_n_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID) <= fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID);
+  fs_clk_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID)   <= clk_sys;
+  fs_rst_n_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID) <= clk_sys_rstn;
 
   fs_clk_array(c_ACQ_CORE_CC_P2P_ID)          <= fofb_userclk(c_FOFB_CC_P2P_ID);
   fs_rst_n_array(c_ACQ_CORE_CC_P2P_ID)        <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
@@ -2206,9 +2212,9 @@ begin
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
           std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) &
           std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) & std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) &
-          fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID);
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0);
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;
+          serialize_fifo_q(c_TIMEFRAME_END_POS-1 downto 0); -- dcc packet
+  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
+  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
 
   --------------------
   -- ACQ Core 2
