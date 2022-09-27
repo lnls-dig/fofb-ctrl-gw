@@ -472,10 +472,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   signal pi_sp_ext                           : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
 
-  signal serialize_fifo_q                    : std_logic_vector(c_SERIALIZE_FIFO_DATA_SIZE-1 downto 0);
-  signal serialize_fifo_rd                   : std_logic := '0';
-  signal serialize_fifo_empty                : std_logic := '0';
-
+  signal acq_dcc_fmc_packet                  : t_fofb_cc_packet;
   signal acq_dcc_fmc_valid                   : std_logic := '0';
 
   -----------------------------------------------------------------------------
@@ -1713,105 +1710,27 @@ begin
   ----------------------------------------------------------------------
   --                          FOFB PROCESSING                         --
   ----------------------------------------------------------------------
-  cmp_generic_async_fifo : generic_async_fifo
-    generic map (
-      g_data_width                            => c_SERIALIZE_FIFO_DATA_SIZE,
-      g_size                                  => c_SERIALIZE_FIFO_SIZE,
-      g_show_ahead                            => false,
-      g_with_rd_empty                         => true,
-      g_with_rd_full                          => false,
-      g_with_rd_almost_empty                  => false,
-      g_with_rd_almost_full                   => false,
-      g_with_rd_count                         => false,
-      g_with_wr_empty                         => false,
-      g_with_wr_full                          => true,
-      g_with_wr_almost_empty                  => false,
-      g_with_wr_almost_full                   => false,
-      g_with_wr_count                         => false,
-      g_with_fifo_inferred                    => false,
-      g_almost_empty_threshold                => 0,
-      g_almost_full_threshold                 => 0
-    )
+
+  cmp_fofb_dcc_adapter: fofb_processing_dcc_adapter
     port map (
-      rst_n_i                                 => clk_sys_rstn,
-      clk_wr_i                                => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
-      d_i                                     => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) & fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID),
-      we_i                                    => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID) or fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0), -- it could be any valid (they're the same)
-      wr_empty_o                              => open,
-      wr_full_o                               => open,
-      wr_almost_empty_o                       => open,
-      wr_almost_full_o                        => open,
-      wr_count_o                              => open,
-      clk_rd_i                                => clk_sys,
-      q_o                                     => serialize_fifo_q,
-      rd_i                                    => serialize_fifo_rd,
-      rd_empty_o                              => serialize_fifo_empty,
-      rd_full_o                               => open,
-      rd_almost_empty_o                       => open,
-      rd_almost_full_o                        => open,
-      rd_count_o                              => open
+      clk_i                      => clk_sys,
+      rst_n_i                    => clk_sys_rstn,
+      clk_dcc_i                  => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
+      rst_dcc_n_i                => fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID),
+
+      dcc_time_frame_end_i       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
+      dcc_packet_i               => f_slv_to_fofb_cc_packet(fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)),
+      dcc_packet_valid_i         => fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0),
+
+      fofb_proc_busy_i           => fofb_proc_busy,
+      fofb_proc_bpm_pos_o        => fofb_proc_bpm_pos,
+      fofb_proc_bpm_pos_index_o  => fofb_proc_bpm_pos_index,
+      fofb_proc_bpm_pos_valid_o  => fofb_proc_bpm_pos_valid,
+      fofb_proc_time_frame_end_o => fofb_proc_time_frame_end,
+
+      acq_dcc_packet_o           => acq_dcc_fmc_packet,
+      acq_dcc_valid_o            => acq_dcc_fmc_valid
     );
-
-  p_serialize_data : process(clk_sys)
-    variable v_state : t_serialize_data_state := IDLE;
-  begin
-    if rising_edge(clk_sys) then
-      if clk_sys_rstn = '0' then
-        v_state := IDLE;
-      else
-        case v_state is
-          when IDLE =>
-            if serialize_fifo_empty /= '1' then
-              serialize_fifo_rd <= '1';
-
-              v_state := DRIVE_X_DATA_OR_TIMEFRAME_END;
-            end if;
-          when DRIVE_X_DATA_OR_TIMEFRAME_END =>
-            serialize_fifo_rd <= '0';
-
-            if fofb_proc_busy /= '1' then
-              if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- drive timeframe end
-                fofb_proc_time_frame_end <= '1';
-              else                                                -- drive x data
-                acq_dcc_fmc_valid <= '1';
-
-                fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataXMSB downto def_PacketDataXLSB));
-                fofb_proc_bpm_pos_index <= unsigned(serialize_fifo_q(def_PacketIDMSB downto def_PacketIDLSB));
-
-                fofb_proc_bpm_pos_valid <= '1';
-              end if;
-
-              v_state := LOWER_VALID_X_DATA_OR_TIMEFRAME_END;
-            end if;
-          when LOWER_VALID_X_DATA_OR_TIMEFRAME_END =>
-            acq_dcc_fmc_valid <= '0';
-
-            if serialize_fifo_q(c_TIMEFRAME_END_POS) = '1' then -- lower timeframe end
-              fofb_proc_time_frame_end <= '0';
-
-              v_state := IDLE;
-            else                                                -- lower valid
-              fofb_proc_bpm_pos_valid <= '0';
-
-              v_state := DRIVE_Y_DATA;
-            end if;
-          when DRIVE_Y_DATA =>
-            if fofb_proc_busy /= '1' then
-              fofb_proc_bpm_pos <= signed(serialize_fifo_q(def_PacketDataYMSB downto def_PacketDataYLSB));
-              fofb_proc_bpm_pos_index(fofb_proc_bpm_pos_index'left) <= '1'; -- y FOFB coeffs start at the middle of SRAM
-
-              fofb_proc_bpm_pos_valid <= '1';
-
-              v_state := LOWER_VALID_Y_DATA;
-            end if;
-          when LOWER_VALID_Y_DATA =>
-            fofb_proc_bpm_pos_valid <= '0';
-
-            v_state := IDLE;
-        end case;
-      end if;
-    end if;
-  end process p_serialize_data;
 
   cmp_fofb_processing : xwb_fofb_processing
     generic map (
@@ -2211,9 +2130,8 @@ begin
 
   -- DCC FMC
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) &
-          std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) & std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) &
-          serialize_fifo_q(c_TIMEFRAME_END_POS-1 downto 0); -- dcc packet
+          std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
+          std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
 

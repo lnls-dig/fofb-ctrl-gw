@@ -9,6 +9,17 @@ use work.dot_prod_pkg.all;
 
 package fofb_ctrl_pkg is
 
+  type t_fofb_cc_packet is record
+    bpm_id     : unsigned(NodeW-1 downto 0);
+    bpm_data_x : signed((def_PacketDataXMSB - def_PacketDataXLSB) downto 0);
+    bpm_data_y : signed((def_PacketDataYMSB - def_PacketDataYLSB) downto 0);
+    time_frame : unsigned((def_PacketTimeframeCntr16MSB - def_PacketTimeframeCntr16LSB) downto 0);
+    time_stamp : unsigned((def_PacketTimeStampMSB - def_PacketTimeStampLSB) downto 0);
+  end record;
+
+  function f_slv_to_fofb_cc_packet(cc_pac: std_logic_vector) return t_fofb_cc_packet;
+  function f_fofb_cc_packet_to_slv(cc_pac_rec: t_fofb_cc_packet) return std_logic_vector;
+
   --------------------------------------------------------------------
   -- Components
   --------------------------------------------------------------------
@@ -577,6 +588,59 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  component fofb_processing_dcc_adapter is
+    generic (
+      -- DCC packet FIFO depth
+      g_FIFO_DATA_DEPTH          : natural := 16
+    );
+    port (
+      -- System clock input
+      clk_i                      : in  std_logic;
+
+      -- System reset input (clock domain: clk_i)
+      rst_n_i                    : in  std_logic;
+
+      -- DCC clock input
+      clk_dcc_i                  : in  std_logic;
+
+      -- DCC reset input (clock domain: clk_dcc_i)
+      rst_dcc_n_i                : in  std_logic;
+
+      -- DCC timeframe end signal (clock domain: clk_dcc_i)
+      dcc_time_frame_end_i       : in  std_logic;
+
+      -- DCC data packet input (clock domain: clk_dcc_i). You can use the
+      -- f_slv_to_fofb_cc_packet() function to convert from std_logic_vector to
+      -- t_fofb_cc_packet
+      dcc_packet_i               : in  t_fofb_cc_packet;
+
+      -- DCC packet valid (clock domain: clk_dcc_i),
+      dcc_packet_valid_i         : in  std_logic;
+
+      -- FOFB processing busy input (clock domain: clk_i)
+      fofb_proc_busy_i           : in  std_logic;
+
+      -- FOFB processing BPM position output (clock domain: clk_i)
+      fofb_proc_bpm_pos_o        : out signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+      -- FOFB processing BPM index output (clock domain: clk_i). First 256 IDs
+      -- are horizontal measurements, last 256 IDs are vertical
+      fofb_proc_bpm_pos_index_o  : out unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+      -- FOFB processing BPM position valid output (clock domain: clk_i)
+      fofb_proc_bpm_pos_valid_o  : out std_logic;
+
+      -- FOFB processing timeframe end output (clock domain: clk_i)
+      fofb_proc_time_frame_end_o : out std_logic;
+
+      -- DCC raw data packet from FIFO output for debugging (clock domain: clk_i)
+      acq_dcc_packet_o           : out t_fofb_cc_packet;
+
+      -- DCC raw data packet valid (clock domain: clk_i)
+      acq_dcc_valid_o            : out std_logic
+    );
+  end component;
+
   --------------------------------------------------------------------
   -- SDB Devices Structures
   --------------------------------------------------------------------
@@ -616,3 +680,29 @@ package fofb_ctrl_pkg is
     name          => "FOFB_PROC_REGS     ")));
 
 end fofb_ctrl_pkg;
+
+package body fofb_ctrl_pkg is
+
+  function f_slv_to_fofb_cc_packet(cc_pac: std_logic_vector) return t_fofb_cc_packet is
+    variable cc_pac_rec: t_fofb_cc_packet;
+  begin
+    cc_pac_rec.bpm_id     := unsigned(cc_pac(def_PacketIDMSB downto def_PacketIDLSB));
+    cc_pac_rec.bpm_data_x := signed(cc_pac(def_PacketDataXMSB downto def_PacketDataXLSB));
+    cc_pac_rec.bpm_data_y := signed(cc_pac(def_PacketDataYMSB downto def_PacketDataYLSB));
+    cc_pac_rec.time_frame := unsigned(cc_pac(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB));
+    cc_pac_rec.time_stamp := unsigned(cc_pac(def_PacketTimeStampMSB downto def_PacketTimeStampLSB));
+    return cc_pac_rec;
+  end function;
+
+  function f_fofb_cc_packet_to_slv(cc_pac_rec: t_fofb_cc_packet) return std_logic_vector  is
+    variable cc_pac: std_logic_vector((32*PacketSize-1) downto 0);
+  begin
+    cc_pac(def_PacketIDMSB downto def_PacketIDLSB) := std_logic_vector(cc_pac_rec.bpm_id);
+    cc_pac(def_PacketDataXMSB downto def_PacketDataXLSB) := std_logic_vector(cc_pac_rec.bpm_data_x);
+    cc_pac(def_PacketDataYMSB downto def_PacketDataYLSB) := std_logic_vector(cc_pac_rec.bpm_data_y);
+    cc_pac(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) := std_logic_vector(cc_pac_rec.time_frame);
+    cc_pac(def_PacketTimeStampMSB downto def_PacketTimeStampLSB) := std_logic_vector(cc_pac_rec.time_stamp);
+    return cc_pac;
+  end function;
+
+end package body fofb_ctrl_pkg;
