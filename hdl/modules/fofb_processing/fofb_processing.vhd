@@ -176,7 +176,7 @@ begin
 
   -- We are busy if any of the fofb_processing_channel instances are busy
   busy <= or(busy_arr);
-  busy_o <= busy;
+  busy_o <= busy or bpm_time_frame_end_tmp or bpm_time_frame_end;
 
   process(clk_i)
     variable bpm_pos_avg_sum: signed(bpm_pos_i'length downto 0);
