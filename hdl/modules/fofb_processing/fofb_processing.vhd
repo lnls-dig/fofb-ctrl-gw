@@ -103,6 +103,12 @@ entity fofb_processing is
     -- Freeze set-point accumulator array (for each channel)
     freeze_acc_arr_i               : in  std_logic_vector(g_CHANNELS-1 downto 0);
 
+    -- Set-points (per channel) maximum value, don't accumulate beyond that
+    sp_max_arr_i                   : in  t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+    -- Set-points (per channel) minimum value, don't accumulate below that
+    sp_min_arr_i                   : in  t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
     -- Set-points output array (for each channel)
     sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
 
@@ -157,6 +163,8 @@ begin
         coeff_ram_data_i               => coeff_ram_data_arr_i(i),
         freeze_acc_i                   => freeze_acc_arr_i(i),
         clear_acc_i                    => clear_acc_arr_i(i),
+        sp_max_i                       => sp_max_arr_i(i),
+        sp_min_i                       => sp_min_arr_i(i),
         sp_o                           => sp_arr_o(i),
         sp_valid_o                     => sp_valid_arr_o(i)
       );

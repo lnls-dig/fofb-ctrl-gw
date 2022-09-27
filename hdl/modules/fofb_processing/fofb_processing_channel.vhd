@@ -118,6 +118,12 @@ entity fofb_processing_channel is
     -- Clear the set-point accumulator, also generate a valid pulse
     clear_acc_i                    : in  std_logic;
 
+    -- Set-point maximum value, don't accumulate beyond that
+    sp_max_i                       : in  signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
+    -- Set-point minimum value, don't accumulate below that
+    sp_min_i                       : in  signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
     -- Setpoint output
     sp_o                           : out signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
 
@@ -199,6 +205,7 @@ begin
 
   process(clk_i)
     variable res_mult_gain_resized_to_acc : acc'subtype;
+    variable res_acc_sum                  : acc'subtype;
   begin
     if rising_edge(clk_i) then
       if rst_n_i = '0' then
@@ -256,10 +263,21 @@ begin
           -- Only accumulate if freeze_acc_i = '0', but generate a sp_valid_o
           -- pulse anyways
           if freeze_acc_i = '0' then
-            -- Resize gain multiplcation result to the accumulator size
+            -- Resize gain multiplication result to the accumulator size
             res_mult_gain_resized_to_acc := resize(res_mult_gain_pipe(res_mult_gain_pipe'high), acc'left, acc'right);
-            -- Accumulate dot product result
-            acc <= resize(acc + res_mult_gain_resized_to_acc, acc'left, acc'right);
+            res_acc_sum := resize(acc + res_mult_gain_resized_to_acc, acc'left, acc'right);
+            -- Check if the resulting set-point is withing limits set by
+            -- sp_max_i and sp_min_i
+            if signed(to_slv(res_acc_sum)) > sp_max_i then
+              -- Saturate to sp_max_i
+              acc <= sfixed(sp_max_i);
+            elsif signed(to_slv(res_acc_sum)) < sp_min_i then
+              -- Saturate to sp_min_i
+              acc <= sfixed(sp_min_i);
+            else
+              -- Accumulate dot product result
+              acc <= res_acc_sum;
+            end if;
           end if;
           sp_valid_o <= '1';
         else

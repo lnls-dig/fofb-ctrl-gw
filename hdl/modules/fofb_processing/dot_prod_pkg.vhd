@@ -181,6 +181,12 @@ package dot_prod_pkg is
       -- Clear the set-point accumulator, also generate a valid pulse
       clear_acc_i                    : in  std_logic;
 
+      -- Set-point maximum value, don't accumulate beyond that
+      sp_max_i                       : in  signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
+      -- Set-point minimum value, don't accumulate below that
+      sp_min_i                       : in  signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
       -- Setpoint output
       sp_o                           : out signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
 
@@ -265,6 +271,12 @@ package dot_prod_pkg is
 
       -- Freeze set-point accumulator array (for each channel)
       freeze_acc_arr_i               : in  std_logic_vector(g_CHANNELS-1 downto 0);
+
+      -- Set-points (per channel) maximum value, don't accumulate beyond that
+      sp_max_arr_i                   : in  t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+      -- Set-points (per channel) minimum value, don't accumulate below that
+      sp_min_arr_i                   : in  t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
 
       -- Set-points output array (for each channel)
       sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);

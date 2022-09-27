@@ -130,6 +130,8 @@ architecture fofb_processing_channel_tb_arch of fofb_processing_channel_tb is
   signal coeff_ram_addr        : std_logic_vector(c_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal coeff_ram_data        : std_logic_vector(c_COEFF_RAM_DATA_WIDTH-1 downto 0);
   signal sp                    : signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0) := (others => '0');
+  signal sp_max                : sp'subtype := to_signed(32767, sp'length);
+  signal sp_min                : sp'subtype := to_signed(-32768, sp'length);
   signal sp_valid              : std_logic := '0';
   shared variable coeff_ram    : t_coeff_ram_data;
 begin
@@ -164,6 +166,8 @@ begin
     gain_i                         => acc_gain,
     freeze_acc_i                   => freeze_acc,
     clear_acc_i                    => clear_acc,
+    sp_max_i                       => sp_max,
+    sp_min_i                       => sp_min,
     sp_o                           => sp,
     sp_valid_o                     => sp_valid
   );

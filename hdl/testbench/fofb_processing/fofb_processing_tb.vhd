@@ -101,6 +101,9 @@ architecture behave of fofb_processing_tb is
   signal coeff_ram_data_arr   : t_arr_coeff_ram_data(g_FOFB_CHANNELS-1 downto 0);
   signal coeff_ram_addr_arr   : t_arr_coeff_ram_addr(g_FOFB_CHANNELS-1 downto 0);
 
+  signal sp_max               : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(32767, c_FOFB_SP_WIDTH);
+  signal sp_min               : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(-32768, c_FOFB_SP_WIDTH);
+
   signal sp_arr               : t_fofb_processing_sp_arr(g_FOFB_CHANNELS-1 downto 0);
   signal sp_valid_arr         : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
   signal clear_acc_arr        : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
@@ -291,6 +294,9 @@ begin
       sp_pos_ram_data_i            => sp_pos_ram_data,
 
       gain_arr_i                   => gain_arr,
+
+      sp_max_arr_i                 => (others => sp_max),
+      sp_min_arr_i                 => (others => sp_min),
 
       sp_arr_o                     => sp_arr,
       sp_valid_arr_o               => sp_valid_arr

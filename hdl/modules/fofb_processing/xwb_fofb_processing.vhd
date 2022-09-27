@@ -233,6 +233,10 @@ begin
       clear_acc_arr_i              => clear_acc_arr(g_CHANNELS-1 downto 0),
       freeze_acc_arr_i             => freeze_acc_arr(g_CHANNELS-1 downto 0),
 
+      -- TODO: connect sp_max/min to registers available through wishbone
+      sp_max_arr_i                 => (others => to_signed(15200, c_FOFB_SP_WIDTH)),
+      sp_min_arr_i                 => (others => to_signed(-15200, c_FOFB_SP_WIDTH)),
+
       sp_arr_o                     => sp_arr_o,
       sp_valid_arr_o               => sp_valid_arr_o
     );
