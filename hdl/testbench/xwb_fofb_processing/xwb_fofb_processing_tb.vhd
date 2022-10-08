@@ -69,6 +69,12 @@ entity xwb_fofb_processing_tb is
     -- number of fofb cycles to simulate
     g_FOFB_NUM_CYC                 : natural := 4;
 
+    -- fofb processing saturation maximum value
+    g_SP_MAX                       : integer := 15200;
+
+    -- fofb processing saturation minimum value
+    g_SP_MIN                       : integer := -15200;
+
     -- inverse response matrix coefficients file (in binary)
     g_COEFF_RAM_FILE               : string  := "../coeff_norm.dat";
 
@@ -99,6 +105,14 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
 
   constant c_NUM_OF_SETPOINTS           : natural :=
     c_NUM_OF_COEFFS_PER_CHANNEL;
+
+  constant c_WB_SP_MAX                  :
+    std_logic_vector(c_FOFB_WB_SP_MIN_MAX_WIDTH-1 downto 0) :=
+      std_logic_vector(to_signed(g_SP_MAX, c_FOFB_WB_SP_MIN_MAX_WIDTH));
+
+  constant c_WB_SP_MIN                  :
+    std_logic_vector(c_FOFB_WB_SP_MIN_MAX_WIDTH-1 downto 0) :=
+      std_logic_vector(to_signed(g_SP_MIN, c_FOFB_WB_SP_MIN_MAX_WIDTH));
 
   -- signals
   signal clk                            : std_logic := '0';
@@ -259,6 +273,36 @@ begin
         c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR;
     end loop;
 
+    -- setting saturation limits via wishbone bus
+    report "setting saturation limits via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_SP_MAX_0_ADDR;
+    for i in 0 to (g_CHANNELS - 1)
+    loop
+      -- writing maximum saturation value
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_SP_MAX);
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_SP_MIN_0_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_SP_MAX_0_ADDR;
+
+      assert (data = c_WB_SP_MAX)
+        report "wrong saturation limit at " & natural'image(addr)
+        severity error;
+
+      -- writing minimum saturation value
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_SP_MIN);
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      assert (data = c_WB_SP_MIN)
+        report "wrong saturation limit at " & natural'image(addr)
+        severity error;
+
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_SP_MAX_1_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_SP_MIN_0_ADDR;
+    end loop;
+
     -- opening bpm positions file
     report "opening bpm positions file"
     severity note;
@@ -312,6 +356,13 @@ begin
       loop
         expec_fofb_proc_sp_arr(i) := expec_fofb_proc_sp_arr(i) +
           real_gain_arr(i) * expec_dot_prod_arr(i);
+
+          -- saturation
+          if expec_fofb_proc_sp_arr(i) > real(g_SP_MAX) then
+            expec_fofb_proc_sp_arr(i) := real(g_SP_MAX);
+          elsif expec_fofb_proc_sp_arr(i) < real(g_SP_MIN) then
+            expec_fofb_proc_sp_arr(i) := real(g_SP_MIN);
+          end if;
       end loop;
       -- ########## computing expected fofb processing setpoint ##########
 

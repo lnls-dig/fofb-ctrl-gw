@@ -601,6 +601,390 @@ memory-map:
                 access_dev: READ_ONLY
                 access_bus: READ_WRITE
                 clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_0
+        width: 32
+        access: rw
+        address: 0x00000068
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_0
+        width: 32
+        access: rw
+        address: 0x0000006C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_1
+        width: 32
+        access: rw
+        address: 0x00000070
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_1
+        width: 32
+        access: rw
+        address: 0x00000074
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_2
+        width: 32
+        access: rw
+        address: 0x00000078
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_2
+        width: 32
+        access: rw
+        address: 0x0000007C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_3
+        width: 32
+        access: rw
+        address: 0x00000080
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_3
+        width: 32
+        access: rw
+        address: 0x00000084
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_4
+        width: 32
+        access: rw
+        address: 0x00000088
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_4
+        width: 32
+        access: rw
+        address: 0x0000008C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_5
+        width: 32
+        access: rw
+        address: 0x00000090
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_5
+        width: 32
+        access: rw
+        address: 0x00000094
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_6
+        width: 32
+        access: rw
+        address: 0x00000098
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_6
+        width: 32
+        access: rw
+        address: 0x0000009C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_7
+        width: 32
+        access: rw
+        address: 0x000000A0
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_7
+        width: 32
+        access: rw
+        address: 0x000000A4
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_8
+        width: 32
+        access: rw
+        address: 0x000000A8
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_8
+        width: 32
+        access: rw
+        address: 0x000000AC
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_9
+        width: 32
+        access: rw
+        address: 0x000000B0
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_9
+        width: 32
+        access: rw
+        address: 0x000000B4
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_10
+        width: 32
+        access: rw
+        address: 0x000000B8
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_10
+        width: 32
+        access: rw
+        address: 0x000000BC
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_11
+        width: 32
+        access: rw
+        address: 0x000000C0
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_11
+        width: 32
+        access: rw
+        address: 0x000000C4
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
     - memory:
         name: coeffs_ram_bank_0
         memsize: 2k

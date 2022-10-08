@@ -159,6 +159,14 @@ architecture rtl of xwb_fofb_processing is
   signal coeff_ram_data_arr      : t_arr_coeff_ram_data(c_MAX_CHANNELS-1 downto 0);
 
   -----------------------------
+  -- Output saturation signals
+  -----------------------------
+  signal sp_max_arr              : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+  signal sp_min_arr              : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+  signal wb_sp_max_arr           : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+  signal wb_sp_min_arr           : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+
+  -----------------------------
   -- Wishbone slave adapter signals/structures
   -----------------------------
   signal wb_slv_adp_out          : t_wishbone_master_out;
@@ -233,9 +241,8 @@ begin
       clear_acc_arr_i              => clear_acc_arr(g_CHANNELS-1 downto 0),
       freeze_acc_arr_i             => freeze_acc_arr(g_CHANNELS-1 downto 0),
 
-      -- TODO: connect sp_max/min to registers available through wishbone
-      sp_max_arr_i                 => (others => to_signed(15200, c_FOFB_SP_WIDTH)),
-      sp_min_arr_i                 => (others => to_signed(-15200, c_FOFB_SP_WIDTH)),
+      sp_max_arr_i                 => sp_max_arr,
+      sp_min_arr_i                 => sp_min_arr,
 
       sp_arr_o                     => sp_arr_o,
       sp_valid_arr_o               => sp_valid_arr_o
@@ -280,11 +287,14 @@ begin
     resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
                                  <= (others => '0');
 
-  -- wb gains are aligned to the left
-  gen_wb_gain_conn: for i in 0 to g_CHANNELS-1
+  gen_wb_conn: for i in 0 to g_CHANNELS-1
   generate
+    -- fixed-point values are aligned to the left
     gain_arr(i) <= signed(wb_gain_arr(i)(c_FOFB_WB_GAIN_WIDTH-1 downto c_FOFB_WB_GAIN_WIDTH-c_FOFB_GAIN_WIDTH));
-  end generate gen_wb_gain_conn;
+
+    sp_max_arr(i) <= signed(wb_sp_max_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
+    sp_min_arr(i) <= signed(wb_sp_min_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
+  end generate gen_wb_conn;
 
   cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
     port map (
@@ -338,6 +348,30 @@ begin
       wb_fofb_processing_regs_acc_gain_11_val_o                 => wb_gain_arr(11),
       wb_fofb_processing_regs_acc_ctl_11_clear_o                => clear_acc_arr(11),
       wb_fofb_processing_regs_acc_ctl_11_freeze_o               => freeze_acc_arr(11),
+      wb_fofb_processing_regs_sp_max_0_val_o                    => wb_sp_max_arr(0),
+      wb_fofb_processing_regs_sp_min_0_val_o                    => wb_sp_min_arr(0),
+      wb_fofb_processing_regs_sp_max_1_val_o                    => wb_sp_max_arr(1),
+      wb_fofb_processing_regs_sp_min_1_val_o                    => wb_sp_min_arr(1),
+      wb_fofb_processing_regs_sp_max_2_val_o                    => wb_sp_max_arr(2),
+      wb_fofb_processing_regs_sp_min_2_val_o                    => wb_sp_min_arr(2),
+      wb_fofb_processing_regs_sp_max_3_val_o                    => wb_sp_max_arr(3),
+      wb_fofb_processing_regs_sp_min_3_val_o                    => wb_sp_min_arr(3),
+      wb_fofb_processing_regs_sp_max_4_val_o                    => wb_sp_max_arr(4),
+      wb_fofb_processing_regs_sp_min_4_val_o                    => wb_sp_min_arr(4),
+      wb_fofb_processing_regs_sp_max_5_val_o                    => wb_sp_max_arr(5),
+      wb_fofb_processing_regs_sp_min_5_val_o                    => wb_sp_min_arr(5),
+      wb_fofb_processing_regs_sp_max_6_val_o                    => wb_sp_max_arr(6),
+      wb_fofb_processing_regs_sp_min_6_val_o                    => wb_sp_min_arr(6),
+      wb_fofb_processing_regs_sp_max_7_val_o                    => wb_sp_max_arr(7),
+      wb_fofb_processing_regs_sp_min_7_val_o                    => wb_sp_min_arr(7),
+      wb_fofb_processing_regs_sp_max_8_val_o                    => wb_sp_max_arr(8),
+      wb_fofb_processing_regs_sp_min_8_val_o                    => wb_sp_min_arr(8),
+      wb_fofb_processing_regs_sp_max_9_val_o                    => wb_sp_max_arr(9),
+      wb_fofb_processing_regs_sp_min_9_val_o                    => wb_sp_min_arr(9),
+      wb_fofb_processing_regs_sp_max_10_val_o                   => wb_sp_max_arr(10),
+      wb_fofb_processing_regs_sp_min_10_val_o                   => wb_sp_min_arr(10),
+      wb_fofb_processing_regs_sp_max_11_val_o                   => wb_sp_max_arr(11),
+      wb_fofb_processing_regs_sp_min_11_val_o                   => wb_sp_min_arr(11),
       wb_fofb_processing_regs_coeffs_ram_bank_0_addr_i          => coeff_ram_addr_arr(0),
       wb_fofb_processing_regs_coeffs_ram_bank_0_data_o          => coeff_ram_data_arr(0),
       wb_fofb_processing_regs_coeffs_ram_bank_0_rd_i            => '0',
