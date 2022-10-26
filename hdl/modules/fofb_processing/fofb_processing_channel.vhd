@@ -25,6 +25,7 @@
 -- 2022-07-27  1.1      guilherme.ricioli     Changed coeffs RAMs' wb interface
 -- 2022-08-29  2.0      augusto.fraga         Refactored using VHDL 2008, add
 --                                            accumulator gain
+-- 2022-10-26  2.1      guilherme.ricioli     Added loop interlock interface
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -129,7 +130,10 @@ entity fofb_processing_channel is
 
     -- Setpoint valid, it will generate a positive pulse after bpm_time_frame_end_i
     -- is set to '1' and all arithmetic operations have finished
-    sp_valid_o                     : out std_logic
+    sp_valid_o                     : out std_logic;
+
+    -- Loop interlock signal (has the same behavior as freeze_acc_i)
+    loop_intlk_i                   : in std_logic
   );
 end fofb_processing_channel;
 
@@ -260,9 +264,9 @@ begin
           acc <= (others => '0');
           sp_valid_o <= '1';
         elsif res_mult_gain_pipe_valid(res_mult_gain_pipe_valid'high) = '1' then
-          -- Only accumulate if freeze_acc_i = '0', but generate a sp_valid_o
-          -- pulse anyways
-          if freeze_acc_i = '0' then
+          -- Only accumulate if freeze_acc_i = '0' and loop_intlk_i = '0', but
+          -- generate a sp_valid_o pulse anyways
+          if freeze_acc_i = '0' and loop_intlk_i = '0' then
             -- Resize gain multiplication result to the accumulator size
             res_mult_gain_resized_to_acc := resize(res_mult_gain_pipe(res_mult_gain_pipe'high), acc'left, acc'right);
             res_acc_sum := resize(acc + res_mult_gain_resized_to_acc, acc'left, acc'right);

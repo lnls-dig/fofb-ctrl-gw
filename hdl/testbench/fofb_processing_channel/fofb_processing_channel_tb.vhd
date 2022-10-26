@@ -116,6 +116,7 @@ architecture fofb_processing_channel_tb_arch of fofb_processing_channel_tb is
 
   constant c_COEFF_RAM_ADDR_WIDTH : natural := 9;
   constant c_COEFF_RAM_DATA_WIDTH : natural := 32;
+  constant c_LOOP_INTLK_CLK_CYCLES_DELAY : natural := 800;
   signal clk                   : std_logic := '0';
   signal rst_n                 : std_logic := '0';
   signal busy                  : std_logic;
@@ -133,6 +134,7 @@ architecture fofb_processing_channel_tb_arch of fofb_processing_channel_tb is
   signal sp_max                : sp'subtype := to_signed(32767, sp'length);
   signal sp_min                : sp'subtype := to_signed(-32768, sp'length);
   signal sp_valid              : std_logic := '0';
+  signal loop_intlk            : std_logic := '0';
   shared variable coeff_ram    : t_coeff_ram_data;
 begin
 
@@ -169,7 +171,8 @@ begin
     sp_max_i                       => sp_max,
     sp_min_i                       => sp_min,
     sp_o                           => sp,
-    sp_valid_o                     => sp_valid
+    sp_valid_o                     => sp_valid,
+    loop_intlk_i                   => loop_intlk
   );
 
   f_gen_clk(100_000_000, clk);
@@ -218,7 +221,7 @@ begin
         end if;
       end loop;
 
-      if freeze_acc = '0' then
+      if freeze_acc = '0' and loop_intlk = '0' then
         -- Multiply the simulated dot product result by the gain and accumulate
         fofb_proc_acc_simu := fofb_proc_acc_simu + dot_prod_acc_simu * acc_gain_real;
       end if;
@@ -238,6 +241,7 @@ begin
       report "---- Iteration  " & to_string(fofb_cyc) & " ----" severity note;
       report "Gain: " & to_string(acc_gain_real) severity note;
       report "ACC Freeze: " & to_string(freeze_acc) severity note;
+      report "Loop interlock: " & to_string(loop_intlk) severity note;
       report "Set point: " & to_string(to_integer(sp)) severity note;
       report "Set point simulated: " & to_string(integer(floor(fofb_proc_acc_simu))) severity note;
 
@@ -275,5 +279,19 @@ begin
       coeff_ram_data <= coeff_ram.get_coeff(to_integer(unsigned(coeff_ram_addr)));
     end if;
   end process;
+
+  p_loop_intlk_gen: process(clk)
+    variable count : natural := 0;
+  begin
+    if rising_edge(clk) then
+      if count = c_LOOP_INTLK_CLK_CYCLES_DELAY then
+        loop_intlk <= '1';
+      else
+        count := count + 1;
+        loop_intlk <= '0';
+      end if;
+    end if;
+  end process;
+
 
 end architecture;

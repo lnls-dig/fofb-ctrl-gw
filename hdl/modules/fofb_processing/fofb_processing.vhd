@@ -166,7 +166,8 @@ begin
         sp_max_i                       => sp_max_arr_i(i),
         sp_min_i                       => sp_min_arr_i(i),
         sp_o                           => sp_arr_o(i),
-        sp_valid_o                     => sp_valid_arr_o(i)
+        sp_valid_o                     => sp_valid_arr_o(i),
+        loop_intlk_i                   => '0'
       );
   end generate;
 

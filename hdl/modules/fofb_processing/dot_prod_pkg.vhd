@@ -194,7 +194,10 @@ package dot_prod_pkg is
 
       -- Setpoint valid, it will generate a positive pulse after bpm_time_frame_end_i
       -- is set to '1' and all arithmetic operations have finished
-      sp_valid_o                     : out std_logic
+      sp_valid_o                     : out std_logic;
+
+      -- Loop interlock signal (has the same behavior as freeze_acc_i)
+      loop_intlk_i                   : in std_logic
     );
   end component fofb_processing_channel;
 
