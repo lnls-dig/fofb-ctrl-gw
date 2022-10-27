@@ -37,6 +37,8 @@ use work.dot_prod_pkg.all;
 use work.genram_pkg.all;
 use work.fofb_tb_pkg.all;
 
+-- TODO: Properly test loop interlock
+
 entity fofb_processing_tb is
   generic (
     -- Integer width for the inverse response matrix coefficient input
@@ -79,13 +81,19 @@ entity fofb_processing_tb is
     g_FOFB_BPM_REF_FILE            : string  := "../fofb_bpm_ref.dat";
 
     -- Number of FOFB processing channels
-    g_FOFB_CHANNELS                : natural := 2
+    g_FOFB_CHANNELS                : natural := 2;
+
+    -- Loop interlock orbit distortion limit
+    g_LOOP_INTLK_DISTORT_LIMIT     : natural := 300000
   );
 end fofb_processing_tb;
 
 architecture behave of fofb_processing_tb is
   -- Constants
   constant c_SYS_CLOCK_FREQ   : natural := 100_000_000;
+  constant c_LOOP_INTLK_DISTORT_LIMIT :
+    unsigned(g_BPM_POS_INT_WIDTH-1 downto 0) :=
+      to_unsigned(g_LOOP_INTLK_DISTORT_LIMIT, g_BPM_POS_INT_WIDTH);
 
   -- Signals
   signal clk                  : std_logic := '0';
@@ -136,6 +144,7 @@ begin
     variable bpm_prev_x           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable bpm_prev_y           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable sp_err               : real := 0.0;
+    variable loop_intlk_distort   : std_logic := '0';
   begin
     -- Load BPM position, set-point and coefficients files
     bpm_pos_reader.open_bpm_pos_file(g_FOFB_BPM_POS_FILE);
@@ -184,6 +193,12 @@ begin
           bpm_err_y := bpm_y - sp_ram.get_sp_integer(i + 256);
         end if;
 
+        -- Detects loop interlock due to orbit distortion
+        if (abs(bpm_err_x) > c_LOOP_INTLK_DISTORT_LIMIT) or
+          (abs(bpm_err_y) > c_LOOP_INTLK_DISTORT_LIMIT) then
+            loop_intlk_distort := '1';
+        end if;
+
         -- Store the current BPM position for computing the average in the next
         -- time frame
         bpm_prev_x(i) := bpm_x;
@@ -198,7 +213,9 @@ begin
 
       -- Accumulate the simulated dot product result
       for i in 0 to g_FOFB_CHANNELS-1 loop
-        fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
+        if loop_intlk_distort = '0' then
+          fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
+        end if;
       end loop;
 
       -- Time frame ended
@@ -299,7 +316,12 @@ begin
       sp_min_arr_i                 => (others => sp_min),
 
       sp_arr_o                     => sp_arr,
-      sp_valid_arr_o               => sp_valid_arr
+      sp_valid_arr_o               => sp_valid_arr,
+
+      loop_intlk_src_en_i          => (others => '1'),
+      loop_intlk_state_clr_i       => '0',
+      loop_intlk_state_o           => open,
+      loop_intlk_distort_limit_i   => c_LOOP_INTLK_DISTORT_LIMIT
     );
 
 end architecture behave;

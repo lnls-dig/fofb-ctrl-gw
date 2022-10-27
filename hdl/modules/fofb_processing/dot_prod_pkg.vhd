@@ -39,6 +39,9 @@ package dot_prod_pkg is
   type t_fofb_processing_gain_arr is array (natural range <>) of signed(c_FOFB_GAIN_WIDTH-1 downto 0);
   type t_fofb_processing_wb_gain_arr is array (natural range <>) of std_logic_vector(c_FOFB_WB_GAIN_WIDTH-1 downto 0);
 
+  constant c_FOFB_LOOP_INTLK_TRIGS_WIDTH : natural := 1;
+  constant c_FOFB_LOOP_INTLK_DISTORT_ID  : natural := 0;
+
   -- RAM interface widths
   constant c_SP_COEFF_RAM_ADDR_WIDTH      : natural := 9;
   constant c_COEFF_RAM_DATA_WIDTH         : natural := 32;
@@ -287,7 +290,19 @@ package dot_prod_pkg is
       sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
 
       -- Set-point valid array (for each channel)
-      sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0)
+      sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
+
+      -- Loop interlock sources enable
+      loop_intlk_src_en_i            : in std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+
+      -- Loop interlock state clear
+      loop_intlk_state_clr_i         : in std_logic;
+
+      -- Loop interlock state array ('0': not interlocked; '1': interlocked)
+      loop_intlk_state_o             : out std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+
+      -- Loop interlock orbit distortion limit
+      loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0)
     );
   end component fofb_processing;
 

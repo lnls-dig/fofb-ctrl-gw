@@ -245,7 +245,12 @@ begin
       sp_min_arr_i                 => sp_min_arr,
 
       sp_arr_o                     => sp_arr_o,
-      sp_valid_arr_o               => sp_valid_arr_o
+      sp_valid_arr_o               => sp_valid_arr_o,
+
+      loop_intlk_en_i              => '0',
+      loop_intlk_state_clr_i       => '0',
+      loop_intlk_distort_limit_i   => to_unsigned(2**g_BPM_POS_INT_WIDTH-1, g_BPM_POS_INT_WIDTH),
+      loop_intlk_state_o           => open
     );
 
   -----------------------------

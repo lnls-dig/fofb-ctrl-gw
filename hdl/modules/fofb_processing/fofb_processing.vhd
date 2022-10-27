@@ -18,6 +18,9 @@
 -- 2022-09-02  2.0      augusto.fraga         Update to match the new
 --                                            fofb_processing_channel version,
 --                                            add memory interface for set-points
+-- 2022-10-27  2.1      guilherme.ricioli     Add loop interlock control/status
+--                                            mechanisms and orbit distortion
+--                                            loop interlocking
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -113,7 +116,19 @@ entity fofb_processing is
     sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
 
     -- Set-point valid array (for each channel)
-    sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0)
+    sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
+
+    -- Loop interlock sources enable
+    loop_intlk_src_en_i            : in std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+
+    -- Loop interlock state clear
+    loop_intlk_state_clr_i         : in std_logic;
+
+    -- Loop interlock state array ('0': not interlocked; '1': interlocked)
+    loop_intlk_state_o             : out std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+
+    -- Loop interlock orbit distortion limit
+    loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0)
   );
 end fofb_processing;
 
@@ -130,6 +145,7 @@ architecture behave of fofb_processing is
   signal busy_arr               : std_logic_vector(g_CHANNELS-1 downto 0);
   signal busy                   : std_logic;
   signal bpm_pos_err_index      : integer range 0 to (2**c_SP_COEFF_RAM_ADDR_WIDTH)-1;
+  signal loop_intlk_state       : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
 begin
 
   gen_channels : for i in 0 to g_CHANNELS-1 generate
@@ -167,7 +183,7 @@ begin
         sp_min_i                       => sp_min_arr_i(i),
         sp_o                           => sp_arr_o(i),
         sp_valid_o                     => sp_valid_arr_o(i),
-        loop_intlk_i                   => '0'
+        loop_intlk_i                   => or loop_intlk_state
       );
   end generate;
 
@@ -181,6 +197,7 @@ begin
 
   process(clk_i)
     variable bpm_pos_avg_sum: signed(bpm_pos_i'length downto 0);
+    variable loop_intlk_trigs : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
   begin
     if rising_edge(clk_i) then
       if rst_n_i = '0' then
@@ -220,7 +237,27 @@ begin
         bpm_time_frame_end <= bpm_time_frame_end_tmp;
         bpm_pos_err_index <= to_integer(bpm_index_tmp);
       end if;
+
+      -- Check orbit distortion limit crossing
+      if bpm_pos_err_valid = '1' then
+        if abs(bpm_pos_err) > signed(loop_intlk_distort_limit_i) then
+          loop_intlk_trigs(c_FOFB_LOOP_INTLK_DISTORT_ID) := '1';
+        end if;
+      else
+        loop_intlk_trigs(c_FOFB_LOOP_INTLK_DISTORT_ID) := '0';
+      end if;
+
+      if loop_intlk_state_clr_i = '1' then
+        loop_intlk_state <= (others => '0');
+      else
+        for src in 0 to c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1
+        loop
+          loop_intlk_state(src) <= loop_intlk_state(src) or (loop_intlk_trigs(src) and loop_intlk_src_en_i(src));
+        end loop;
+      end if;
+
     end if;
   end process;
 
+  loop_intlk_state_o <= loop_intlk_state;
 end architecture behave;
