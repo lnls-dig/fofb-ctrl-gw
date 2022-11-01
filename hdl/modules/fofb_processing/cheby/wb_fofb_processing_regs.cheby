@@ -985,6 +985,79 @@ memory-map:
                 access_dev: READ_ONLY
                 access_bus: READ_WRITE
                 clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: loop_intlk_src_en_ctl
+        width: 32
+        access: rw
+        address: 0x000000C8
+        description: fofb processing loop interlock sources enable control register
+        children:
+          - field:
+              name: orb_distort_en
+              range: 0
+              description: orbit distortion source enable
+              comment: |
+                write 0: disables orbit distortion source
+                write 1: enables orbit distortion source
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: loop_intlk_ctl
+        width: 32
+        access: rw
+        address: 0x000000CC
+        description: fofb processing loop interlock control register
+        children:
+          - field:
+              name: clr
+              range: 0
+              description: clears loop interlock status
+              comment: |
+                write 0: no effect
+                write 1: clears loop interlock status (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: loop_intlk_sta
+        width: 32
+        access: rw
+        address: 0x000000D0
+        description: fofb processing loop interlock status register
+        children:
+          - field:
+              name: orb_distort
+              range: 0
+              description: orbit distortion loop interlock flag
+              comment: |
+                read 0: not interlocked
+                read 1: interlocked
+              x-wbgen:
+                type: BIT
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: orb_distort_limit
+        width: 32
+        access: rw
+        address: 0x000000D4
+        description: fofb processing loop interlock orbit distortion limit value register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
     - memory:
         name: coeffs_ram_bank_0
         memsize: 2k

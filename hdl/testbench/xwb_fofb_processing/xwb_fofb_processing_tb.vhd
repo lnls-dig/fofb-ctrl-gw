@@ -21,6 +21,8 @@
 --                                         output
 -- 2022-09-19  2.2      guilherme.ricioli  Test wishbone interface for
 --                                         accumulators regs
+-- 2022-01-11  2.3      guilherme.ricioli  Test wishbone interface for
+--                                         loop interlock regs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -75,6 +77,9 @@ entity xwb_fofb_processing_tb is
     -- fofb processing saturation minimum value
     g_SP_MIN                       : integer := -15200;
 
+    -- loop interlock orbit distortion limit
+    g_ORB_DISTORT_LIMIT            : natural := 1000;
+
     -- inverse response matrix coefficients file (in binary)
     g_COEFF_RAM_FILE               : string  := "../coeff_norm.dat";
 
@@ -113,6 +118,9 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   constant c_WB_SP_MIN                  :
     std_logic_vector(c_FOFB_WB_SP_MIN_MAX_WIDTH-1 downto 0) :=
       std_logic_vector(to_signed(g_SP_MIN, c_FOFB_WB_SP_MIN_MAX_WIDTH));
+
+  constant c_WB_ORB_DISTORT_LIMIT       : std_logic_vector(31 downto 0) :=
+    std_logic_vector(to_unsigned(g_ORB_DISTORT_LIMIT, c_FOFB_WB_GAIN_WIDTH));
 
   -- signals
   signal clk                            : std_logic := '0';
@@ -166,6 +174,8 @@ begin
     variable expec_fofb_proc_sp_arr       :
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable sp_err                       : real := 0.0;
+
+    variable expec_loop_intlk_distort     : boolean := false;
 
   begin
     -- loading coefficients and set-point from files
@@ -300,6 +310,42 @@ begin
         c_WB_FOFB_PROCESSING_REGS_SP_MIN_0_ADDR;
     end loop;
 
+    -- setting limit for loop interlock orbit distortion source via wishbone
+    -- bus
+    report
+      "setting limit for loop interlock orbit distortion source via wishbone" &
+      " bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_ORB_DISTORT_LIMIT_ADDR;
+
+    write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_ORB_DISTORT_LIMIT);
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+    assert (data = c_WB_ORB_DISTORT_LIMIT)
+      report "orbit distortion limit was not set"
+      severity error;
+
+    -- disabling loop interlock orbit distortion source via wishbone bus
+    report "disabling loop interlock orbit distortion source via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    data(
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) :=
+        '0';
+
+    write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+    assert (data(
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) =
+        '0')
+      report "loop interlock orbit distortion source was not disabled"
+      severity error;
+
     -- opening bpm positions file
     report "opening bpm positions file"
     severity note;
@@ -395,6 +441,202 @@ begin
         end if;
       end loop;
     end loop;
+
+    -- enabling loop interlock orbit distortion source via wishbone bus
+    report "enabling loop interlock orbit distortion source via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    data(
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) :=
+        '1';
+
+    write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+    assert (data(
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) =
+        '1')
+      report "loop interlock orbit distortion source was not enabled"
+      severity error;
+
+    -- ########## performing two extra fofb processing cycles ##########
+    report "performing two extra fofb processing cycles"
+    severity note;
+
+    for c in 0 to 1
+    loop
+      -- resetting the expected dot product state
+      expec_dot_prod_arr := (others => 0.0);
+
+      -- fofb loop should interlock when c = 1
+      bpm_x := g_ORB_DISTORT_LIMIT + sp_ram.get_sp_integer(0) + c;
+      bpm_y := sp_ram.get_sp_integer(256);
+
+      -- wait for the fofb_processing core to be ready to receive new data
+      f_wait_clocked_signal(clk, busy, '0');
+
+      -- new data available (serves the next two clock cycles)
+      bpm_pos_valid <= '1';
+
+      -- send bpm x position
+      bpm_pos_index <= to_unsigned(0, c_SP_COEFF_RAM_ADDR_WIDTH);
+      bpm_pos <= to_signed(bpm_x, c_SP_POS_RAM_DATA_WIDTH);
+      f_wait_cycles(clk, 1);
+
+      -- send bpm y position
+      bpm_pos_index <= to_unsigned(256, c_SP_COEFF_RAM_ADDR_WIDTH);
+      bpm_pos <= to_signed(bpm_y, c_SP_POS_RAM_DATA_WIDTH);
+      f_wait_cycles(clk, 1);
+
+      -- data ended
+      bpm_pos_valid <= '0';
+
+      -- ########## computing expected dot product internal state ##########
+      -- computing bpm position errors
+      bpm_x_err := bpm_x - sp_ram.get_sp_integer(0);
+      bpm_y_err := bpm_y - sp_ram.get_sp_integer(256);
+
+      -- checking orbit distortion
+      if abs(bpm_x_err) > g_ORB_DISTORT_LIMIT or
+        abs(bpm_x_err) > g_ORB_DISTORT_LIMIT then
+          expec_loop_intlk_distort := true;
+      end if;
+
+      -- computing expected dot product internal state
+      for j in 0 to g_CHANNELS-1
+      loop
+        expec_dot_prod_arr(j) := expec_dot_prod_arr(j) +
+          real(bpm_x_err) * coeff_ram.get_coeff_real(0, g_COEFF_FRAC_WIDTH);
+        expec_dot_prod_arr(j) := expec_dot_prod_arr(j) +
+          real(bpm_y_err) * coeff_ram.get_coeff_real(256, g_COEFF_FRAC_WIDTH);
+      end loop;
+      -- ####### end of: computing expected dot product internal state #######
+
+      -- ########## computing expected fofb processing setpoint ##########
+      for i in 0 to g_CHANNELS-1
+      loop
+        if expec_loop_intlk_distort = false then
+          expec_fofb_proc_sp_arr(i) := expec_fofb_proc_sp_arr(i) +
+            real_gain_arr(i) * expec_dot_prod_arr(i);
+
+            -- saturation
+            if expec_fofb_proc_sp_arr(i) > real(g_SP_MAX) then
+              expec_fofb_proc_sp_arr(i) := real(g_SP_MAX);
+            elsif expec_fofb_proc_sp_arr(i) < real(g_SP_MIN) then
+              expec_fofb_proc_sp_arr(i) := real(g_SP_MIN);
+            end if;
+        end if;
+      end loop;
+      -- ########## computing expected fofb processing setpoint ##########
+
+      -- time frame ended
+      bpm_time_frame_end <= '1';
+      f_wait_cycles(clk, 1);
+      bpm_time_frame_end <= '0';
+      f_wait_cycles(clk, 1);
+
+      -- wait until the new set-point is ready
+      f_wait_clocked_signal(clk, sp_valid_arr(0), '1');
+
+      report "fofb processing extra cycle " & to_string(c)
+      severity note;
+
+      for i in 0 to g_CHANNELS-1
+      loop
+        -- TODO: this may be problematic for smaller setpoint values
+        sp_err := abs((real(to_integer(sp_arr(i))) /
+          floor(expec_fofb_proc_sp_arr(i))) - 1.0);
+
+        report "channel " & to_string(i) & ": " &
+          "setpoint: " & to_string(to_integer(sp_arr(i))) & " (expected: " &
+          to_string(integer(floor(expec_fofb_proc_sp_arr(i)))) & ")"
+        severity note;
+
+        if sp_err > 0.01 then
+          report "error: " & to_string(sp_err) & " is too large (> 1%)!"
+          severity error;
+        else
+          report "error: " & to_string(sp_err) & " is ok!"
+          severity note;
+        end if;
+      end loop;
+
+      -- checking loop interlock orbit distortion source state via wishbone bus
+      report
+        "checking loop interlock orbit distortion source state via wishbone bus"
+      severity note;
+
+      addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ADDR;
+
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      if c = 0 then
+        assert (data(
+          c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ORB_DISTORT_OFFSET) = '0')
+            report "loop interlock should not be interlocked"
+            severity error;
+      else -- c = 1
+        assert (data(
+          c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ORB_DISTORT_OFFSET) = '1')
+            report "loop interlock should be interlocked"
+            severity error;
+      end if;
+
+    end loop;
+
+    -- ########## end of two extra fofb processing cycles ##########
+    report "end of two extra fofb processing cycles"
+    severity note;
+
+    -- clearing loop interlock state via wishbone bus
+    report "clearing loop interlock state via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
+
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    data(c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_CLR_OFFSET) := '1';
+
+    write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+    -- NOTE: must wait 4 clk cycles for status register to update
+    f_wait_cycles(clk, 4);
+
+    -- checking if loop interlock state was cleared via wishbone bus
+    report
+      "checking if loop interlock state was cleared via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ADDR;
+
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+    assert (or data(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) = '0')
+      report "loop interlock state was not cleared"
+      severity error;
+
+    -- disabling loop interlock orbit distortion source via wishbone bus
+    report "disabling loop interlock orbit distortion source via wishbone bus"
+    severity note;
+
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    data(
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) :=
+        '0';
+
+    write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+    read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+    assert (data(
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) =
+        '0')
+      report "loop interlock orbit distortion source was not disabled"
+      severity error;
 
     -- freezing accumulators via wishbone bus
     report "freezing accumulators via wishbone bus"
