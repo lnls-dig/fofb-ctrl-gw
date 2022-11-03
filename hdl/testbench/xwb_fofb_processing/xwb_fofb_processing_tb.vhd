@@ -139,9 +139,6 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   -- TODO: used to solve 'actual signal must be a static name' error
   signal valid_to_check                 : std_logic := '0';
 
-  shared variable freeze_flag_arr       :
-    std_logic_vector(g_CHANNELS-1 downto 0) := (others => '0');
-
 begin
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
 
@@ -410,7 +407,7 @@ begin
       data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_FREEZE_OFFSET) := '1';
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
-      freeze_flag_arr(i) := '1';
+      frozen_sp_arr(i) <= sp_arr(i);
 
       -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
       -- c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR on each iteration
@@ -503,17 +500,6 @@ begin
 
     finish;
   end process;
-
-  p_store_frozen_sps: process(clk)
-  begin
-    for i in 0 to (g_CHANNELS-1)
-    loop
-      if (freeze_flag_arr(i) = '1') then
-        frozen_sp_arr(i) <= sp_arr(i);
-        freeze_flag_arr(i) := '0';
-      end if;
-    end loop;
-  end process p_store_frozen_sps;
 
   -- components
   cmp_xwb_fofb_processing : xwb_fofb_processing
