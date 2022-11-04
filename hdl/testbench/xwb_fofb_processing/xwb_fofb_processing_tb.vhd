@@ -614,7 +614,9 @@ begin
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
-    assert (or data(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) = '0')
+    -- TODO: increase slice to c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0 when
+    --       c_FOFB_LOOP_INTLK_PKT_LOSS_ID regs are exposed on wishbone
+    assert (or data(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-2 downto 0) = '0')
       report "loop interlock state was not cleared"
       severity error;
 

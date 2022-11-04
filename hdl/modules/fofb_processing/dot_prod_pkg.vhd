@@ -39,8 +39,9 @@ package dot_prod_pkg is
   type t_fofb_processing_gain_arr is array (natural range <>) of signed(c_FOFB_GAIN_WIDTH-1 downto 0);
   type t_fofb_processing_wb_gain_arr is array (natural range <>) of std_logic_vector(c_FOFB_WB_GAIN_WIDTH-1 downto 0);
 
-  constant c_FOFB_LOOP_INTLK_TRIGS_WIDTH : natural := 1;
+  constant c_FOFB_LOOP_INTLK_TRIGS_WIDTH : natural := 2;
   constant c_FOFB_LOOP_INTLK_DISTORT_ID  : natural := 0;
+  constant c_FOFB_LOOP_INTLK_PKT_LOSS_ID : natural := 1;
 
   -- RAM interface widths
   constant c_SP_COEFF_RAM_ADDR_WIDTH      : natural := 9;
@@ -302,7 +303,10 @@ package dot_prod_pkg is
       loop_intlk_state_o             : out std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
 
       -- Loop interlock orbit distortion limit
-      loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0)
+      loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0);
+
+      -- Loop interlock minimum number of measurements per timeframe
+      loop_intlk_min_num_meas_i      : in unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)
     );
   end component fofb_processing;
 

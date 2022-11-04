@@ -261,7 +261,8 @@ begin
       loop_intlk_src_en_i          => loop_intlk_src_en,
       loop_intlk_state_clr_i       => loop_intlk_state_clr,
       loop_intlk_state_o           => loop_intlk_state,
-      loop_intlk_distort_limit_i   => loop_intlk_distort_limit
+      loop_intlk_distort_limit_i   => loop_intlk_distort_limit,
+      loop_intlk_min_num_meas_i     => (others => '0')
     );
 
   -----------------------------
@@ -313,7 +314,8 @@ begin
   end generate gen_wb_conn;
 
   loop_intlk_distort_limit <= unsigned(orb_distort_limit_val(loop_intlk_distort_limit'left downto 0));
-  loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID) <=  orb_distort_en;
+  loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID) <= orb_distort_en;
+  loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID) <= '0';
 
   cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
     port map (

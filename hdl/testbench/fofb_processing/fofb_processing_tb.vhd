@@ -22,6 +22,7 @@
 -- 2022-07-27  1.0      guilherme.ricioli     Created
 -- 2022-09-02  2.0      augusto.fraga         Update the testbench to match the
 --                                            new fofb_processing version
+-- 2022-11-04  2.1      guilherme.ricioli     Test loop interlock
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -36,8 +37,6 @@ library work;
 use work.dot_prod_pkg.all;
 use work.genram_pkg.all;
 use work.fofb_tb_pkg.all;
-
--- TODO: Properly test loop interlock
 
 entity fofb_processing_tb is
   generic (
@@ -81,19 +80,15 @@ entity fofb_processing_tb is
     g_FOFB_BPM_REF_FILE            : string  := "../fofb_bpm_ref.dat";
 
     -- Number of FOFB processing channels
-    g_FOFB_CHANNELS                : natural := 2;
-
-    -- Loop interlock orbit distortion limit
-    g_LOOP_INTLK_DISTORT_LIMIT     : natural := 300000
+    g_FOFB_CHANNELS                : natural := 2
   );
 end fofb_processing_tb;
 
 architecture behave of fofb_processing_tb is
   -- Constants
   constant c_SYS_CLOCK_FREQ   : natural := 100_000_000;
-  constant c_LOOP_INTLK_DISTORT_LIMIT :
-    unsigned(g_BPM_POS_INT_WIDTH-1 downto 0) :=
-      to_unsigned(g_LOOP_INTLK_DISTORT_LIMIT, g_BPM_POS_INT_WIDTH);
+  constant c_LOOP_INTLK_DISTORT_LIMIT : natural := 20000;
+  constant c_LOOP_INTLK_MIN_NUM_MEAS  : natural := 10;
 
   -- Signals
   signal clk                  : std_logic := '0';
@@ -125,6 +120,12 @@ architecture behave of fofb_processing_tb is
   shared variable sp_ram      : t_sp_ram_data;
 
   signal fofb_proc_gains      : real_vector(g_FOFB_CHANNELS-1 downto 0) := (others => 0.0);
+
+  signal loop_intlk_src_en        : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
+  signal loop_intlk_state_clr     : std_logic := '0';
+  signal loop_intlk_state         : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+  signal loop_intlk_distort_limit : unsigned(g_BPM_POS_INT_WIDTH-1 downto 0) := (others => '0');
+  signal loop_intlk_min_num_meas  : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
 begin
   -- Generate clock signal
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
@@ -144,7 +145,8 @@ begin
     variable bpm_prev_x           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable bpm_prev_y           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable sp_err               : real := 0.0;
-    variable loop_intlk_distort   : std_logic := '0';
+    variable meas_cnt             : natural := 0;
+    variable loop_intlked         : boolean := false;
   begin
     -- Load BPM position, set-point and coefficients files
     bpm_pos_reader.open_bpm_pos_file(g_FOFB_BPM_POS_FILE);
@@ -156,6 +158,19 @@ begin
     f_wait_cycles(clk, 1);
     rst_n <= '1';
     f_wait_cycles(clk, 10);
+
+    -- Disable all loop interlock sources
+    loop_intlk_src_en <= (others => '0');
+    f_wait_cycles(clk, 1);
+
+    -- Clear interlock state
+    loop_intlk_state_clr <= '1';
+    f_wait_cycles(clk, 1);
+    loop_intlk_state_clr <= '0';
+
+    f_wait_clocked_signal(clk, loop_intlk_state(c_FOFB_LOOP_INTLK_DISTORT_ID), '0');
+    f_wait_clocked_signal(clk, loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID), '0');
+    loop_intlked := false;
 
     for fofb_cyc in 1 to g_FOFB_NUM_CYC
     loop
@@ -193,12 +208,6 @@ begin
           bpm_err_y := bpm_y - sp_ram.get_sp_integer(i + 256);
         end if;
 
-        -- Detects loop interlock due to orbit distortion
-        if (abs(bpm_err_x) > c_LOOP_INTLK_DISTORT_LIMIT) or
-          (abs(bpm_err_y) > c_LOOP_INTLK_DISTORT_LIMIT) then
-            loop_intlk_distort := '1';
-        end if;
-
         -- Store the current BPM position for computing the average in the next
         -- time frame
         bpm_prev_x(i) := bpm_x;
@@ -213,9 +222,7 @@ begin
 
       -- Accumulate the simulated dot product result
       for i in 0 to g_FOFB_CHANNELS-1 loop
-        if loop_intlk_distort = '0' then
-          fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
-        end if;
+        fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
       end loop;
 
       -- Time frame ended
@@ -245,6 +252,241 @@ begin
         end if;
       end loop;
     end loop;
+
+    -- Enable loop interlock orbit distortion source
+    loop_intlk_distort_limit <= to_unsigned(c_LOOP_INTLK_DISTORT_LIMIT, g_BPM_POS_INT_WIDTH);
+    loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID) <= '1';
+    f_wait_cycles(clk, 1);
+
+    report "Testing loop interlock orbit distortion source" severity note;
+    for fofb_cyc in 0 to 1
+    loop
+      -- Reset the simulated dot product accumulator
+      dot_prod_acc_simu := (others => 0.0);
+
+      -- Loop should interlock when fofb_cyc = 1
+      if g_USE_MOVING_AVG then
+        bpm_x := ((c_LOOP_INTLK_DISTORT_LIMIT + fofb_cyc) + sp_ram.get_sp_integer(0))*2 - bpm_prev_x(0);
+      else
+        bpm_x := (c_LOOP_INTLK_DISTORT_LIMIT + fofb_cyc) + sp_ram.get_sp_integer(0);
+      end if;
+
+      -- Wait for the fofb_processing core to be ready to receive new data
+      f_wait_clocked_signal(clk, busy, '0');
+
+      -- New data available
+      bpm_pos_valid <= '1';
+
+      -- Send BPM x position
+      bpm_pos_index <= to_unsigned(0, c_SP_COEFF_RAM_ADDR_WIDTH);
+      bpm_pos <= to_signed(bpm_x, c_SP_POS_RAM_DATA_WIDTH);
+      f_wait_cycles(clk, 1);
+
+      -- BPM data ended
+      bpm_pos_valid <= '0';
+
+      -- Compute the BPM position error
+      if g_USE_MOVING_AVG then
+        -- Take the average with the BPM position from the last time frame
+        bpm_err_x := ((bpm_x + bpm_prev_x(0)) / 2) - sp_ram.get_sp_integer(0);
+      else
+        bpm_err_x := bpm_x - sp_ram.get_sp_integer(0);
+      end if;
+
+      -- Detect loop interlock due to orbit distortion
+      if (abs(bpm_err_x) > to_unsigned(c_LOOP_INTLK_DISTORT_LIMIT, g_BPM_POS_INT_WIDTH)) then
+          loop_intlked := true;
+      end if;
+
+      -- Store the current BPM position for computing the average in the next
+      -- time frame
+      bpm_prev_x(0) := bpm_x;
+
+      -- Compute the simulated dot product
+      for j in 0 to g_FOFB_CHANNELS-1 loop
+        dot_prod_acc_simu(j) := dot_prod_acc_simu(j) + real(bpm_err_x) * coeff_ram.get_coeff_real(0, g_COEFF_FRAC_WIDTH);
+      end loop;
+
+      -- Accumulate the simulated dot product result
+      for i in 0 to g_FOFB_CHANNELS-1 loop
+        -- Only accumulate if loop is not interlocked
+        if loop_intlked = false then
+          fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
+        end if;
+      end loop;
+
+      -- Time frame ended
+      bpm_time_frame_end <= '1';
+      f_wait_cycles(clk, 1);
+      bpm_time_frame_end <= '0';
+      f_wait_cycles(clk, 1);
+
+      -- Wait until the new set-point is ready
+      f_wait_clocked_signal(clk, sp_valid_arr(0), '1');
+
+      -- Check loop interlock state
+      if loop_intlked = false then
+        assert ((or loop_intlk_state) = '0')
+          report "Loop shouldn't be interlocked" severity error;
+        else -- loop_intlked = true
+        assert ((or loop_intlk_state) = '1')
+          report "Loop should be interlocked" severity error;
+      end if;
+
+      report "---- Iteration  " & to_string(fofb_cyc) & " ----" severity note;
+
+      for i in 0 to g_FOFB_CHANNELS-1 loop
+        -- This may be problematic for smaller set-point values
+        sp_err := abs((real(to_integer(sp_arr(i))) / floor(fofb_proc_acc_simu(i))) - 1.0);
+
+        report "Instance: " & to_string(i) severity note;
+        report "Gain: " & to_string(fofb_proc_gains(i)) severity note;
+        report "Set point: " & to_string(to_integer(sp_arr(i))) severity note;
+        report "Set point simulated: " & to_string(integer(floor(fofb_proc_acc_simu(i)))) severity note;
+
+        if sp_err > 0.01 then
+          report "Set point error: " & to_string(sp_err) & " Too large!" severity error;
+        else
+          report "Set point error: " & to_string(sp_err) & " OK!" severity note;
+        end if;
+      end loop;
+    end loop;
+
+    -- Clear interlock state
+    loop_intlk_state_clr <= '1';
+    f_wait_cycles(clk, 1);
+    loop_intlk_state_clr <= '0';
+
+    f_wait_clocked_signal(clk, loop_intlk_state(c_FOFB_LOOP_INTLK_DISTORT_ID), '0');
+    f_wait_clocked_signal(clk, loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID), '0');
+    loop_intlked := false;
+
+    -- Disable loop interlock orbit distortion source
+    loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID) <= '0';
+    f_wait_cycles(clk, 1);
+
+    report "Orbit distortion source of loop interlock test succeed!" severity note;
+
+    -- Enable loop interlock packet loss source
+    loop_intlk_min_num_meas <= to_unsigned(c_LOOP_INTLK_MIN_NUM_MEAS, c_SP_COEFF_RAM_ADDR_WIDTH);
+    loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID) <= '1';
+    f_wait_cycles(clk, 1);
+
+    report "Testing loop interlock packet loss source" severity note;
+    for fofb_cyc in 0 to 1
+    loop
+      -- Reset the simulated dot product accumulator
+      dot_prod_acc_simu := (others => 0.0);
+
+      -- Loop should interlock when fofb_cyc = 1
+      meas_cnt := 0;
+      for meas in 1 to c_LOOP_INTLK_MIN_NUM_MEAS-fofb_cyc
+      loop
+        if g_USE_MOVING_AVG then
+          bpm_x := meas + sp_ram.get_sp_integer(0)*2 - bpm_prev_x(0);
+        else
+          bpm_x := meas + sp_ram.get_sp_integer(0);
+        end if;
+
+        -- Wait for the fofb_processing core to be ready to receive new data
+        f_wait_clocked_signal(clk, busy, '0');
+
+        -- New data available
+        bpm_pos_valid <= '1';
+
+        -- Send BPM x position
+        bpm_pos_index <= to_unsigned(0, c_SP_COEFF_RAM_ADDR_WIDTH);
+        bpm_pos <= to_signed(bpm_x, c_SP_POS_RAM_DATA_WIDTH);
+        f_wait_cycles(clk, 1);
+
+        -- BPM data ended
+        bpm_pos_valid <= '0';
+
+        -- Count measurements
+        meas_cnt := meas_cnt + 1;
+
+        -- Compute the BPM position error
+        if g_USE_MOVING_AVG then
+          -- Take the average with the BPM position from the last time frame
+          bpm_err_x := ((bpm_x + bpm_prev_x(0)) / 2) - sp_ram.get_sp_integer(0);
+        else
+          bpm_err_x := bpm_x - sp_ram.get_sp_integer(0);
+        end if;
+
+        -- Store the current BPM position for computing the average in the next
+        -- time frame
+        bpm_prev_x(0) := bpm_x;
+
+        -- Compute the simulated dot product
+        for j in 0 to g_FOFB_CHANNELS-1 loop
+          dot_prod_acc_simu(j) := dot_prod_acc_simu(j) + real(bpm_err_x) * coeff_ram.get_coeff_real(0, g_COEFF_FRAC_WIDTH);
+        end loop;
+      end loop;
+
+      -- Detect loop interlock due to packet loss
+      if meas_cnt < c_LOOP_INTLK_MIN_NUM_MEAS then
+          loop_intlked := true;
+      end if;
+
+      -- Accumulate the simulated dot product result
+      for i in 0 to g_FOFB_CHANNELS-1 loop
+        -- Only accumulate if loop is not interlocked
+        if loop_intlked = false then
+          fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
+        end if;
+      end loop;
+
+      -- Time frame ended
+      bpm_time_frame_end <= '1';
+      f_wait_cycles(clk, 1);
+      bpm_time_frame_end <= '0';
+      f_wait_cycles(clk, 1);
+
+      -- Wait until the new set-point is ready
+      f_wait_clocked_signal(clk, sp_valid_arr(0), '1');
+
+      -- Check loop interlock state
+      if loop_intlked = false then
+        assert ((or loop_intlk_state) = '0')
+          report "Loop shouldn't be interlocked" severity error;
+      else -- loop_intlked = true
+        assert ((or loop_intlk_state) = '1')
+          report "Loop should be interlocked" severity error;
+      end if;
+
+      report "---- Iteration  " & to_string(fofb_cyc) & " ----" severity note;
+
+      for i in 0 to g_FOFB_CHANNELS-1 loop
+        -- This may be problematic for smaller set-point values
+        sp_err := abs((real(to_integer(sp_arr(i))) / floor(fofb_proc_acc_simu(i))) - 1.0);
+
+        report "Instance: " & to_string(i) severity note;
+        report "Gain: " & to_string(fofb_proc_gains(i)) severity note;
+        report "Set point: " & to_string(to_integer(sp_arr(i))) severity note;
+        report "Set point simulated: " & to_string(integer(floor(fofb_proc_acc_simu(i)))) severity note;
+
+        if sp_err > 0.01 then
+          report "Set point error: " & to_string(sp_err) & " Too large!" severity error;
+        else
+          report "Set point error: " & to_string(sp_err) & " OK!" severity note;
+        end if;
+      end loop;
+    end loop;
+
+    -- Clear interlock state
+    loop_intlk_state_clr <= '1';
+    f_wait_cycles(clk, 1);
+    loop_intlk_state_clr <= '0';
+
+    f_wait_clocked_signal(clk, loop_intlk_state(c_FOFB_LOOP_INTLK_DISTORT_ID), '0');
+    f_wait_clocked_signal(clk, loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID), '0');
+    loop_intlked := false;
+
+    -- Disable loop interlock packet loss source
+    loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID) <= '0';
+    f_wait_cycles(clk, 1);
+
+    report "Test of loop interlock packet loss source succeed!" severity note;
 
     report "Clearing the set-point accumulator for each channel..." severity note;
     clear_acc_arr <= (others => '1');
@@ -318,10 +560,11 @@ begin
       sp_arr_o                     => sp_arr,
       sp_valid_arr_o               => sp_valid_arr,
 
-      loop_intlk_src_en_i          => (others => '1'),
-      loop_intlk_state_clr_i       => '0',
-      loop_intlk_state_o           => open,
-      loop_intlk_distort_limit_i   => c_LOOP_INTLK_DISTORT_LIMIT
+      loop_intlk_src_en_i          => loop_intlk_src_en,
+      loop_intlk_state_clr_i       => loop_intlk_state_clr,
+      loop_intlk_state_o           => loop_intlk_state,
+      loop_intlk_distort_limit_i   => loop_intlk_distort_limit,
+      loop_intlk_min_num_meas_i    => loop_intlk_min_num_meas
     );
 
 end architecture behave;

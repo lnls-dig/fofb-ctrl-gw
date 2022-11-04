@@ -21,6 +21,7 @@
 -- 2022-10-27  2.1      guilherme.ricioli     Add loop interlock control/status
 --                                            mechanisms and orbit distortion
 --                                            loop interlocking
+-- 2022-11-04  2.2      guilherme.ricioli     Add packet loss loop interlocking
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -128,7 +129,10 @@ entity fofb_processing is
     loop_intlk_state_o             : out std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
 
     -- Loop interlock orbit distortion limit
-    loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0)
+    loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0);
+
+    -- Loop interlock minimum number of measurements per timeframe
+    loop_intlk_min_num_meas_i      : in unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)
   );
 end fofb_processing;
 
@@ -197,6 +201,7 @@ begin
 
   process(clk_i)
     variable bpm_pos_avg_sum: signed(bpm_pos_i'length downto 0);
+    variable loop_intlk_meas_cnt : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
     variable loop_intlk_trigs : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
   begin
     if rising_edge(clk_i) then
@@ -238,13 +243,26 @@ begin
         bpm_pos_err_index <= to_integer(bpm_index_tmp);
       end if;
 
-      -- Check orbit distortion limit crossing
       if bpm_pos_err_valid = '1' then
+        -- Check orbit distortion limit crossing
         if abs(bpm_pos_err) > signed(loop_intlk_distort_limit_i) then
           loop_intlk_trigs(c_FOFB_LOOP_INTLK_DISTORT_ID) := '1';
         end if;
+
+        -- Count number of incoming packets in this timeframe
+        loop_intlk_meas_cnt := loop_intlk_meas_cnt + 1;
       else
         loop_intlk_trigs(c_FOFB_LOOP_INTLK_DISTORT_ID) := '0';
+        loop_intlk_trigs(c_FOFB_LOOP_INTLK_PKT_LOSS_ID) := '0';
+      end if;
+
+      -- Check packet loss
+      if bpm_time_frame_end = '1' then
+        if loop_intlk_meas_cnt < loop_intlk_min_num_meas_i then
+          loop_intlk_trigs(c_FOFB_LOOP_INTLK_PKT_LOSS_ID) := '1';
+        end if;
+
+        loop_intlk_meas_cnt := (others => '0');
       end if;
 
       if loop_intlk_state_clr_i = '1' then
