@@ -174,8 +174,9 @@ architecture rtl of xwb_fofb_processing is
   signal loop_intlk_state_clr         : std_logic;
   signal loop_intlk_state             : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
   signal loop_intlk_distort_limit     : unsigned(g_BPM_POS_INT_WIDTH-1 downto 0);
-  signal orb_distort_en               : std_logic;
+  signal loop_intlk_min_num_meas      : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal orb_distort_limit_val        : std_logic_vector(31 downto 0);
+  signal min_num_pkts_val             : std_logic_vector(31 downto 0);
 
   -----------------------------
   -- Wishbone slave adapter signals/structures
@@ -262,7 +263,7 @@ begin
       loop_intlk_state_clr_i       => loop_intlk_state_clr,
       loop_intlk_state_o           => loop_intlk_state,
       loop_intlk_distort_limit_i   => loop_intlk_distort_limit,
-      loop_intlk_min_num_meas_i     => (others => '0')
+      loop_intlk_min_num_meas_i    => loop_intlk_min_num_meas
     );
 
   -----------------------------
@@ -314,8 +315,8 @@ begin
   end generate gen_wb_conn;
 
   loop_intlk_distort_limit <= unsigned(orb_distort_limit_val(loop_intlk_distort_limit'left downto 0));
-  loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID) <= orb_distort_en;
-  loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID) <= '0';
+  -- Each DCC packet has 2 measurements
+  loop_intlk_min_num_meas <= shift_left(unsigned(min_num_pkts_val(loop_intlk_min_num_meas'left downto 0)), 1);
 
   cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
     port map (
@@ -458,10 +459,13 @@ begin
       wb_fofb_processing_regs_setpoints_ram_bank_rd_i                 => '0',
       wb_fofb_processing_regs_setpoints_ram_bank_data_i               => (others => '0'),
       wb_fofb_processing_regs_setpoints_ram_bank_wr_i                 => '0',
-      wb_fofb_processing_regs_loop_intlk_src_en_ctl_orb_distort_en_o  => orb_distort_en,
+      wb_fofb_processing_regs_loop_intlk_src_en_ctl_orb_distort_en_o  => loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID),
+      wb_fofb_processing_regs_loop_intlk_src_en_ctl_packet_loss_en_o  => loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
       wb_fofb_processing_regs_loop_intlk_ctl_clr_o                    => loop_intlk_state_clr,
       wb_fofb_processing_regs_loop_intlk_sta_orb_distort_i            => loop_intlk_state(c_FOFB_LOOP_INTLK_DISTORT_ID),
-      wb_fofb_processing_regs_orb_distort_limit_val_o                 => orb_distort_limit_val
+      wb_fofb_processing_regs_loop_intlk_sta_packet_loss_i            => loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
+      wb_fofb_processing_regs_orb_distort_limit_val_o                 => orb_distort_limit_val,
+      wb_fofb_processing_regs_min_num_pkts_val_o                      => min_num_pkts_val
     );
 
 end architecture rtl;

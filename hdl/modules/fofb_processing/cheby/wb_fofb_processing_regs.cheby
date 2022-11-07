@@ -997,8 +997,20 @@ memory-map:
               range: 0
               description: orbit distortion source enable
               comment: |
-                write 0: disables orbit distortion source
-                write 1: enables orbit distortion source
+                write 0: disables source
+                write 1: enables source
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: packet_loss_en
+              range: 1
+              description: packet loss source enable
+              comment: |
+                write 0: disables source
+                write 1: enables source
               x-wbgen:
                 type: BIT
                 access_dev: READ_ONLY
@@ -1042,12 +1054,40 @@ memory-map:
                 access_dev: WRITE_ONLY
                 access_bus: READ_ONLY
                 clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: packet_loss
+              range: 1
+              description: packet loss loop interlock flag
+              comment: |
+                read 0: not interlocked
+                read 1: interlocked
+              x-wbgen:
+                type: BIT
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
     - reg:
         name: orb_distort_limit
         width: 32
         access: rw
         address: 0x000000D4
         description: fofb processing loop interlock orbit distortion limit value register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: min_num_pkts
+        width: 32
+        access: rw
+        address: 0x000000D8
+        description: fofb processing loop interlock minimum number of packets per timeframe value register
         children:
           - field:
               name: val

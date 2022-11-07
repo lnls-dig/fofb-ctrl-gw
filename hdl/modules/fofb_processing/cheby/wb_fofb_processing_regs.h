@@ -255,6 +255,7 @@
 /* fofb processing loop interlock sources enable control register */
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL 0xc8UL
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN 0x1UL
+#define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN 0x2UL
 
 /* fofb processing loop interlock control register */
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL 0xccUL
@@ -263,11 +264,17 @@
 /* fofb processing loop interlock status register */
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA 0xd0UL
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ORB_DISTORT 0x1UL
+#define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_PACKET_LOSS 0x2UL
 
 /* fofb processing loop interlock orbit distortion limit value register */
 #define WB_FOFB_PROCESSING_REGS_ORB_DISTORT_LIMIT 0xd4UL
 #define WB_FOFB_PROCESSING_REGS_ORB_DISTORT_LIMIT_VAL_MASK 0xffffffffUL
 #define WB_FOFB_PROCESSING_REGS_ORB_DISTORT_LIMIT_VAL_SHIFT 0
+
+/* fofb processing loop interlock minimum number of packets per timeframe value register */
+#define WB_FOFB_PROCESSING_REGS_MIN_NUM_PKTS 0xd8UL
+#define WB_FOFB_PROCESSING_REGS_MIN_NUM_PKTS_VAL_MASK 0xffffffffUL
+#define WB_FOFB_PROCESSING_REGS_MIN_NUM_PKTS_VAL_SHIFT 0
 
 /* fofb processing coefficients ram bank */
 #define WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0 0x800UL
@@ -523,8 +530,11 @@ struct wb_fofb_processing_regs {
   /* [0xd4]: REG (rw) fofb processing loop interlock orbit distortion limit value register */
   uint32_t orb_distort_limit;
 
+  /* [0xd8]: REG (rw) fofb processing loop interlock minimum number of packets per timeframe value register */
+  uint32_t min_num_pkts;
+
   /* padding to: 512 words */
-  uint32_t __padding_0[458];
+  uint32_t __padding_0[457];
 
   /* [0x800]: MEMORY fofb processing coefficients ram bank */
   struct coeffs_ram_bank_0 {
