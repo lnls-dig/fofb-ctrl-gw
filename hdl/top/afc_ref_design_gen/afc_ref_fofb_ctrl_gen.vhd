@@ -406,7 +406,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
   constant c_SYS_CLOCK_FREQ                  : natural := 100000000;
   constant c_REF_CLOCK_FREQ                  : natural := 100000000;
-  constant c_FAST_SPI_FREQ                   : natural := 400000000;
+  constant c_FAST_SPI_FREQ                   : natural := 200000000;
   constant c_ADC_SCLK_FREQ                   : natural := 100000000;
   constant c_DAC_SCLK_FREQ                   : natural := 25000000;
   constant c_USE_REF_CLOCK                   : boolean := true;
@@ -877,7 +877,7 @@ begin
         g_CLKBOUT_MULT_F                         => 48,
         g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
         g_CLK1_DIVIDE                            => 6,    -- Must be 200 MHz
-        g_CLK2_DIVIDE                            => 3,    -- 400 MHz
+        g_CLK2_DIVIDE                            => 6,    -- 200 MHz
         g_SYS_CLOCK_FREQ                         => c_SYS_CLOCK_FREQ,
         -- aux PLL parameters
         g_AUX_CLKIN_PERIOD                       => 14.400,
@@ -2044,6 +2044,11 @@ begin
       -- FPGA interface
       ---------------------------------------------------------------------------
       data_valid_o                                => rtmlamp_data_valid,
+
+      ---------------------------------------------------------------------------
+      -- External triggers for SP and DAC. Clock domain: clk_i
+      ---------------------------------------------------------------------------
+      trig_i                                      => (others => '0'),
 
       ---------------------------------------------------------------------------
       -- ADC parallel interface
