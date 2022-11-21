@@ -469,6 +469,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal fofb_proc_bpm_pos_index             : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal fofb_proc_bpm_pos_valid             : std_logic;
   signal fofb_proc_time_frame_end            : std_logic;
+  signal fofb_proc_dcc_p2p_en                : std_logic;
 
   signal pi_sp_ext                           : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
 
@@ -1524,7 +1525,7 @@ begin
     ext_cc_clk_i                               => fofb_userclk(c_FOFB_CC_P2P_ID),
     ext_cc_rst_n_i                             => fofb_userrst_n(c_FOFB_CC_P2P_ID),
     ext_cc_dat_i                               => fofb_fod_dat(c_FOFB_CC_P2P_ID),
-    ext_cc_dat_val_i                           => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0),
+    ext_cc_dat_val_i                           => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0) and fofb_proc_dcc_p2p_en,
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
@@ -1758,6 +1759,7 @@ begin
       bpm_time_frame_end_i           => fofb_proc_time_frame_end,
       sp_arr_o                       => fofb_sp_arr,
       sp_valid_arr_o                 => fofb_sp_valid_arr,
+      dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
       wb_slv_i                       => user_wb_out(c_FOFB_PROCESSING_ID),
       wb_slv_o                       => user_wb_in(c_FOFB_PROCESSING_ID)
     );

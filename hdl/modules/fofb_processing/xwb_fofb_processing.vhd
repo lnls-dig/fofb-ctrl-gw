@@ -99,6 +99,8 @@ entity xwb_fofb_processing is
     -- Set-point valid array (for each channel)
     sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
+    dcc_p2p_en_o                   : out std_logic;
+
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
@@ -467,5 +469,7 @@ begin
       wb_fofb_processing_regs_orb_distort_limit_val_o                 => orb_distort_limit_val,
       wb_fofb_processing_regs_min_num_pkts_val_o                      => min_num_pkts_val
     );
+
+    dcc_p2p_en_o <= not loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID);
 
 end architecture rtl;

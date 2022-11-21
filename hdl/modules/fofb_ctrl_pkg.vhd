@@ -580,6 +580,8 @@ package fofb_ctrl_pkg is
     -- Set-point valid array (for each channel)
     sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
+    dcc_p2p_en_o                   : out std_logic;
+
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
