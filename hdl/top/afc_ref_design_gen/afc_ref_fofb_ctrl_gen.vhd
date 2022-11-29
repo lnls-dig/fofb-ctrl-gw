@@ -15,6 +15,7 @@
 -- Date        Version  Author             Description
 -- 2021-06-02  1.0      lucas.russo        Created
 -- 2021-09-08  1.1      melissa.aguiar     FOFB Processing module added
+-- 2022-07-27  1.2      guilherme.ricioli  Changed coeffs RAMs' wb interface
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -61,19 +62,35 @@ use work.genram_pkg.all;
 
 entity afc_ref_fofb_ctrl_gen is
 generic (
-  g_BOARD                                    : string  := "AFCv4";
+  g_BOARD                             : string  := "AFCv4";
   -- Select RTM LAMP or RTM SFP
-  g_RTM                                      : string  := "RTMLAMP";
+  g_RTM                               : string  := "RTMLAMP";
   -- Number of SFP GTs
-  g_NUM_SFPS                                 : integer range 1 to 4 := 4;
+  g_NUM_SFPS                          : integer range 1 to 4 := 4;
   -- Starting index of used SFP GTs
-  g_SFP_START_ID                             : integer := 4;
+  g_SFP_START_ID                      : integer := 4;
   -- Number of P2P GTs
-  g_NUM_P2P_GTS                              : integer range 1 to 8 := 4;
+  g_NUM_P2P_GTS                       : integer range 1 to 8 := 4;
   -- Starting index of used P2P GTs
-  g_P2P_GT_START_ID                          : integer := 0;
+  g_P2P_GT_START_ID                   : integer := 0;
   -- Number of RTM LAMP channels
-  g_RTMLAMP_CHANNELS                         : natural := 12
+  g_RTMLAMP_CHANNELS                  : natural := 12;
+  -- Integer width for the inverse response matrix coefficient input
+  g_FOFB_COEFF_INT_WIDTH              : natural := 0;
+  -- Fractionary width for the inverse response matrix coefficient input
+  g_FOFB_COEFF_FRAC_WIDTH             : natural := 17;
+  -- Integer width for the BPM position error input
+  g_FOFB_BPM_POS_INT_WIDTH            : natural := 20;
+  -- Fractionary width for the BPM position error input
+  g_FOFB_BPM_POS_FRAC_WIDTH           : natural := 0;
+  -- Extra bits for the dot product accumulator
+  g_FOFB_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
+  -- Dot product multiply pipeline stages
+  g_FOFB_DOT_PROD_MUL_PIPELINE_STAGES : natural := 2;
+  -- Dot product accumulator pipeline stages
+  g_FOFB_DOT_PROD_ACC_PIPELINE_STAGES : natural := 2;
+  -- Gain multiplication pipeline stages
+  g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2
 );
 port (
   ---------------------------------------------------------------------------
@@ -354,6 +371,15 @@ architecture top of afc_ref_fofb_ctrl_gen is
     max_fp_p2p_gts : integer;
   end record;
 
+  type t_serialize_data_state is
+  (
+    IDLE,
+    DRIVE_X_DATA_OR_TIMEFRAME_END,
+    LOWER_VALID_X_DATA_OR_TIMEFRAME_END,
+    DRIVE_Y_DATA,
+    LOWER_VALID_Y_DATA
+  );
+
   function f_extract_gt_cfg(num_p2p : integer) return t_gt_cfg is
     variable rv : t_gt_cfg;
   begin
@@ -380,7 +406,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
   constant c_SYS_CLOCK_FREQ                  : natural := 100000000;
   constant c_REF_CLOCK_FREQ                  : natural := 100000000;
-  constant c_FAST_SPI_FREQ                   : natural := 400000000;
+  constant c_FAST_SPI_FREQ                   : natural := 200000000;
   constant c_ADC_SCLK_FREQ                   : natural := 100000000;
   constant c_DAC_SCLK_FREQ                   : natural := 25000000;
   constant c_USE_REF_CLOCK                   : boolean := true;
@@ -428,23 +454,28 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
-  constant c_CHANNELS                        : natural := 8;
-  constant c_ADDR_WIDTH                      : natural := NodeW + f_log2_size(c_CHANNELS);
-  constant c_RAM_SIZE                        : natural := 2**NodeW;
-  constant c_SP_OUT_WIDTH                    : natural := 16;
-  constant c_OUT_FIXED                       : natural := 26;
-  constant c_EXTRA_WIDTH                     : natural := 4;
+  constant c_FOFB_CHANNELS                   : natural := 8;
 
-  constant c_dcc_fod_s                       : t_dot_prod_record_fod := (valid => '0',
-                                                                         data  => (others => '0'),
-                                                                         addr  => (others => '0'));
+  constant c_DOT_PROD_ACC_EXTRA_WIDTH        : natural := 4;
 
-  constant c_ANTI_WINDUP_UPPER_LIMIT         : integer := 2**(c_SP_OUT_WIDTH - 1) - 1;
-  constant c_ANTI_WINDUP_LOWER_LIMIT         : integer := -2**(c_SP_OUT_WIDTH - 1);
+  constant c_SERIALIZE_FIFO_DATA_SIZE        : natural := 1 + def_PacketSize*32;  -- dcc timeframe end + dcc packet
+  constant c_SERIALIZE_FIFO_SIZE             : natural := 32;
+  constant c_TIMEFRAME_END_POS               : natural := c_SERIALIZE_FIFO_DATA_SIZE - 1;  -- dcc timeframe end is the msb of q
 
-  signal dcc_fod_s                           : t_dot_prod_array_record_fod(c_CHANNELS-1 downto 0) := (others => c_dcc_fod_s);
-  signal sp_arr_s                            : t_fofb_processing_setpoints(c_CHANNELS-1 downto 0);
+  signal fofb_sp_arr                         : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_sp_valid_arr                   : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_proc_busy                      : std_logic;
+  signal fofb_proc_bpm_pos                   : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal fofb_proc_bpm_pos_index             : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal fofb_proc_bpm_pos_valid             : std_logic;
+  signal fofb_proc_time_frame_end            : std_logic;
+  signal fofb_proc_dcc_p2p_en                : std_logic;
+
   signal pi_sp_ext                           : t_pi_sp_word_array(c_RTMLAMP_CHANNELS-1 downto 0);
+
+  signal acq_dcc_fmc_packet                  : t_fofb_cc_packet;
+  signal acq_dcc_fmc_valid                   : std_logic := '0';
+
   -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
@@ -846,7 +877,7 @@ begin
         g_CLKBOUT_MULT_F                         => 48,
         g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
         g_CLK1_DIVIDE                            => 6,    -- Must be 200 MHz
-        g_CLK2_DIVIDE                            => 3,    -- 400 MHz
+        g_CLK2_DIVIDE                            => 6,    -- 200 MHz
         g_SYS_CLOCK_FREQ                         => c_SYS_CLOCK_FREQ,
         -- aux PLL parameters
         g_AUX_CLKIN_PERIOD                       => 14.400,
@@ -1494,7 +1525,7 @@ begin
     ext_cc_clk_i                               => fofb_userclk(c_FOFB_CC_P2P_ID),
     ext_cc_rst_n_i                             => fofb_userrst_n(c_FOFB_CC_P2P_ID),
     ext_cc_dat_i                               => fofb_fod_dat(c_FOFB_CC_P2P_ID),
-    ext_cc_dat_val_i                           => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0),
+    ext_cc_dat_val_i                           => fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0) and fofb_proc_dcc_p2p_en,
 
     ---------------------------------------------------------------------------
     -- serial I/Os for eight RocketIOs on the Libera
@@ -1680,81 +1711,58 @@ begin
   ----------------------------------------------------------------------
   --                          FOFB PROCESSING                         --
   ----------------------------------------------------------------------
-  gen_dcc_fod_data: for i in 0 to c_CHANNELS/2-1 generate
-   -- Data xpos
-    dcc_fod_s(2*i).valid                       <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i).data                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataXMSB downto def_PacketDataXLSB);
-    dcc_fod_s(2*i).addr                        <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
 
-    -- Data ypos
-    dcc_fod_s(2*i+1).valid                     <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(i);
-    dcc_fod_s(2*i+1).data                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketDataYMSB downto def_PacketDataYLSB);
-    dcc_fod_s(2*i+1).addr                      <= fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)(def_PacketIDMSB downto def_PacketIDLSB);
-  end generate;
+  cmp_fofb_dcc_adapter: fofb_processing_dcc_adapter
+    port map (
+      clk_i                      => clk_sys,
+      rst_n_i                    => clk_sys_rstn,
+      clk_dcc_i                  => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
+      rst_dcc_n_i                => fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID),
+
+      dcc_time_frame_end_i       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
+      dcc_packet_i               => f_slv_to_fofb_cc_packet(fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID)),
+      dcc_packet_valid_i         => fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0),
+
+      fofb_proc_busy_i           => fofb_proc_busy,
+      fofb_proc_bpm_pos_o        => fofb_proc_bpm_pos,
+      fofb_proc_bpm_pos_index_o  => fofb_proc_bpm_pos_index,
+      fofb_proc_bpm_pos_valid_o  => fofb_proc_bpm_pos_valid,
+      fofb_proc_time_frame_end_o => fofb_proc_time_frame_end,
+
+      acq_dcc_packet_o           => acq_dcc_fmc_packet,
+      acq_dcc_valid_o            => acq_dcc_fmc_valid
+    );
 
   cmp_fofb_processing : xwb_fofb_processing
-  generic map
-  (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     => c_RAM_SIZE,
-    g_WITH_BYTE_ENABLE                         => false,
-    g_ADDR_CONFLICT_RESOLUTION                 => "read_first",
-    g_INIT_FILE                                => "../../../../modules/fofb_processing/ram_col_h_Q26.txt",
-    g_DUAL_CLOCK                               => true,
-    g_FAIL_IF_FILE_NOT_FOUND                   => true,
-    -- Width for inputs x and y
-    g_A_WIDTH                                  => c_DATA_WIDTH,
-    -- Width for ram data
-    g_B_WIDTH                                  => c_DATA_WIDTH,
-    -- Width for ram addr
-    g_K_WIDTH                                  => c_ADDR_WIDTH,
-    -- Width for dcc addr
-    g_ID_WIDTH                                 => NodeW,
-    -- Width for output
-    g_C_WIDTH                                  => c_SP_OUT_WIDTH,
-    -- Fixed point representation for output
-    g_OUT_FIXED                                => c_OUT_FIXED,
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                              => c_EXTRA_WIDTH,
-    -- Number of channels
-    g_CHANNELS                                 => c_CHANNELS,
-
-    g_ANTI_WINDUP_UPPER_LIMIT                  => c_ANTI_WINDUP_UPPER_LIMIT,  -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT                  => c_ANTI_WINDUP_LOWER_LIMIT,  -- anti-windup lower limit
-
-    -- Wishbone parameters
-    g_INTERFACE_MODE                           => PIPELINED,
-    g_ADDRESS_GRANULARITY                      => BYTE,
-    g_WITH_EXTRA_WB_REG                        => false
-  )
-  port map
-  (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      => fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID),
-    rst_n_i                                    => fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID),
-    clk_sys_i                                  => clk_sys,
-    rst_sys_n_i                                => clk_sys_rstn,
-
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  => dcc_fod_s,
-    dcc_time_frame_start_i                     => timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID),
-    dcc_time_frame_end_i                       => timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID),
-
-    -- Setpoints
-    sp_arr_o                                   => sp_arr_s,
-    sp_valid_arr_o                             => open,
-
-    ---------------------------------------------------------------------------
-    -- Wishbone Control Interface signals
-    ---------------------------------------------------------------------------
-    wb_slv_i                                   => user_wb_out(c_FOFB_PROCESSING_ID),
-    wb_slv_o                                   => user_wb_in(c_FOFB_PROCESSING_ID)
-  );
+    generic map (
+      g_COEFF_INT_WIDTH              => g_FOFB_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH             => g_FOFB_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH            => g_FOFB_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH           => g_FOFB_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH     => g_FOFB_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES => g_FOFB_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES => g_FOFB_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES => g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_USE_MOVING_AVG               => true,
+      g_CHANNELS                     => c_FOFB_CHANNELS,
+      g_INTERFACE_MODE               => PIPELINED,
+      g_ADDRESS_GRANULARITY          => BYTE,
+      g_WITH_EXTRA_WB_REG            => false
+    )
+    port map (
+      clk_i                          => clk_sys,
+      rst_n_i                        => clk_sys_rstn,
+      busy_o                         => fofb_proc_busy,
+      bpm_pos_i                      => fofb_proc_bpm_pos,
+      bpm_pos_index_i                => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i                => fofb_proc_bpm_pos_valid,
+      bpm_time_frame_end_i           => fofb_proc_time_frame_end,
+      sp_arr_o                       => fofb_sp_arr,
+      sp_valid_arr_o                 => fofb_sp_valid_arr,
+      dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
+      wb_slv_i                       => user_wb_out(c_FOFB_PROCESSING_ID),
+      wb_slv_o                       => user_wb_in(c_FOFB_PROCESSING_ID)
+    );
 
   ----------------------------------------------------------------------
   --                          RTM 8SFP OHWR                           --
@@ -2038,6 +2046,11 @@ begin
       data_valid_o                                => rtmlamp_data_valid,
 
       ---------------------------------------------------------------------------
+      -- External triggers for SP and DAC. Clock domain: clk_i
+      ---------------------------------------------------------------------------
+      trig_i                                      => (others => '0'),
+
+      ---------------------------------------------------------------------------
       -- ADC parallel interface
       ---------------------------------------------------------------------------
       adc_data_o                                 => rtmlamp_adc_data,
@@ -2054,16 +2067,16 @@ begin
   end generate;
 
   -- Convert signed elements to std_logic_vector
-  gen_conv_pi_sp: for i in 0 to c_CHANNELS-1 generate
-    pi_sp_ext(i) <= std_logic_vector(sp_arr_s(i));
+  gen_conv_pi_sp: for i in 0 to c_FOFB_CHANNELS-1 generate
+    pi_sp_ext(i) <= std_logic_vector(fofb_sp_arr(i));
   end generate;
 
   ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
-  fs_clk_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID)   <= fofb_userclk(c_FOFB_CC_FMC_OR_RTM_ID);
-  fs_rst_n_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID) <= fofb_userrst_n(c_FOFB_CC_FMC_OR_RTM_ID);
+  fs_clk_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID)   <= clk_sys;
+  fs_rst_n_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID) <= clk_sys_rstn;
 
   fs_clk_array(c_ACQ_CORE_CC_P2P_ID)          <= fofb_userclk(c_FOFB_CC_P2P_ID);
   fs_rst_n_array(c_ACQ_CORE_CC_P2P_ID)        <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
@@ -2124,11 +2137,10 @@ begin
 
   -- DCC FMC
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(sp_arr_s(0)) & std_logic_vector(sp_arr_s(1)) & std_logic_vector(sp_arr_s(2)) & std_logic_vector(sp_arr_s(3)) &
-          std_logic_vector(sp_arr_s(4)) & std_logic_vector(sp_arr_s(5)) & std_logic_vector(sp_arr_s(6)) & std_logic_vector(sp_arr_s(7)) &
-          fofb_fod_dat(c_FOFB_CC_FMC_OR_RTM_ID);
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= fofb_fod_dat_val(c_FOFB_CC_FMC_OR_RTM_ID)(0);
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;
+          std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
+          std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
+  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
+  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
 
   --------------------
   -- ACQ Core 2

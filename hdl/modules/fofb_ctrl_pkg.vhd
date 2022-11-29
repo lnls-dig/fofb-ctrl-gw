@@ -9,6 +9,17 @@ use work.dot_prod_pkg.all;
 
 package fofb_ctrl_pkg is
 
+  type t_fofb_cc_packet is record
+    bpm_id     : unsigned(NodeW-1 downto 0);
+    bpm_data_x : signed((def_PacketDataXMSB - def_PacketDataXLSB) downto 0);
+    bpm_data_y : signed((def_PacketDataYMSB - def_PacketDataYLSB) downto 0);
+    time_frame : unsigned((def_PacketTimeframeCntr16MSB - def_PacketTimeframeCntr16LSB) downto 0);
+    time_stamp : unsigned((def_PacketTimeStampMSB - def_PacketTimeStampLSB) downto 0);
+  end record;
+
+  function f_slv_to_fofb_cc_packet(cc_pac: std_logic_vector) return t_fofb_cc_packet;
+  function f_fofb_cc_packet_to_slv(cc_pac_rec: t_fofb_cc_packet) return std_logic_vector;
+
   --------------------------------------------------------------------
   -- Components
   --------------------------------------------------------------------
@@ -501,159 +512,135 @@ package fofb_ctrl_pkg is
   );
   end component;
 
-  component wb_fofb_processing
-  generic
-  (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     : natural := 512;
-    g_WITH_BYTE_ENABLE                         : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION                 : string  := "read_first";
-    g_INIT_FILE                                : string  := "";
-    g_DUAL_CLOCK                               : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND                   : boolean := true;
-
-    -- Width for DCC input
-    g_A_WIDTH                                  : natural := 32;
-
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural := 32;
-
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural := 12;
-
-    -- Width for DCC addr
-    g_ID_WIDTH                                 : natural := 9;
-
-    -- Width for output
-    g_C_WIDTH                                  : natural := 16;
-
-    -- Fixed point representation for output
-    g_OUT_FIXED                                : natural := 26;
-
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                              : natural := 4;
-
-    -- Number of channels
-    g_CHANNELS                                 : natural := 8;
-
-    g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
-
-    -- Wishbone parameters
-    g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
-    g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
-    g_WITH_EXTRA_WB_REG                        : boolean := false
-  );
-  port
-  (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      : in std_logic;
-    rst_n_i                                    : in std_logic;
-    clk_sys_i                                  : in std_logic;
-    rst_sys_n_i                                : in std_logic;
-
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  : in t_dot_prod_array_record_fod(g_CHANNELS-1 downto 0);
-    dcc_time_frame_start_i                     : in std_logic;
-    dcc_time_frame_end_i                       : in std_logic;
-
-    -- Setpoints
-    sp_arr_o                                   : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
-    sp_valid_arr_o                             : out std_logic_vector(g_CHANNELS-1 downto 0);
-
-    ---------------------------------------------------------------------------
-    -- Wishbone Control Interface signals
-    ---------------------------------------------------------------------------
-    wb_adr_i                                   : in  std_logic_vector(c_WISHBONE_ADDRESS_WIDTH-1 downto 0) := (others => '0');
-    wb_dat_i                                   : in  std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0) := (others => '0');
-    wb_dat_o                                   : out std_logic_vector(c_WISHBONE_DATA_WIDTH-1 downto 0);
-    wb_sel_i                                   : in  std_logic_vector(c_WISHBONE_DATA_WIDTH/8-1 downto 0) := (others => '0');
-    wb_we_i                                    : in  std_logic := '0';
-    wb_cyc_i                                   : in  std_logic := '0';
-    wb_stb_i                                   : in  std_logic := '0';
-    wb_ack_o                                   : out std_logic;
-    wb_err_o                                   : out std_logic;
-    wb_rty_o                                   : out std_logic;
-    wb_stall_o                                 : out std_logic
-  );
-  end component;
-
   component xwb_fofb_processing
   generic
   (
-    -- Standard parameters of generic_dpram
-    g_SIZE                                     : natural := 512;
-    g_WITH_BYTE_ENABLE                         : boolean := false;
-    g_ADDR_CONFLICT_RESOLUTION                 : string  := "read_first";
-    g_INIT_FILE                                : string  := "";
-    g_DUAL_CLOCK                               : boolean := true;
-    g_FAIL_IF_FILE_NOT_FOUND                   : boolean := true;
+    -- Integer width for the inverse response matrix coefficient input
+    g_COEFF_INT_WIDTH              : natural := 0;
 
-    -- Width for DCC input
-    g_A_WIDTH                                  : natural := 32;
+    -- Fractionary width for the inverse response matrix coefficient input
+    g_COEFF_FRAC_WIDTH             : natural := 17;
 
-    -- Width for RAM coeff
-    g_B_WIDTH                                  : natural := 32;
+    -- Integer width for the BPM position error input
+    g_BPM_POS_INT_WIDTH            : natural := 20;
 
-    -- Width for RAM addr
-    g_K_WIDTH                                  : natural := 12;
+    -- Fractionary width for the BPM position error input
+    g_BPM_POS_FRAC_WIDTH           : natural := 0;
 
-    -- Width for DCC addr
-    g_ID_WIDTH                                 : natural := 9;
+    -- Extra bits for the dot product accumulator
+    g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
 
-    -- Width for output
-    g_C_WIDTH                                  : natural := 16;
+    -- Dot product multiply pipeline stages
+    g_DOT_PROD_MUL_PIPELINE_STAGES : natural := 1;
 
-    -- Fixed point representation for output
-    g_OUT_FIXED                                : natural := 26;
+    -- Dot product accumulator pipeline stages
+    g_DOT_PROD_ACC_PIPELINE_STAGES : natural := 1;
 
-    -- Extra bits for accumulator
-    g_EXTRA_WIDTH                              : natural := 4;
+    -- Gain multiplication pipeline stages
+    g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
+
+    -- If true, take the average of the last 2 positions for each BPM
+    g_USE_MOVING_AVG               : boolean := false;
 
     -- Number of channels
-    g_CHANNELS                                 : natural := 8;
-
-    g_ANTI_WINDUP_UPPER_LIMIT                  : integer; -- anti-windup upper limit
-    g_ANTI_WINDUP_LOWER_LIMIT                  : integer; -- anti-windup lower limit
+    g_CHANNELS                     : natural;
 
     -- Wishbone parameters
-    g_INTERFACE_MODE                           : t_wishbone_interface_mode      := CLASSIC;
-    g_ADDRESS_GRANULARITY                      : t_wishbone_address_granularity := WORD;
-    g_WITH_EXTRA_WB_REG                        : boolean := false
+    g_INTERFACE_MODE               : t_wishbone_interface_mode      := CLASSIC;
+    g_ADDRESS_GRANULARITY          : t_wishbone_address_granularity := WORD;
+    g_WITH_EXTRA_WB_REG            : boolean := false
   );
   port
   (
-    ---------------------------------------------------------------------------
-    -- Clock and reset interface
-    ---------------------------------------------------------------------------
-    clk_i                                      : in std_logic;
-    rst_n_i                                    : in std_logic;
-    clk_sys_i                                  : in std_logic;
-    rst_sys_n_i                                : in std_logic;
+    -- Clock
+    clk_i                          : in  std_logic;
 
-    ---------------------------------------------------------------------------
-    -- FOFB Processing Interface signals
-    ---------------------------------------------------------------------------
-    -- DCC interface
-    dcc_fod_i                                  : in t_dot_prod_array_record_fod(g_CHANNELS-1 downto 0);
-    dcc_time_frame_start_i                     : in std_logic;
-    dcc_time_frame_end_i                       : in std_logic;
+    -- Reset
+    rst_n_i                        : in  std_logic;
 
-    -- Setpoints
-    sp_arr_o                                   : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
-    sp_valid_arr_o                             : out std_logic_vector(g_CHANNELS-1 downto 0);
+    -- If busy_o = '1', core is busy, can't receive new data
+    busy_o                         : out std_logic;
+
+    -- BPM position measurement (either horizontal or vertical)
+    bpm_pos_i                      : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+    -- BPM index, 0 to 255 for horizontal measurements, 256 to 511 for vertical
+    -- measurements
+    bpm_pos_index_i                : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+    -- BPM position valid
+    bpm_pos_valid_i                : in  std_logic;
+
+    -- End of time frame, computes the next set-point
+    bpm_time_frame_end_i           : in  std_logic;
+
+    -- Set-points output array (for each channel)
+    sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+    -- Set-point valid array (for each channel)
+    sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
+
+    dcc_p2p_en_o                   : out std_logic;
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    wb_slv_i                                   : in t_wishbone_slave_in;
-    wb_slv_o                                   : out t_wishbone_slave_out
+    wb_slv_i                     : in t_wishbone_slave_in;
+    wb_slv_o                     : out t_wishbone_slave_out
   );
+  end component;
+
+  component fofb_processing_dcc_adapter is
+    generic (
+      -- DCC packet FIFO depth
+      g_FIFO_DATA_DEPTH          : natural := 16
+    );
+    port (
+      -- System clock input
+      clk_i                      : in  std_logic;
+
+      -- System reset input (clock domain: clk_i)
+      rst_n_i                    : in  std_logic;
+
+      -- DCC clock input
+      clk_dcc_i                  : in  std_logic;
+
+      -- DCC reset input (clock domain: clk_dcc_i)
+      rst_dcc_n_i                : in  std_logic;
+
+      -- DCC timeframe end signal (clock domain: clk_dcc_i)
+      dcc_time_frame_end_i       : in  std_logic;
+
+      -- DCC data packet input (clock domain: clk_dcc_i). You can use the
+      -- f_slv_to_fofb_cc_packet() function to convert from std_logic_vector to
+      -- t_fofb_cc_packet
+      dcc_packet_i               : in  t_fofb_cc_packet;
+
+      -- DCC packet valid (clock domain: clk_dcc_i),
+      dcc_packet_valid_i         : in  std_logic;
+
+      -- FOFB processing busy input (clock domain: clk_i)
+      fofb_proc_busy_i           : in  std_logic;
+
+      -- FOFB processing BPM position output (clock domain: clk_i)
+      fofb_proc_bpm_pos_o        : out signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+      -- FOFB processing BPM index output (clock domain: clk_i). First 256 IDs
+      -- are horizontal measurements, last 256 IDs are vertical
+      fofb_proc_bpm_pos_index_o  : out unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+      -- FOFB processing BPM position valid output (clock domain: clk_i)
+      fofb_proc_bpm_pos_valid_o  : out std_logic;
+
+      -- FOFB processing timeframe end output (clock domain: clk_i)
+      fofb_proc_time_frame_end_o : out std_logic;
+
+      -- DCC raw data packet from FIFO output for debugging (clock domain: clk_i)
+      acq_dcc_packet_o           : out t_fofb_cc_packet;
+
+      -- DCC raw data packet valid (clock domain: clk_i)
+      acq_dcc_valid_o            : out std_logic
+    );
   end component;
 
   --------------------------------------------------------------------
@@ -680,18 +667,44 @@ package fofb_ctrl_pkg is
   -- FOFB Processing
   constant c_xwb_fofb_processing_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
-    abi_ver_major => x"01",
+    abi_ver_major => x"02",
     abi_ver_minor => x"00",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
     addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000FF",
+    addr_last     => x"0000000000007FFF",
     product => (
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"49681ca6",
     version       => x"00000001",
-    date          => x"20210819",
+    date          => x"20220809",
     name          => "FOFB_PROC_REGS     ")));
 
 end fofb_ctrl_pkg;
+
+package body fofb_ctrl_pkg is
+
+  function f_slv_to_fofb_cc_packet(cc_pac: std_logic_vector) return t_fofb_cc_packet is
+    variable cc_pac_rec: t_fofb_cc_packet;
+  begin
+    cc_pac_rec.bpm_id     := unsigned(cc_pac(def_PacketIDMSB downto def_PacketIDLSB));
+    cc_pac_rec.bpm_data_x := signed(cc_pac(def_PacketDataXMSB downto def_PacketDataXLSB));
+    cc_pac_rec.bpm_data_y := signed(cc_pac(def_PacketDataYMSB downto def_PacketDataYLSB));
+    cc_pac_rec.time_frame := unsigned(cc_pac(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB));
+    cc_pac_rec.time_stamp := unsigned(cc_pac(def_PacketTimeStampMSB downto def_PacketTimeStampLSB));
+    return cc_pac_rec;
+  end function;
+
+  function f_fofb_cc_packet_to_slv(cc_pac_rec: t_fofb_cc_packet) return std_logic_vector  is
+    variable cc_pac: std_logic_vector((32*PacketSize-1) downto 0);
+  begin
+    cc_pac(def_PacketIDMSB downto def_PacketIDLSB) := std_logic_vector(cc_pac_rec.bpm_id);
+    cc_pac(def_PacketDataXMSB downto def_PacketDataXLSB) := std_logic_vector(cc_pac_rec.bpm_data_x);
+    cc_pac(def_PacketDataYMSB downto def_PacketDataYLSB) := std_logic_vector(cc_pac_rec.bpm_data_y);
+    cc_pac(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) := std_logic_vector(cc_pac_rec.time_frame);
+    cc_pac(def_PacketTimeStampMSB downto def_PacketTimeStampLSB) := std_logic_vector(cc_pac_rec.time_stamp);
+    return cc_pac;
+  end function;
+
+end package body fofb_ctrl_pkg;

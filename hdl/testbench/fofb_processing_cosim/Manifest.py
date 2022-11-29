@@ -1,5 +1,7 @@
 files = [
-    "dot_prod_coeff_vec_tb.vhd",
+    "fofb_processing_cosim.vhd",
+    "fofb_server_pkg.vhd",
+    "../fofb_tb_pkg.vhd",
 ]
 
 modules = {

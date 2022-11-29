@@ -1,302 +1,313 @@
 -------------------------------------------------------------------------------
--- Title      :  Dot product package
+-- Title      : Dot product package
 -------------------------------------------------------------------------------
--- Author     :  Melissa Aguiar
--- Company    :  CNPEM LNLS-DIG
--- Platform   :  FPGA-generic
+-- Author     : Melissa Aguiar
+-- Company    : CNPEM LNLS-DIG
+-- Platform   : FPGA-generic
+-- Standard   : VHDL 2008
 -------------------------------------------------------------------------------
--- Description:  Package for the dot product core
+-- Description: Package for the dot product core
 -------------------------------------------------------------------------------
--- Copyright (c) 2020 CNPEM
+-- Copyright (c) 2020-2022 CNPEM
 -- Licensed under GNU Lesser General Public License (LGPL) v3.0
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2021-07-30  1.0      melissa.aguiar        Created
+-- 2022-07-27  1.1      guilherme.ricioli     Changed coeffs RAMs' wb interface
+-- 2022-08-22  2.0      augusto.fraga         Refactored using VHDL 2008
 -------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.fixed_pkg.all;
 
 package dot_prod_pkg is
 
-    -- fofb_processing output array
-    -- NOTE:  c_Q_WIDTH must match with g_Q_WIDTH defined on
-    --        hdl/top/afc_ref_design_gen/afc_ref_fofb_ctrl_gen.vhd
-    constant c_Q_WIDTH         : natural := 16;
-    type t_fofb_processing_setpoints is array (natural range <>) of signed(c_Q_WIDTH-1 downto 0);
+  constant c_FOFB_SP_INT_WIDTH           : natural := 15;
+  constant c_FOFB_SP_FRAC_WIDTH          : natural := 0;
+  constant c_FOFB_SP_WIDTH               : natural := c_FOFB_SP_INT_WIDTH + c_FOFB_SP_FRAC_WIDTH + 1;
+  constant c_FOFB_WB_SP_MIN_MAX_WIDTH    : natural := 32;
+  type t_fofb_processing_sp_arr is array (natural range <>) of signed(c_FOFB_SP_WIDTH-1 downto 0);
+  type t_fofb_processing_wb_sp_arr is array (natural range <>) of std_logic_vector(c_FOFB_WB_SP_MIN_MAX_WIDTH-1 downto 0);
 
-    -- RAM data output array
-    type t_ram_data_out_array_logic_vector is array (natural range <>) of std_logic_vector(32-1 downto 0);
+  constant c_FOFB_GAIN_INT_WIDTH         : natural := 3;
+  constant c_FOFB_GAIN_FRAC_WIDTH        : natural := 12;
+  constant c_FOFB_GAIN_WIDTH             : natural := c_FOFB_GAIN_INT_WIDTH + c_FOFB_GAIN_FRAC_WIDTH + 1;
+  constant c_FOFB_WB_GAIN_WIDTH          : natural := 32;
+  type t_fofb_processing_gain_arr is array (natural range <>) of signed(c_FOFB_GAIN_WIDTH-1 downto 0);
+  type t_fofb_processing_wb_gain_arr is array (natural range <>) of std_logic_vector(c_FOFB_WB_GAIN_WIDTH-1 downto 0);
 
-    -- Input record
-    type t_dot_prod_record_fod is record
-      valid                        : std_logic;
-      data                         : std_logic_vector(32-1 downto 0);
-      addr                         : std_logic_vector(9-1 downto 0);
-    end record t_dot_prod_record_fod;
+  constant c_FOFB_LOOP_INTLK_TRIGS_WIDTH : natural := 2;
+  constant c_FOFB_LOOP_INTLK_DISTORT_ID  : natural := 0;
+  constant c_FOFB_LOOP_INTLK_PKT_LOSS_ID : natural := 1;
 
-    -- Input array of record
-    type t_dot_prod_array_record_fod is array (natural range <>) of t_dot_prod_record_fod;
+  -- RAM interface widths
+  constant c_SP_COEFF_RAM_ADDR_WIDTH      : natural := 9;
+  constant c_COEFF_RAM_DATA_WIDTH         : natural := 32;
+  constant c_SP_POS_RAM_DATA_WIDTH        : natural := 32;
+  type t_arr_coeff_ram_addr is array (natural range <>) of std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  type t_arr_coeff_ram_data is array (natural range <>) of std_logic_vector(c_COEFF_RAM_DATA_WIDTH-1 downto 0);
 
   component dot_prod is
     generic(
-      -- Width for input a[k]
-      g_A_WIDTH                    : natural := 32;
+    -- Integer width for input a[k]
+    g_A_INT_WIDTH                  : natural := 7;
 
-      -- Width for input b[k]
-      g_B_WIDTH                    : natural := 32;
+    -- Fractionary width for input a[k]
+    g_A_FRAC_WIDTH                 : natural := 10;
 
-      -- Width for output
-      g_C_WIDTH                    : natural := 16;
+    -- Integer width for input b[k]
+    g_B_INT_WIDTH                  : natural := 7;
 
-      -- Fixed point representation for output
-      g_OUT_FIXED                  : natural := 26;
+    -- Fractionary width for input b[k]
+    g_B_FRAC_WIDTH                 : natural := 10;
 
-      -- Extra bits for accumulator
-      g_EXTRA_WIDTH                : natural := 4
-    );
-    port(
-      -- Core clock
-      clk_i                        : in std_logic;
+    -- Extra bits for accumulator
+    g_ACC_EXTRA_WIDTH              : natural := 4;
 
-      -- Reset
-      rst_n_i                      : in std_logic;
+    -- Use registered inputs
+    g_REG_INPUTS                   : boolean := false;
 
-      -- Clear
-      clear_acc_i                  : in std_logic;
+    -- Number of multiplier pipeline stages
+    g_MULT_PIPELINE_STAGES         : natural := 1;
 
-      -- Data valid input
-      valid_i                      : in std_logic;
+    -- Number of accumulator pipeline stages
+    g_ACC_PIPELINE_STAGES          : natural := 1
+  );
+  port(
+    -- Core clock
+    clk_i                          : in std_logic;
 
-      -- Time frame end
-      time_frame_end_i             : in std_logic;
+    -- Reset all pipeline stages
+    rst_n_i                        : in std_logic;
 
-      -- Input a[k]
-      a_i                          : in signed(g_A_WIDTH-1 downto 0);
+    -- Clear the accumulator
+    clear_acc_i                    : in std_logic;
 
-      -- Input b[k]
-      b_i                          : in signed(g_B_WIDTH-1 downto 0);
+    -- Data valid input
+    valid_i                        : in std_logic;
 
-      -- Result output
-      result_o                     : out signed(g_C_WIDTH-1 downto 0);
-      result_debug_o               : out signed(g_C_WIDTH-1 downto 0);
+    -- Input a[k]
+    a_i                            : in sfixed(g_A_INT_WIDTH downto -g_A_FRAC_WIDTH);
 
-      -- Data valid output
-      result_valid_end_o           : out std_logic;
-      result_valid_debug_o         : out std_logic
-    );
+    -- Input b[k]
+    b_i                            : in sfixed(g_B_INT_WIDTH downto -g_B_FRAC_WIDTH);
+
+    -- No ongoing operations, all pipeline stages idle
+    idle_o                         : out std_logic;
+
+    -- Result output
+    result_o                       : out sfixed(g_A_INT_WIDTH + g_B_INT_WIDTH + g_ACC_EXTRA_WIDTH + 1
+                                                downto
+                                                -(g_A_FRAC_WIDTH + g_B_FRAC_WIDTH))
+  );
   end component dot_prod;
 
-  component dot_prod_coeff_vec is
-    generic(
-      -- Standard parameters of generic_dpram
-      g_SIZE                       : natural := 512;
-      g_WITH_BYTE_ENABLE           : boolean := false;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
-      g_INIT_FILE                  : string  := "";
-      g_DUAL_CLOCK                 : boolean := true;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
-
-      -- Width for DCC input
-      g_A_WIDTH                    : natural := 32;
-
-      -- Width for RAM coeff
-      g_B_WIDTH                    : natural := 32;
-
-      -- Width for DCC addr
-      g_ID_WIDTH                   : natural := 9;
-
-      -- Width for output
-      g_C_WIDTH                    : natural := 16;
-
-      -- Fixed point representation for output
-      g_OUT_FIXED                  : natural := 26;
-
-      -- Extra bits for accumulator
-      g_EXTRA_WIDTH                : natural := 4
-    );
-    port(
-      -- Core clock
-      clk_i                        : in std_logic;
-
-      -- Reset
-      rst_n_i                      : in std_logic;
-
-      -- DCC interface
-      dcc_valid_i                  : in std_logic;
-      dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
-      dcc_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
-      dcc_time_frame_start_i       : in std_logic;
-      dcc_time_frame_end_i         : in std_logic;
-
-      -- RAM interface
-      ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
-      ram_write_enable_i           : in std_logic;
-      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
-
-      -- Result output array
-      sp_o                         : out signed(g_C_WIDTH-1 downto 0);
-      sp_debug_o                   : out signed(g_C_WIDTH-1 downto 0);
-
-      -- Valid output
-      sp_valid_o                   : out std_logic;
-      sp_valid_debug_o             : out std_logic
-    );
-  end component dot_prod_coeff_vec;
-
   component fofb_processing_channel is
-    generic(
-      -- Standard parameters of generic_dpram
-      g_SIZE                       : natural := 512;
-      g_WITH_BYTE_ENABLE           : boolean := false;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
-      g_INIT_FILE                  : string  := "";
-      g_DUAL_CLOCK                 : boolean := true;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
+    generic (
+      -- Integer width for the inverse response matrix coefficient input
+      g_COEFF_INT_WIDTH              : natural := 0;
 
-      -- Width for DCC input
-      g_A_WIDTH                    : natural := 32;
+      -- Fractionary width for the inverse response matrix coefficient input
+      g_COEFF_FRAC_WIDTH             : natural := 17;
 
-      -- Width for RAM coeff
-      g_B_WIDTH                    : natural := 32;
+      -- Integer width for the BPM position error input
+      g_BPM_POS_INT_WIDTH            : natural := 20;
 
-      -- Width for DCC addr
-      g_ID_WIDTH                   : natural := 9;
+      -- Fractionary width for the BPM position error input
+      g_BPM_POS_FRAC_WIDTH           : natural := 0;
 
-      -- Width for output
-      g_C_WIDTH                    : natural := 16;
+      -- Integer width for the accumulator gain input
+      g_GAIN_INT_WIDTH               : natural := 7;
 
-      -- Fixed point representation for output
-      g_OUT_FIXED                  : natural := 26;
+      -- Fractionary width for the accumulator gain input
+      g_GAIN_FRAC_WIDTH              : natural := 8;
 
-      -- Extra bits for accumulator
-      g_EXTRA_WIDTH                : natural := 4;
+      -- Integer width for the set-point output
+      g_SP_INT_WIDTH                 : natural := 15;
 
-      g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
-      g_ANTI_WINDUP_LOWER_LIMIT    : integer  -- anti-windup lower limit
+      -- Fractionary width for the set-point output
+      g_SP_FRAC_WIDTH                : natural := 0;
+
+      -- Extra bits for the dot product accumulator
+      g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
+
+      -- Dot product multiply pipeline stages
+      g_DOT_PROD_MUL_PIPELINE_STAGES : natural := 1;
+
+      -- Dot product accumulator pipeline stages
+      g_DOT_PROD_ACC_PIPELINE_STAGES : natural := 1;
+
+      -- Gain multiplication pipeline stages
+      g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
+
+      -- Width for RAM addr
+      g_COEFF_RAM_ADDR_WIDTH         : natural;
+
+      -- Bit width
+      g_COEFF_RAM_DATA_WIDTH         : natural
     );
-    port(
-      ---------------------------------------------------------------------------
-      -- Clock and reset interface
-      ---------------------------------------------------------------------------
-      clk_i                        : in std_logic;
-      rst_n_i                      : in std_logic;
+    port (
+      -- Core clock
+      clk_i                          : in  std_logic;
 
-      ---------------------------------------------------------------------------
-      -- Dot product Interface Signals
-      ---------------------------------------------------------------------------
-      -- DCC interface
-      dcc_valid_i                  : in std_logic;
-      dcc_data_i                   : in signed(g_A_WIDTH-1 downto 0);
-      dcc_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
-      dcc_time_frame_start_i       : in std_logic;
-      dcc_time_frame_end_i         : in std_logic;
+      -- Core reset
+      rst_n_i                        : in  std_logic;
 
-      -- RAM interface
-      ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_ID_WIDTH-1 downto 0);
-      ram_write_enable_i           : in std_logic;
-      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
+      -- If busy_o = '1', core is busy, can't receive new data
+      busy_o                         : out std_logic;
 
-      -- Setpoint
-      sp_o                         : out signed(g_C_WIDTH-1 downto 0);
-      sp_valid_o                   : out std_logic
+      -- BPM position error data
+      bpm_pos_err_i                  : in  signed((g_BPM_POS_INT_WIDTH + g_BPM_POS_FRAC_WIDTH) downto 0);
+
+      -- BPM position error data valid
+      bpm_pos_err_valid_i            : in  std_logic;
+
+      -- BPM position index, it should match the coefficient address
+      bpm_pos_err_index_i            : in  integer range 0 to (2**g_COEFF_RAM_ADDR_WIDTH)-1;
+
+      -- Indicates that the time frame has ended, so it can compute a new setpoint
+      bpm_time_frame_end_i           : in  std_logic;
+
+      -- Coefficients RAM address, it is derived from bpm_pos_err_index
+      coeff_ram_addr_o               : out std_logic_vector(g_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+      -- Coefficients RAM data, it should be the corresponding data from the address
+      -- written in the previous clock cycle
+      coeff_ram_data_i               : in  std_logic_vector(g_COEFF_RAM_DATA_WIDTH-1 downto 0);
+
+      -- Pre-accumulator gain
+      gain_i                         : in  signed((g_GAIN_INT_WIDTH + g_GAIN_FRAC_WIDTH) downto 0);
+
+      -- Stop accumulating the dot product result
+      freeze_acc_i                   : in  std_logic;
+
+      -- Clear the set-point accumulator, also generate a valid pulse
+      clear_acc_i                    : in  std_logic;
+
+      -- Set-point maximum value, don't accumulate beyond that
+      sp_max_i                       : in  signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
+      -- Set-point minimum value, don't accumulate below that
+      sp_min_i                       : in  signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
+      -- Setpoint output
+      sp_o                           : out signed((g_SP_INT_WIDTH + g_SP_FRAC_WIDTH) downto 0);
+
+      -- Setpoint valid, it will generate a positive pulse after bpm_time_frame_end_i
+      -- is set to '1' and all arithmetic operations have finished
+      sp_valid_o                     : out std_logic;
+
+      -- Loop interlock signal (has the same behavior as freeze_acc_i)
+      loop_intlk_i                   : in std_logic
     );
   end component fofb_processing_channel;
 
   component fofb_processing is
-    generic(
-      -- Standard parameters of generic_dpram
-      g_SIZE                       : natural := 512;
-      g_WITH_BYTE_ENABLE           : boolean := false;
-      g_ADDR_CONFLICT_RESOLUTION   : string  := "read_first";
-      g_INIT_FILE                  : string  := "";
-      g_DUAL_CLOCK                 : boolean := true;
-      g_FAIL_IF_FILE_NOT_FOUND     : boolean := true;
+    generic (
+      -- Integer width for the inverse response matrix coefficient input
+      g_COEFF_INT_WIDTH              : natural := 0;
 
-      -- Width for DCC input
-      g_A_WIDTH                    : natural := 32;
+      -- Fractionary width for the inverse response matrix coefficient input
+      g_COEFF_FRAC_WIDTH             : natural := 17;
 
-      -- Width for RAM coeff
-      g_B_WIDTH                    : natural := 32;
+      -- Integer width for the BPM position error input
+      g_BPM_POS_INT_WIDTH            : natural := 20;
 
-      -- Width for RAM addr
-      g_K_WIDTH                    : natural := 12;
+      -- Fractionary width for the BPM position error input
+      g_BPM_POS_FRAC_WIDTH           : natural := 0;
 
-      -- Width for DCC addr
-      g_ID_WIDTH                   : natural := 9;
+      -- Extra bits for the dot product accumulator
+      g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
 
-      -- Width for output
-      g_C_WIDTH                    : natural := 16;
+      -- Dot product multiply pipeline stages
+      g_DOT_PROD_MUL_PIPELINE_STAGES : natural := 1;
 
-      -- Fixed point representation for output
-      g_OUT_FIXED                  : natural := 26;
+      -- Dot product accumulator pipeline stages
+      g_DOT_PROD_ACC_PIPELINE_STAGES : natural := 1;
 
-      -- Extra bits for accumulator
-      g_EXTRA_WIDTH                : natural := 4;
+      -- Gain multiplication pipeline stages
+      g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 1;
+
+      -- If true, take the average of the last 2 positions for each BPM
+      g_USE_MOVING_AVG               : boolean := false;
 
       -- Number of channels
-      g_CHANNELS                   : natural := 8;
-
-      g_ANTI_WINDUP_UPPER_LIMIT    : integer; -- anti-windup upper limit
-      g_ANTI_WINDUP_LOWER_LIMIT    : integer  -- anti-windup lower limit
+      g_CHANNELS                     : natural
     );
-    port(
-      ---------------------------------------------------------------------------
-      -- FOFB processing channel interface
-      ---------------------------------------------------------------------------
-      -- Clock core
-      clk_i                        : in std_logic;
+    port (
+      -- Clock
+      clk_i                          : in  std_logic;
 
       -- Reset
-      rst_n_i                      : in std_logic;
+      rst_n_i                        : in  std_logic;
 
-      -- DCC interface
-      dcc_fod_i                    : in t_dot_prod_array_record_fod;
-      dcc_time_frame_start_i       : in std_logic;
-      dcc_time_frame_end_i    	   : in std_logic;
+      -- If busy_o = '1', core is busy, can't receive new data
+      busy_o                         : out std_logic;
 
-      -- RAM interface
-      ram_coeff_dat_i              : in std_logic_vector(g_B_WIDTH-1 downto 0);
-      ram_addr_i                   : in std_logic_vector(g_K_WIDTH-1 downto 0);
-      ram_write_enable_i           : in std_logic;
-      ram_coeff_dat_o              : out std_logic_vector(g_B_WIDTH-1 downto 0);
+      -- BPM position measurement (either horizontal or vertical)
+      bpm_pos_i                      : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
 
-      -- Setpoints
-      sp_arr_o                     : out t_fofb_processing_setpoints(g_CHANNELS-1 downto 0);
-      sp_valid_arr_o               : out std_logic_vector(g_CHANNELS-1 downto 0)
+      -- BPM index, 0 to 255 for horizontal measurements, 256 to 511 for vertical
+      -- measurements
+      bpm_pos_index_i                : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+      -- BPM position valid
+      bpm_pos_valid_i                : in  std_logic;
+
+      -- End of time frame, computes the next set-point
+      bpm_time_frame_end_i           : in  std_logic;
+
+      -- Set-point RAM address
+      sp_pos_ram_addr_o              : out std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+
+      -- Set-point RAM data
+      sp_pos_ram_data_i              : in  std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+
+      -- Coefficients RAM address array
+      coeff_ram_addr_arr_o           : out t_arr_coeff_ram_addr(g_CHANNELS-1 downto 0);
+
+      -- Coefficients RAM data array
+      coeff_ram_data_arr_i           : in  t_arr_coeff_ram_data(g_CHANNELS-1 downto 0);
+
+      -- Array of gains (for each channel)
+      gain_arr_i                     : in  t_fofb_processing_gain_arr(g_CHANNELS-1 downto 0);
+
+      -- Clear set-point accumulator array (for each channel)
+      clear_acc_arr_i                : in  std_logic_vector(g_CHANNELS-1 downto 0);
+
+      -- Freeze set-point accumulator array (for each channel)
+      freeze_acc_arr_i               : in  std_logic_vector(g_CHANNELS-1 downto 0);
+
+      -- Set-points (per channel) maximum value, don't accumulate beyond that
+      sp_max_arr_i                   : in  t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+      -- Set-points (per channel) minimum value, don't accumulate below that
+      sp_min_arr_i                   : in  t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+      -- Set-points output array (for each channel)
+      sp_arr_o                       : out t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+
+      -- Set-point valid array (for each channel)
+      sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
+
+      -- Loop interlock sources enable
+      loop_intlk_src_en_i            : in std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+
+      -- Loop interlock state clear
+      loop_intlk_state_clr_i         : in std_logic;
+
+      -- Loop interlock state array ('0': not interlocked; '1': interlocked)
+      loop_intlk_state_o             : out std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+
+      -- Loop interlock orbit distortion limit
+      loop_intlk_distort_limit_i     : in unsigned(g_BPM_POS_INT_WIDTH-1 downto 0);
+
+      -- Loop interlock minimum number of measurements per timeframe
+      loop_intlk_min_num_meas_i      : in unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)
     );
   end component fofb_processing;
 
-  component wb_fofb_processing_regs is
-    port(
-      rst_n_i                      : in    std_logic;
-      clk_sys_i                    : in    std_logic;
-      wb_adr_i                     : in    std_logic_vector(1 downto 0);
-      wb_dat_i                     : in    std_logic_vector(31 downto 0);
-      wb_dat_o                     : out   std_logic_vector(31 downto 0);
-      wb_cyc_i                     : in    std_logic;
-      wb_sel_i                     : in    std_logic_vector(3 downto 0);
-      wb_stb_i                     : in    std_logic;
-      wb_we_i                      : in    std_logic;
-      wb_ack_o                     : out   std_logic;
-      wb_stall_o                   : out   std_logic;
-      fofb_processing_clk_reg_i    : in    std_logic;
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) MONOSTABLE field: 'RAM write enable bit' in reg: 'RAM write register'
-      wb_fofb_processing_regs_ram_write_enable_o
-                                   : out   std_logic;
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM data input' in reg: 'RAM data input register'
-      wb_fofb_processing_regs_ram_data_in_val_o
-                                   : out   std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM data output' in reg: 'RAM data output register'
-      wb_fofb_processing_regs_ram_data_out_val_i
-                                   : in    std_logic_vector(31 downto 0);
-      -- Port for asynchronous (clock: fofb_processing_clk_reg_i) std_logic_vector field: 'RAM address' in reg: 'RAM address register'
-      wb_fofb_processing_regs_ram_addr_val_o
-                                   : out   std_logic_vector(11 downto 0)
-    );
-  end component wb_fofb_processing_regs;
 end package dot_prod_pkg;

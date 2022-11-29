@@ -1,77 +1,1334 @@
 memory-map:
   bus: wb-32-be
   name: wb_fofb_processing_regs
-  description: interface to memory registers
+  description: interface to internal regs and coefficient ram banks
   x-wbgen:
     hdl_entity: wb_fofb_processing_regs
   children:
-# --------------------------------------------
-# ------- Interface to RAM Registers ---------
-# --------------------------------------------  
-  - reg:
-      name: ram_write
-      address: 0x00000000
-      width: 32
-      access: rw
-      description: RAM write register
-      children:
-      - field:
-          name: enable
-          range: 0
-          description: RAM write enable bit
-          x-wbgen:
-            type: MONOSTABLE
-            access_bus: READ_WRITE
-            access_dev: READ_ONLY
-            clock: fofb_processing_clk_reg_i
-            x-hdl:
-              write-strobe: True
-  - reg:
-      name: ram_data_in
-      address: 0x00000004
-      width: 32
-      access: rw
-      description: RAM data input register
-      children:
-      - field:
-          name: val
-          range: 31-0
-          description: RAM data input
-          x-wbgen:
-            type: SLV
-            access_bus: READ_WRITE
-            access_dev: READ_ONLY
-            clock: fofb_processing_clk_reg_i
-  - reg:
-      name: ram_data_out
-      address: 0x00000008
-      width: 32
-      access: ro
-      description: RAM data output register
-      children:
-      - field:
-          name: val
-          range: 31-0
-          description: RAM data output
-          x-wbgen:
-            type: SLV
-            access_bus: READ_ONLY
-            access_dev: WRITE_ONLY
-            clock: fofb_processing_clk_reg_i
-  - reg:
-      name: ram_addr
-      address: 0x0000000c
-      width: 32
-      access: rw
-      description: RAM address register
-      children:
-      - field:
-          name: val
-          range: 11-0
-          description: RAM address
-          x-wbgen:
-            type: SLV
-            access_bus: READ_WRITE
-            access_dev: READ_ONLY
-            clock: fofb_processing_clk_reg_i
-
+    - reg:
+        name: coeffs_fixed_point_pos
+        width: 32
+        access: rw
+        address: 0x00000000
+        description: fofb processing coefficients fixed-point position constant
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: fixed-point position constant value
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: accs_gains_fixed_point_pos
+        width: 32
+        access: ro
+        address: 0x00000004
+        description: fofb processing accumulators' gains fixed-point position register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_0
+        width: 32
+        access: rw
+        address: 0x00000008
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_0
+        width: 32
+        access: rw
+        address: 0x0000000C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_1
+        width: 32
+        access: rw
+        address: 0x00000010
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_1
+        width: 32
+        access: rw
+        address: 0x00000014
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_2
+        width: 32
+        access: rw
+        address: 0x00000018
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_2
+        width: 32
+        access: rw
+        address: 0x0000001C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_3
+        width: 32
+        access: rw
+        address: 0x00000020
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_3
+        width: 32
+        access: rw
+        address: 0x00000024
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_4
+        width: 32
+        access: rw
+        address: 0x00000028
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_4
+        width: 32
+        access: rw
+        address: 0x0000002C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_5
+        width: 32
+        access: rw
+        address: 0x00000030
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_5
+        width: 32
+        access: rw
+        address: 0x00000034
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_6
+        width: 32
+        access: rw
+        address: 0x00000038
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_6
+        width: 32
+        access: rw
+        address: 0x0000003C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_7
+        width: 32
+        access: rw
+        address: 0x00000040
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_7
+        width: 32
+        access: rw
+        address: 0x00000044
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_8
+        width: 32
+        access: rw
+        address: 0x00000048
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_8
+        width: 32
+        access: rw
+        address: 0x0000004C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_9
+        width: 32
+        access: rw
+        address: 0x00000050
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_9
+        width: 32
+        access: rw
+        address: 0x00000054
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_10
+        width: 32
+        access: rw
+        address: 0x00000058
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_10
+        width: 32
+        access: rw
+        address: 0x0000005C
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_gain_11
+        width: 32
+        access: rw
+        address: 0x00000060
+        description: fofb processing accumulator gain register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: acc_ctl_11
+        width: 32
+        access: rw
+        address: 0x00000064
+        description: fofb processing accumulator control register (per channel)
+        children:
+          - field:
+              name: clear
+              range: 0
+              description: clear accumulator bit
+              comment: |
+                write 0: no effect
+                write 1: clears accumulator (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: freeze
+              range: 1
+              description: freeze accumulator bit
+              comment: |
+                write 0: no effect on accumulator
+                write 1: freezes accumulator
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_0
+        width: 32
+        access: rw
+        address: 0x00000068
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_0
+        width: 32
+        access: rw
+        address: 0x0000006C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_1
+        width: 32
+        access: rw
+        address: 0x00000070
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_1
+        width: 32
+        access: rw
+        address: 0x00000074
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_2
+        width: 32
+        access: rw
+        address: 0x00000078
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_2
+        width: 32
+        access: rw
+        address: 0x0000007C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_3
+        width: 32
+        access: rw
+        address: 0x00000080
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_3
+        width: 32
+        access: rw
+        address: 0x00000084
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_4
+        width: 32
+        access: rw
+        address: 0x00000088
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_4
+        width: 32
+        access: rw
+        address: 0x0000008C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_5
+        width: 32
+        access: rw
+        address: 0x00000090
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_5
+        width: 32
+        access: rw
+        address: 0x00000094
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_6
+        width: 32
+        access: rw
+        address: 0x00000098
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_6
+        width: 32
+        access: rw
+        address: 0x0000009C
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_7
+        width: 32
+        access: rw
+        address: 0x000000A0
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_7
+        width: 32
+        access: rw
+        address: 0x000000A4
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_8
+        width: 32
+        access: rw
+        address: 0x000000A8
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_8
+        width: 32
+        access: rw
+        address: 0x000000AC
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_9
+        width: 32
+        access: rw
+        address: 0x000000B0
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_9
+        width: 32
+        access: rw
+        address: 0x000000B4
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_10
+        width: 32
+        access: rw
+        address: 0x000000B8
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_10
+        width: 32
+        access: rw
+        address: 0x000000BC
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_max_11
+        width: 32
+        access: rw
+        address: 0x000000C0
+        description: fofb processing maximum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: sp_min_11
+        width: 32
+        access: rw
+        address: 0x000000C4
+        description: fofb processing minimum saturation value register (per channel)
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: loop_intlk_src_en_ctl
+        width: 32
+        access: rw
+        address: 0x000000C8
+        description: fofb processing loop interlock sources enable control register
+        children:
+          - field:
+              name: orb_distort_en
+              range: 0
+              description: orbit distortion source enable
+              comment: |
+                write 0: disables source
+                write 1: enables source
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: packet_loss_en
+              range: 1
+              description: packet loss source enable
+              comment: |
+                write 0: disables source
+                write 1: enables source
+              x-wbgen:
+                type: BIT
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: loop_intlk_ctl
+        width: 32
+        access: rw
+        address: 0x000000CC
+        description: fofb processing loop interlock control register
+        children:
+          - field:
+              name: clr
+              range: 0
+              description: clears loop interlock status
+              comment: |
+                write 0: no effect
+                write 1: clears loop interlock status (this bit autoclears)
+              x-wbgen:
+                type: MONOSTABLE
+                access_dev: READ_ONLY
+                access_bus: WRITE_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: loop_intlk_sta
+        width: 32
+        access: rw
+        address: 0x000000D0
+        description: fofb processing loop interlock status register
+        children:
+          - field:
+              name: orb_distort
+              range: 0
+              description: orbit distortion loop interlock flag
+              comment: |
+                read 0: not interlocked
+                read 1: interlocked
+              x-wbgen:
+                type: BIT
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+          - field:
+              name: packet_loss
+              range: 1
+              description: packet loss loop interlock flag
+              comment: |
+                read 0: not interlocked
+                read 1: interlocked
+              x-wbgen:
+                type: BIT
+                access_dev: WRITE_ONLY
+                access_bus: READ_ONLY
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: orb_distort_limit
+        width: 32
+        access: rw
+        address: 0x000000D4
+        description: fofb processing loop interlock orbit distortion limit value register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - reg:
+        name: min_num_pkts
+        width: 32
+        access: rw
+        address: 0x000000D8
+        description: fofb processing loop interlock minimum number of packets per timeframe value register
+        children:
+          - field:
+              name: val
+              range: 31-0
+              description: value
+              x-wbgen:
+                type: SLV
+                access_dev: READ_ONLY
+                access_bus: READ_WRITE
+                clock: wb_fofb_processing_regs_clk_i
+    - memory:
+        name: coeffs_ram_bank_0
+        memsize: 2k
+        address: 0x00000800
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_1
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_2
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_3
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_4
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_5
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_6
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_7
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_8
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_9
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_10
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: coeffs_ram_bank_11
+        memsize: 2k
+        address: next
+        description: fofb processing coefficients ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw
+    - memory:
+        name: setpoints_ram_bank
+        memsize: 2k
+        address: next
+        description: fofb processing setpoints ram bank
+        align: True
+        x-wbgen:
+          kind: ram
+          access_bus: READ_WRITE
+          access_dev: READ_WRITE
+          clock: wb_fofb_processing_regs_clk_i
+        x-hdl:
+          dual-clock: True
+        children:
+          - reg:
+              name: data
+              width: 32
+              access: rw

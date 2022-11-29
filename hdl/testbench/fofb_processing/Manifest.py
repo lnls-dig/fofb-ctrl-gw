@@ -1,5 +1,6 @@
 files = [
     "fofb_processing_tb.vhd",
+    "../fofb_tb_pkg.vhd",
 ]
 
 modules = {
