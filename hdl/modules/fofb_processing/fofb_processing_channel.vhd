@@ -159,9 +159,11 @@ architecture behave of fofb_processing_channel is
   signal res_mult_gain_pipe        : t_res_mult_gain_arr(g_ACC_GAIN_MUL_PIPELINE_STAGES-1 downto 0);
   signal res_mult_gain_pipe_valid  : std_logic_vector(g_ACC_GAIN_MUL_PIPELINE_STAGES-1 downto 0);
   signal acc                       : sfixed(g_SP_INT_WIDTH downto -g_SP_FRAC_WIDTH);
+  signal res_acc_sum               : acc'subtype;
   signal gain                      : sfixed(g_GAIN_INT_WIDTH downto -g_GAIN_FRAC_WIDTH);
   signal bpm_pos_err_fp            : sfixed(g_BPM_POS_INT_WIDTH downto -g_BPM_POS_FRAC_WIDTH);
   signal coeff_fp                  : sfixed(g_COEFF_INT_WIDTH downto -g_COEFF_FRAC_WIDTH);
+  signal res_acc_sum_valid         : std_logic;
 begin
 
   -- Cast bpm_pos_err_index_i to std_logic_vector (coefficient RAM address)
@@ -209,7 +211,6 @@ begin
 
   process(clk_i)
     variable res_mult_gain_resized_to_acc : acc'subtype;
-    variable res_acc_sum                  : acc'subtype;
   begin
     if rising_edge(clk_i) then
       if rst_n_i = '0' then
@@ -217,7 +218,9 @@ begin
         dot_prod_valid <= '0';
         bpm_pos_err_fp <= (others => '0');
         acc <= (others => '0');
+        res_acc_sum <= (others => '0');
         sp_valid_o <= '0';
+        res_acc_sum_valid <= '0';
         res_mult_gain_pipe_valid <= (others => '0');
         fofb_proc_state <= CALC_DOT_PROD;
       else
@@ -260,16 +263,29 @@ begin
           end loop;
         end if;
 
+        res_acc_sum_valid <= '0';
+
         if clear_acc_i = '1' then
           acc <= (others => '0');
+          res_acc_sum <= (others => '0');
           sp_valid_o <= '1';
-        elsif res_mult_gain_pipe_valid(res_mult_gain_pipe_valid'high) = '1' then
-          -- Only accumulate if freeze_acc_i = '0' and loop_intlk_i = '0', but
-          -- generate a sp_valid_o pulse anyways
-          if freeze_acc_i = '0' and loop_intlk_i = '0' then
-            -- Resize gain multiplication result to the accumulator size
-            res_mult_gain_resized_to_acc := resize(res_mult_gain_pipe(res_mult_gain_pipe'high), acc'left, acc'right);
-            res_acc_sum := resize(acc + res_mult_gain_resized_to_acc, acc'left, acc'right);
+        else
+          if res_mult_gain_pipe_valid(res_mult_gain_pipe_valid'high) = '1' then
+            -- Only accumulate if freeze_acc_i = '0' and loop_intlk_i = '0', but
+            -- generate a sp_valid_o pulse anyways
+            if freeze_acc_i = '0' and loop_intlk_i = '0' then
+              -- Resize gain multiplication result to the accumulator size
+              res_mult_gain_resized_to_acc := resize(res_mult_gain_pipe(res_mult_gain_pipe'high), acc'left, acc'right);
+              -- Use a register here to ease timing clousure
+              res_acc_sum <= resize(acc + res_mult_gain_resized_to_acc, acc'left, acc'right);
+            end if;
+            -- Pass valid to the next pipeline stage (bound check)
+            res_acc_sum_valid <= '1';
+          end if;
+
+          sp_valid_o <= '0';
+
+          if res_acc_sum_valid = '1' then
             -- Check if the resulting set-point is withing limits set by
             -- sp_max_i and sp_min_i
             if signed(to_slv(res_acc_sum)) > sp_max_i then
@@ -282,12 +298,9 @@ begin
               -- Accumulate dot product result
               acc <= res_acc_sum;
             end if;
+            sp_valid_o <= '1';
           end if;
-          sp_valid_o <= '1';
-        else
-          sp_valid_o <= '0';
         end if;
-
       end if;
     end if;
   end process;
