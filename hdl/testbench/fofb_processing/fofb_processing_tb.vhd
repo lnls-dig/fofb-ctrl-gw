@@ -198,6 +198,14 @@ begin
         -- BPM data ended
         bpm_pos_valid <= '0';
 
+        -- Simulate an invalid position to check that bpm_pos_valid is respected
+        bpm_pos_index <= to_unsigned(i, c_SP_COEFF_RAM_ADDR_WIDTH);
+        bpm_pos <= to_signed(bpm_y, c_SP_POS_RAM_DATA_WIDTH);
+        f_wait_cycles(clk, 1);
+        bpm_pos_index <= to_unsigned(i + 256, c_SP_COEFF_RAM_ADDR_WIDTH);
+        bpm_pos <= to_signed(bpm_x, c_SP_POS_RAM_DATA_WIDTH);
+        f_wait_cycles(clk, 1);
+
         -- Compute the BPM position error
         if g_USE_MOVING_AVG then
           -- Take the average with the BPM position from the last time frame
