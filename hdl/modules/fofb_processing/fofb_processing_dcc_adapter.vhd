@@ -104,7 +104,6 @@ begin
       g_with_wr_almost_empty                  => false,
       g_with_wr_almost_full                   => false,
       g_with_wr_count                         => false,
-      g_with_fifo_inferred                    => false,
       g_almost_empty_threshold                => 0,
       g_almost_full_threshold                 => 0
     )
