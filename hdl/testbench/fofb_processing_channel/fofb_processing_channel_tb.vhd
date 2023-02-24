@@ -68,7 +68,7 @@ entity fofb_processing_channel_tb is
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2;
 
     -- Number of FOFB cycles to simulate
-    g_FOFB_NUM_CYC                 : natural := 4;
+    g_FOFB_NUM_CYC                 : natural := 20;
 
     -- Inverse response matrix coefficients file
     g_COEFF_RAM_FILE               : string  := "../coeff_norm_q31.dat";
@@ -116,7 +116,7 @@ architecture fofb_processing_channel_tb_arch of fofb_processing_channel_tb is
 
   constant c_COEFF_RAM_ADDR_WIDTH : natural := 9;
   constant c_COEFF_RAM_DATA_WIDTH : natural := 32;
-  constant c_LOOP_INTLK_CLK_CYCLES_DELAY : natural := 800;
+  constant c_LOOP_INTLK_CLK_CYCLES_DELAY : natural := 6000;
   signal clk                   : std_logic := '0';
   signal rst_n                 : std_logic := '0';
   signal busy                  : std_logic;
