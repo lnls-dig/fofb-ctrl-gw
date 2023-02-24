@@ -109,19 +109,50 @@ set_property DIFF_TERM TRUE                                   [get_ports rtmlamp
 # keep it here for reference. Also we sample SDO/SCK with IOB FF, so there is
 # not much the tool can improve.
 #
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdob_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdob_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdoc_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdoc_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdod_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdod_p_i];
-#
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -max 6.5 [get_ports rtmlamp_adc_quad_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -min 5.0 [get_ports rtmlamp_adc_quad_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -max 6.5 [get_ports rtmlamp_adc_quad_sdoc_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -min 5.0 [get_ports rtmlamp_adc_quad_sdoc_p_i];
+set rtmlamp_adc_octo_sdoa_delay 0.159
+set rtmlamp_adc_octo_sdob_delay 0.125
+set rtmlamp_adc_octo_sdoc_delay 0.120
+set rtmlamp_adc_octo_sdod_delay 0.107
+set rtmlamp_adc_quad_sdoa_delay -0.161
+set rtmlamp_adc_quad_sdoc_delay -0.144
+
+set_clock_groups -asynchronous -group rtmlamp_adc_octo_sck_ret  -group clk_fast_spi
+set_clock_groups -asynchronous -group rtmlamp_adc_quad_sck_ret  -group clk_fast_spi
+
+set rtmlamp_adc_delay_min [expr {$rtmlamp_adc_octo_sck_ret_clk_period / 2}]
+set rtmlamp_adc_delay_max [expr {[expr {$rtmlamp_adc_octo_sck_ret_clk_period / 2}] + 1.5}
+
+set rtmlamp_adc_octo_sdoa_idelay_min [expr {$rtmlamp_adc_delay_min - $rtmlamp_adc_octo_sdoa_delay}]
+set rtmlamp_adc_octo_sdoa_idelay_max [expr {$rtmlamp_adc_delay_max + $rtmlamp_adc_octo_sdoa_delay}]
+
+set rtmlamp_adc_octo_sdob_idelay_min [expr {$rtmlamp_adc_delay_min - $rtmlamp_adc_octo_sdob_delay}]
+set rtmlamp_adc_octo_sdob_idelay_max [expr {$rtmlamp_adc_delay_max + $rtmlamp_adc_octo_sdob_delay}]
+
+set rtmlamp_adc_octo_sdoc_idelay_min [expr {$rtmlamp_adc_delay_min - $rtmlamp_adc_octo_sdoc_delay}]
+set rtmlamp_adc_octo_sdoc_idelay_max [expr {$rtmlamp_adc_delay_max + $rtmlamp_adc_octo_sdoc_delay}]
+
+set rtmlamp_adc_octo_sdod_idelay_min [expr {$rtmlamp_adc_delay_min - $rtmlamp_adc_octo_sdod_delay}]
+set rtmlamp_adc_octo_sdod_idelay_max [expr {$rtmlamp_adc_delay_max + $rtmlamp_adc_octo_sdod_delay}]
+
+set rtmlamp_adc_quad_sdoa_idelay_min [expr {$rtmlamp_adc_delay_min - $rtmlamp_adc_quad_sdoa_delay}]
+set rtmlamp_adc_quad_sdoa_idelay_max [expr {$rtmlamp_adc_delay_max + $rtmlamp_adc_quad_sdoa_delay}]
+
+set rtmlamp_adc_quad_sdoc_idelay_min [expr {$rtmlamp_adc_delay_min - $rtmlamp_adc_quad_sdoc_delay}]
+set rtmlamp_adc_quad_sdoc_idelay_max [expr {$rtmlamp_adc_delay_max + $rtmlamp_adc_quad_sdoc_delay}]
+
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max $rtmlamp_adc_octo_sdoa_idelay_max [get_ports rtmlamp_adc_octo_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min $rtmlamp_adc_octo_sdoa_idelay_min [get_ports rtmlamp_adc_octo_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max $rtmlamp_adc_octo_sdob_idelay_max [get_ports rtmlamp_adc_octo_sdob_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min $rtmlamp_adc_octo_sdob_idelay_min [get_ports rtmlamp_adc_octo_sdob_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max $rtmlamp_adc_octo_sdoc_idelay_max [get_ports rtmlamp_adc_octo_sdoc_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min $rtmlamp_adc_octo_sdoc_idelay_min [get_ports rtmlamp_adc_octo_sdoc_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max $rtmlamp_adc_octo_sdod_idelay_max [get_ports rtmlamp_adc_octo_sdod_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min $rtmlamp_adc_octo_sdod_idelay_min [get_ports rtmlamp_adc_octo_sdod_p_i];
+
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -max $rtmlamp_adc_quad_sdoa_idelay_max [get_ports rtmlamp_adc_quad_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -min $rtmlamp_adc_quad_sdoa_idelay_min [get_ports rtmlamp_adc_quad_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -max $rtmlamp_adc_quad_sdoc_idelay_max [get_ports rtmlamp_adc_quad_sdoc_p_i];
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -min $rtmlamp_adc_quad_sdod_idelay_min [get_ports rtmlamp_adc_quad_sdoc_p_i];
 
 #######################################################################
 ##                          DELAY values                             ##
