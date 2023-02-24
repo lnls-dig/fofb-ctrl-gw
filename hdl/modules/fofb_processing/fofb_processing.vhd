@@ -152,6 +152,8 @@ architecture behave of fofb_processing is
   signal loop_intlk_state       : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
 begin
 
+  -- TODO: properly connect g_SP_DECIM_MAX_RATIO, sp_decim_ratio_i, sp_decim_o and sp_decim_valid_o
+
   gen_channels : for i in 0 to g_CHANNELS-1 generate
     fofb_processing_channel_interface : fofb_processing_channel
       generic map (
@@ -163,6 +165,7 @@ begin
         g_GAIN_FRAC_WIDTH              => c_FOFB_GAIN_FRAC_WIDTH,
         g_SP_INT_WIDTH                 => c_FOFB_SP_INT_WIDTH,
         g_SP_FRAC_WIDTH                => c_FOFB_SP_FRAC_WIDTH,
+        g_SP_DECIM_MAX_RATIO           => 8191,
         g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
         g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
         g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
@@ -187,6 +190,9 @@ begin
         sp_min_i                       => sp_min_arr_i(i),
         sp_o                           => sp_arr_o(i),
         sp_valid_o                     => sp_valid_arr_o(i),
+        sp_decim_ratio_i               => 4600, -- at Monit rate (but not synced)
+        sp_decim_o                     => open,
+        sp_decim_valid_o               => open,
         loop_intlk_i                   => or loop_intlk_state
       );
   end generate;

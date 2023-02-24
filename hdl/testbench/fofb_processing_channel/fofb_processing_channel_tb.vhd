@@ -14,6 +14,7 @@
 -- Revisions  :
 -- Date        Version  Author                Description
 -- 2022-08-26  1.0      augusto.fraga         Created
+-- 2023-02-24  1.1      guilherme.ricioli     Added setpoint decimation
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -54,6 +55,9 @@ entity fofb_processing_channel_tb is
 
     -- Fractionary width for the set-point output
     g_SP_FRAC_WIDTH                : natural := 0;
+
+    -- Maximum decimation ratio for the decimated setpoint output
+    g_SP_DECIM_MAX_RATIO           : natural := 8191;
 
     -- Extra bits for the dot product accumulator
     g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
@@ -114,9 +118,21 @@ architecture fofb_processing_channel_tb_arch of fofb_processing_channel_tb is
     return to_signed(integer(gain * 2.0**g_GAIN_FRAC_WIDTH), gain_width);
   end function f_conv_gain;
 
+  impure function gen_rand_int(min, max : integer) return integer is
+    variable s1 : integer := 742030307;
+    variable s2 : integer := 656422083;
+    variable r : real;
+  begin
+    uniform(s1, s2, r);
+    return integer(r * real(max - min) + real(min));
+  end function gen_rand_int;
+
   constant c_COEFF_RAM_ADDR_WIDTH : natural := 9;
   constant c_COEFF_RAM_DATA_WIDTH : natural := 32;
   constant c_LOOP_INTLK_CLK_CYCLES_DELAY : natural := 6000;
+  constant c_FOFB_CYC_TO_CHANGE_SP_DECIM_RATIO : integer := gen_rand_int(1, g_FOFB_NUM_CYC);
+  constant c_BPM_READING_TO_CHANGE_SP_DECIM_RATIO : integer := gen_rand_int(0, 159);
+
   signal clk                   : std_logic := '0';
   signal rst_n                 : std_logic := '0';
   signal busy                  : std_logic;
@@ -134,6 +150,9 @@ architecture fofb_processing_channel_tb_arch of fofb_processing_channel_tb is
   signal sp_max                : sp'subtype := to_signed(32767, sp'length);
   signal sp_min                : sp'subtype := to_signed(-32768, sp'length);
   signal sp_valid              : std_logic := '0';
+  signal sp_decim_ratio        : integer range 0 to g_SP_DECIM_MAX_RATIO := 3;
+  signal sp_decim              : signed(31 downto 0);
+  signal sp_decim_valid        : std_logic;
   signal loop_intlk            : std_logic := '0';
   shared variable coeff_ram    : t_coeff_ram_data;
 begin
@@ -148,6 +167,7 @@ begin
     g_GAIN_FRAC_WIDTH              => g_GAIN_FRAC_WIDTH,
     g_SP_INT_WIDTH                 => g_SP_INT_WIDTH,
     g_SP_FRAC_WIDTH                => g_SP_FRAC_WIDTH,
+    g_SP_DECIM_MAX_RATIO           => g_SP_DECIM_MAX_RATIO,
     g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
     g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
     g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
@@ -172,6 +192,9 @@ begin
     sp_min_i                       => sp_min,
     sp_o                           => sp,
     sp_valid_o                     => sp_valid,
+    sp_decim_ratio_i               => sp_decim_ratio,
+    sp_decim_o                     => sp_decim,
+    sp_decim_valid_o               => sp_decim_valid,
     loop_intlk_i                   => loop_intlk
   );
 
@@ -185,6 +208,8 @@ begin
     variable dot_prod_acc_simu              : real := 0.0;
     variable fofb_proc_acc_simu             : real := 0.0;
     variable sp_err                         : real := 0.0;
+    variable sp_decim_simu                  : real := 0.0;
+    variable sp_decim_err                   : real := 0.0;
   begin
     -- Load the coefficients of the inverse response matrix for a single
     -- corrector
@@ -216,6 +241,15 @@ begin
           f_send_bpm_err_pos_xy(clk, i, bpm_err_x_data, bpm_err_y_data, busy, bpm_pos_err, bpm_pos_err_index, bpm_pos_err_valid);
           dot_prod_acc_simu := dot_prod_acc_simu + real(bpm_err_x_data) * coeff_ram.get_coeff_real(i, g_COEFF_FRAC_WIDTH);
           dot_prod_acc_simu := dot_prod_acc_simu + real(bpm_err_y_data) * coeff_ram.get_coeff_real(i + 256, g_COEFF_FRAC_WIDTH);
+
+          -- Changes setpoint decimation ratio
+          if fofb_cyc = c_FOFB_CYC_TO_CHANGE_SP_DECIM_RATIO and
+            i = c_BPM_READING_TO_CHANGE_SP_DECIM_RATIO then
+            sp_decim_ratio <= sp_decim_ratio + 1;
+            f_wait_cycles(clk, 1);
+
+            sp_decim_simu := 0.0;
+          end if;
         else
           report "File " & g_FOFB_BPM_ERR_FILE & " ended prematurely!" severity error;
         end if;
@@ -225,6 +259,9 @@ begin
         -- Multiply the simulated dot product result by the gain and accumulate
         fofb_proc_acc_simu := fofb_proc_acc_simu + dot_prod_acc_simu * acc_gain_real;
       end if;
+
+      -- Computes the filtered setpoint
+      sp_decim_simu := sp_decim_simu + fofb_proc_acc_simu;
 
       -- Time frame ended
       bpm_time_frame_end <= '1';
@@ -249,6 +286,26 @@ begin
         report "Set point error: " & to_string(sp_err) & " Too large!" severity error;
       else
         report "Set point error: " & to_string(sp_err) & " OK!" severity note;
+      end if;
+
+      -- Checks if a new decimated/filtered setpoint is ready
+      f_wait_clocked_signal(clk, sp_decim_valid, '1', 10);
+
+      if sp_decim_valid = '1' then
+        -- This may be problematic for small values
+        sp_decim_err := abs((real(to_integer(sp_decim)) / floor(sp_decim_simu)) - 1.0);
+
+        report "Decimated set point: " & to_string(to_integer(sp_decim)) severity note;
+        report "Decimated set point simulated: " & to_string(integer(floor(sp_decim_simu))) severity note;
+
+        if sp_decim_err > 0.005 then
+          report "Decimated setpoint error: " & to_string(sp_decim_err) & " Too large!" severity error;
+        else
+          report "Decimated setpoint error: " & to_string(sp_decim_err) & " OK!" severity note;
+        end if;
+
+        f_wait_cycles(clk, 1);
+        sp_decim_simu := 0.0;
       end if;
 
       acc_gain_real <= acc_gain_real + 0.5;

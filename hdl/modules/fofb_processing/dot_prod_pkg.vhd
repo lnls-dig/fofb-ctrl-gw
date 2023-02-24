@@ -131,6 +131,9 @@ package dot_prod_pkg is
       -- Fractionary width for the set-point output
       g_SP_FRAC_WIDTH                : natural := 0;
 
+      -- Maximum decimation ratio for the decimated setpoint output
+      g_SP_DECIM_MAX_RATIO           : natural := 8191;
+
       -- Extra bits for the dot product accumulator
       g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
 
@@ -199,6 +202,15 @@ package dot_prod_pkg is
       -- Setpoint valid, it will generate a positive pulse after bpm_time_frame_end_i
       -- is set to '1' and all arithmetic operations have finished
       sp_valid_o                     : out std_logic;
+
+      -- Setpoint decimation ratio
+      sp_decim_ratio_i               : in integer range 0 to g_SP_DECIM_MAX_RATIO := 4600;
+
+      -- Decimated setpoint
+      sp_decim_o                     : out signed(31 downto 0);
+
+      -- Decimated setpoint valid
+      sp_decim_valid_o               : out std_logic;
 
       -- Loop interlock signal (has the same behavior as freeze_acc_i)
       loop_intlk_i                   : in std_logic
