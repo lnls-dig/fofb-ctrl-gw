@@ -26,6 +26,7 @@
 -- 2022-08-29  2.0      augusto.fraga         Refactored using VHDL 2008, add
 --                                            accumulator gain
 -- 2022-10-26  2.1      guilherme.ricioli     Added loop interlock interface
+-- 2023-02-24  2.2      guilherme.ricioli     Added setpoint decimation
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -62,6 +63,9 @@ entity fofb_processing_channel is
 
     -- Fractionary width for the set-point output
     g_SP_FRAC_WIDTH                : natural := 0;
+
+    -- Maximum decimation ratio for the decimated setpoint output
+    g_SP_DECIM_MAX_RATIO           : natural := 8191;
 
     -- Extra bits for the dot product accumulator
     g_DOT_PROD_ACC_EXTRA_WIDTH     : natural := 4;
@@ -132,12 +136,22 @@ entity fofb_processing_channel is
     -- is set to '1' and all arithmetic operations have finished
     sp_valid_o                     : out std_logic;
 
+    -- Setpoint decimation ratio
+    sp_decim_ratio_i               : in integer range 0 to g_SP_DECIM_MAX_RATIO := 4600;
+
+    -- Decimated setpoint
+    sp_decim_o                     : out signed(31 downto 0);
+
+    -- Decimated setpoint valid
+    sp_decim_valid_o               : out std_logic;
+
     -- Loop interlock signal (has the same behavior as freeze_acc_i)
     loop_intlk_i                   : in std_logic
   );
 end fofb_processing_channel;
 
 architecture behave of fofb_processing_channel is
+
   type t_fofb_proc_state is (CALC_DOT_PROD, WAIT_DOT_PROD_FINISH);
   signal fofb_proc_state           : t_fofb_proc_state;
   signal clear_acc_dot_prod        : std_logic;
@@ -164,6 +178,11 @@ architecture behave of fofb_processing_channel is
   signal bpm_pos_err_fp            : sfixed(g_BPM_POS_INT_WIDTH downto -g_BPM_POS_FRAC_WIDTH);
   signal coeff_fp                  : sfixed(g_COEFF_INT_WIDTH downto -g_COEFF_FRAC_WIDTH);
   signal res_acc_sum_valid         : std_logic;
+  signal sp_decim_ratio_d1         : integer range 0 to g_SP_DECIM_MAX_RATIO := 4600;
+  signal sp_decim_ratio_changed    : boolean := false;
+  signal sp_filtered               : signed(31 downto 0) := (others => '0');
+  signal sp_filtered_samples       : integer range 0 to g_SP_DECIM_MAX_RATIO + 1 := 0;
+
 begin
 
   -- Cast bpm_pos_err_index_i to std_logic_vector (coefficient RAM address)
@@ -186,6 +205,9 @@ begin
 
   -- Core is busy when it is not in the calculing the dot product state
   busy_o <= '0' when fofb_proc_state = CALC_DOT_PROD else '1';
+
+  -- Checks if sp_decim_ratio_i changed
+  sp_decim_ratio_changed <= true when sp_decim_ratio_i /= sp_decim_ratio_d1 else false;
 
   cmp_dot_prod: dot_prod
     generic map (
@@ -223,6 +245,8 @@ begin
         res_acc_sum_valid <= '0';
         res_mult_gain_pipe_valid <= (others => '0');
         fofb_proc_state <= CALC_DOT_PROD;
+        sp_filtered <= (others => '0');
+        sp_filtered_samples <= 0;
       else
         -- Delay 1 clock cycle to wait for the RAM data
         dot_prod_valid <= bpm_pos_err_valid_i;
@@ -299,6 +323,29 @@ begin
               acc <= res_acc_sum;
             end if;
             sp_valid_o <= '1';
+          end if;
+
+          sp_decim_valid_o <= '0';
+
+          -- Register sp_decim_ratio_i so to check if it changes
+          sp_decim_ratio_d1 <= sp_decim_ratio_i;
+
+          if sp_decim_ratio_changed = true then
+            -- Resets decimation/filtering regs
+            sp_filtered <= (others => '0');
+            sp_filtered_samples <= 0;
+          elsif sp_valid_o = '1' then
+            -- Computes the low-pass filtered setpoint
+            sp_filtered <= sp_filtered + sp_o;
+            sp_filtered_samples <= sp_filtered_samples + 1;
+          elsif sp_filtered_samples = sp_decim_ratio_i + 1 then
+            -- Decimates the low-pass filtered setpoint
+            sp_decim_o <= sp_filtered;
+            sp_decim_valid_o <= '1';
+
+            -- Resets decimation/filtering regs
+            sp_filtered <= (others => '0');
+            sp_filtered_samples <= 0;
           end if;
         end if;
       end if;
