@@ -77,6 +77,7 @@ architecture rtl of fofb_processing_cosim is
 
   -- Constants
   constant c_FOFB_CHANNELS  : integer := 1;
+  constant c_SP_DECIM_RATIO : integer := 4600; -- at Monit rate (but not synced)
 
   -- Signals
   signal clk                : std_logic := '0';
@@ -268,6 +269,9 @@ begin
       sp_min_arr_i                    => (others => sp_min),
       sp_arr_o                        => sp_arr,
       sp_valid_arr_o                  => sp_valid_arr,
+      sp_decim_ratio_arr_i            => (others => c_SP_DECIM_RATIO),
+      sp_decim_arr_o                  => open,
+      sp_decim_valid_arr_o            => open,
       loop_intlk_src_en_i             => (others => '0'),
       loop_intlk_state_clr_i          => '0',
       loop_intlk_state_o              => open,

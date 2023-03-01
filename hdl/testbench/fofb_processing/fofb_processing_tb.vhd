@@ -23,6 +23,8 @@
 -- 2022-09-02  2.0      augusto.fraga         Update the testbench to match the
 --                                            new fofb_processing version
 -- 2022-11-04  2.1      guilherme.ricioli     Test loop interlock
+-- 2023-03-01  2.2      guilherme.ricioli     Connected decimated setpoint
+--                                            signals
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -108,6 +110,10 @@ architecture behave of fofb_processing_tb is
   signal sp_valid_arr                 : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
   signal sp_pos_ram_addr              : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal sp_pos_ram_data              : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal sp_decim_ratio_arr           : t_fofb_processing_sp_decim_ratio_arr(g_FOFB_CHANNELS-1 downto 0) := (others => 0);
+  signal sp_decim_arr                 : t_fofb_processing_sp_decim_arr(g_FOFB_CHANNELS-1 downto 0);
+  signal sp_decim_valid_arr           : std_logic_vector(g_FOFB_CHANNELS-1 downto 0);
+  signal is_there_any_sp_decim_valid  : std_logic := '0';
   signal loop_intlk_src_en            : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
   signal loop_intlk_state_clr         : std_logic := '0';
   signal loop_intlk_state             : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
@@ -126,6 +132,12 @@ begin
     gain_arr(i) <= to_signed(integer(fofb_proc_gains(i) * 2.0**c_FOFB_GAIN_FRAC_WIDTH), c_FOFB_GAIN_WIDTH);
   end generate;
 
+  gen_ratios : for i in 0 to g_FOFB_CHANNELS-1 generate
+    sp_decim_ratio_arr(i) <= i;
+  end generate gen_ratios;
+
+  is_there_any_sp_decim_valid <= or sp_decim_valid_arr;
+
   -- Main simulation process
   process
     variable bpm_pos_reader       : t_bpm_pos_reader;
@@ -136,6 +148,8 @@ begin
     variable bpm_prev_x           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable bpm_prev_y           : integer_vector(2**c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => 0);
     variable sp_err               : real := 0.0;
+    variable sp_decim_arr_simu    : real_vector(g_FOFB_CHANNELS-1 downto 0) := (others => 0.0);
+    variable sp_decim_err         : real := 0.0;
     variable meas_cnt             : natural := 0;
     variable loop_intlked         : boolean := false;
   begin
@@ -219,9 +233,12 @@ begin
         end loop;
       end loop;
 
-      -- Accumulate the simulated dot product result
       for i in 0 to g_FOFB_CHANNELS-1 loop
+        -- Accumulate the simulated dot product result
         fofb_proc_acc_simu(i) := fofb_proc_acc_simu(i) + dot_prod_acc_simu(i) * fofb_proc_gains(i);
+
+        -- Computes the filtered setpoints
+        sp_decim_arr_simu(i) := sp_decim_arr_simu(i) + fofb_proc_acc_simu(i);
       end loop;
 
       -- Time frame ended
@@ -248,6 +265,28 @@ begin
           report "Set point error: " & to_string(sp_err) & " Too large!" severity error;
         else
           report "Set point error: " & to_string(sp_err) & " OK!" severity note;
+        end if;
+      end loop;
+
+      -- Checks if any new decimated/filtered setpoint is ready (if more than one, they happen at the same cycle)
+      f_wait_clocked_signal(clk, is_there_any_sp_decim_valid, '1', 10);
+
+      for i in 0 to g_FOFB_CHANNELS-1 loop
+        if sp_decim_valid_arr(i) = '1' then
+          -- This may be problematic for small values
+          sp_decim_err := abs((real(to_integer(sp_decim_arr(i))) / floor(sp_decim_arr_simu(i))) - 1.0);
+
+          report "Instance: " & to_string(i) severity note;
+          report "Decimated set point: " & to_string(to_integer(sp_decim_arr(i))) severity note;
+          report "Decimated set point simulated: " & to_string(integer(floor(sp_decim_arr_simu(i)))) severity note;
+
+          if sp_decim_err > 0.005 then
+            report "Decimated setpoint error: " & to_string(sp_decim_err) & " Too large!" severity error;
+          else
+            report "Decimated setpoint error: " & to_string(sp_decim_err) & " OK!" severity note;
+          end if;
+
+          sp_decim_arr_simu(i) := 0.0;
         end if;
       end loop;
     end loop;
@@ -550,6 +589,9 @@ begin
       sp_min_arr_i                    => (others => sp_min),
       sp_arr_o                        => sp_arr,
       sp_valid_arr_o                  => sp_valid_arr,
+      sp_decim_ratio_arr_i            => sp_decim_ratio_arr,
+      sp_decim_arr_o                  => sp_decim_arr,
+      sp_decim_valid_arr_o            => sp_decim_valid_arr,
       loop_intlk_src_en_i             => loop_intlk_src_en,
       loop_intlk_state_clr_i          => loop_intlk_state_clr,
       loop_intlk_state_o              => loop_intlk_state,
