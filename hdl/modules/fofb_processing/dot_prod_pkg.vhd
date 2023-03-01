@@ -29,8 +29,11 @@ package dot_prod_pkg is
   constant c_FOFB_SP_FRAC_WIDTH          : natural := 0;
   constant c_FOFB_SP_WIDTH               : natural := c_FOFB_SP_INT_WIDTH + c_FOFB_SP_FRAC_WIDTH + 1;
   constant c_FOFB_WB_SP_MIN_MAX_WIDTH    : natural := 32;
+  constant c_FOFB_SP_DECIM_MAX_RATIO     : natural := 8191;
   type t_fofb_processing_sp_arr is array (natural range <>) of signed(c_FOFB_SP_WIDTH-1 downto 0);
   type t_fofb_processing_wb_sp_arr is array (natural range <>) of std_logic_vector(c_FOFB_WB_SP_MIN_MAX_WIDTH-1 downto 0);
+  type t_fofb_processing_sp_decim_arr is array (natural range <>) of signed(31 downto 0);
+  type t_fofb_processing_sp_decim_ratio_arr is array (natural range <>) of integer range 0 to c_FOFB_SP_DECIM_MAX_RATIO;
 
   constant c_FOFB_GAIN_INT_WIDTH         : natural := 3;
   constant c_FOFB_GAIN_FRAC_WIDTH        : natural := 12;
@@ -304,6 +307,15 @@ package dot_prod_pkg is
 
       -- Set-point valid array (for each channel)
       sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
+
+      -- Setpoint decimation ratio (for each channel)
+      sp_decim_ratio_arr_i           : in  t_fofb_processing_sp_decim_ratio_arr(g_CHANNELS-1 downto 0);
+
+      -- Decimated setpoint (for each channel)
+      sp_decim_arr_o                 : out t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+
+      -- Decimated setpoint valid (for each channel)
+      sp_decim_valid_arr_o           : out std_logic_vector(g_CHANNELS-1 downto 0);
 
       -- Loop interlock sources enable
       loop_intlk_src_en_i            : in std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);

@@ -229,6 +229,9 @@ begin
       sp_min_arr_i                    => sp_min_arr,
       sp_arr_o                        => sp_arr_o,
       sp_valid_arr_o                  => sp_valid_arr_o,
+      sp_decim_ratio_arr_i            => (others => 4600), -- at Monit rate (but not synced)
+      sp_decim_arr_o                  => open,
+      sp_decim_valid_arr_o            => open,
       loop_intlk_src_en_i             => loop_intlk_src_en,
       loop_intlk_state_clr_i          => loop_intlk_ctl_sta_clr,
       loop_intlk_state_o              => loop_intlk_sta,
