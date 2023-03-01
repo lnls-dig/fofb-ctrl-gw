@@ -65,28 +65,21 @@ architecture rtl of fofb_processing_dcc_adapter_tb is
   signal rst_n                    : std_logic := '0';
   signal clk_dcc                  : std_logic := '0';
   signal rst_dcc_n                : std_logic := '0';
-
   signal dcc_time_frame_end       : std_logic := '0';
   signal dcc_packet               : t_fofb_cc_packet;
   signal dcc_packet_valid         : std_logic := '0';
-
   signal fofb_proc_busy           : std_logic := '0';
   signal fofb_proc_bpm_pos        : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
   signal fofb_proc_bpm_pos_index  : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal fofb_proc_bpm_pos_valid  : std_logic;
   signal fofb_proc_time_frame_end : std_logic;
-
   signal coeff_ram_addr_arr       : t_arr_coeff_ram_addr(g_FOFB_CHANNELS-1 downto 0);
   signal coeff_ram_data_arr       : t_arr_coeff_ram_data(g_FOFB_CHANNELS-1 downto 0) := (others => x"40000000");
-
   signal sp_pos_ram_addr          : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal sp_pos_ram_data          : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0) := x"00000000";
-
   signal gain_arr                 : t_fofb_processing_gain_arr(g_FOFB_CHANNELS-1 downto 0) := (others => x"1000");
-
   signal sp_arr                   : t_fofb_processing_sp_arr(g_FOFB_CHANNELS-1 downto 0);
   signal sp_valid_arr             : std_logic_vector(g_FOFB_CHANNELS-1 downto 0);
-
   signal sp_max                   : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(32767, c_FOFB_SP_WIDTH);
   signal sp_min                   : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(-32768, c_FOFB_SP_WIDTH);
 
@@ -141,50 +134,41 @@ begin
 
   cmp_fofb_processing: fofb_processing
     generic map (
-    g_COEFF_INT_WIDTH              => g_COEFF_INT_WIDTH,
-    g_COEFF_FRAC_WIDTH             => g_COEFF_FRAC_WIDTH,
-    g_BPM_POS_INT_WIDTH            => g_BPM_POS_INT_WIDTH,
-    g_BPM_POS_FRAC_WIDTH           => g_BPM_POS_FRAC_WIDTH,
-    g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
-    g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
-    g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
-    g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
-    g_USE_MOVING_AVG               => g_USE_MOVING_AVG,
-    g_CHANNELS                     => g_FOFB_CHANNELS
+      g_COEFF_INT_WIDTH               => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH              => g_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH             => g_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH            => g_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH      => g_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES  => g_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES  => g_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES  => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_USE_MOVING_AVG                => g_USE_MOVING_AVG,
+      g_CHANNELS                      => g_FOFB_CHANNELS
     )
     port map (
-      clk_i                        => clk,
-      rst_n_i                      => rst_n,
-
-      busy_o                       => fofb_proc_busy,
-
-      bpm_pos_i                    => fofb_proc_bpm_pos,
-      bpm_pos_index_i              => fofb_proc_bpm_pos_index,
-      bpm_pos_valid_i              => fofb_proc_bpm_pos_valid,
-      bpm_time_frame_end_i         => fofb_proc_time_frame_end,
-
-      coeff_ram_addr_arr_o         => coeff_ram_addr_arr,
-      coeff_ram_data_arr_i         => coeff_ram_data_arr,
-
-      freeze_acc_arr_i             => (others => '0'),
-      clear_acc_arr_i              => (others => '0'),
-
-      sp_pos_ram_addr_o            => sp_pos_ram_addr,
-      sp_pos_ram_data_i            => sp_pos_ram_data,
-
-      gain_arr_i                   => gain_arr,
-
-      sp_max_arr_i                 => (others => sp_max),
-      sp_min_arr_i                 => (others => sp_min),
-
-      sp_arr_o                     => sp_arr,
-      sp_valid_arr_o               => sp_valid_arr,
-
-      loop_intlk_src_en_i          => (others => '0'),
-      loop_intlk_state_clr_i       => '0',
-      loop_intlk_state_o           => open,
-      loop_intlk_distort_limit_i   => (others => '0'),
-      loop_intlk_min_num_meas_i    => (others => '0')
+      clk_i                           => clk,
+      rst_n_i                         => rst_n,
+      busy_o                          => fofb_proc_busy,
+      bpm_pos_i                       => fofb_proc_bpm_pos,
+      bpm_pos_index_i                 => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i                 => fofb_proc_bpm_pos_valid,
+      bpm_time_frame_end_i            => fofb_proc_time_frame_end,
+      coeff_ram_addr_arr_o            => coeff_ram_addr_arr,
+      coeff_ram_data_arr_i            => coeff_ram_data_arr,
+      freeze_acc_arr_i                => (others => '0'),
+      clear_acc_arr_i                 => (others => '0'),
+      sp_pos_ram_addr_o               => sp_pos_ram_addr,
+      sp_pos_ram_data_i               => sp_pos_ram_data,
+      gain_arr_i                      => gain_arr,
+      sp_max_arr_i                    => (others => sp_max),
+      sp_min_arr_i                    => (others => sp_min),
+      sp_arr_o                        => sp_arr,
+      sp_valid_arr_o                  => sp_valid_arr,
+      loop_intlk_src_en_i             => (others => '0'),
+      loop_intlk_state_clr_i          => '0',
+      loop_intlk_state_o              => open,
+      loop_intlk_distort_limit_i      => (others => '0'),
+      loop_intlk_min_num_meas_i       => (others => '0')
     );
 
   cmp_fofb_dcc_adapter: fofb_processing_dcc_adapter
@@ -193,17 +177,14 @@ begin
       rst_n_i                    => rst_n,
       clk_dcc_i                  => clk_dcc,
       rst_dcc_n_i                => rst_dcc_n,
-
       dcc_time_frame_end_i       => dcc_time_frame_end,
       dcc_packet_i               => dcc_packet,
       dcc_packet_valid_i         => dcc_packet_valid,
-
       fofb_proc_busy_i           => fofb_proc_busy,
       fofb_proc_bpm_pos_o        => fofb_proc_bpm_pos,
       fofb_proc_bpm_pos_index_o  => fofb_proc_bpm_pos_index,
       fofb_proc_bpm_pos_valid_o  => fofb_proc_bpm_pos_valid,
       fofb_proc_time_frame_end_o => fofb_proc_time_frame_end,
-
       acq_dcc_packet_o           => open,
       acq_dcc_valid_o            => open
     );
