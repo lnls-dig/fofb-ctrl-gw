@@ -76,36 +76,28 @@ architecture rtl of fofb_processing_cosim is
   type t_word32_arr is array (natural range <>) of std_logic_vector(31 downto 0);
 
   -- Constants
-  constant c_FOFB_CHANNELS    : integer := 1;
+  constant c_FOFB_CHANNELS  : integer := 1;
 
   -- Signals
-  signal clk                  : std_logic := '0';
-  signal rst_n                : std_logic := '0';
-
-  signal busy                 : std_logic;
-  signal bpm_time_frame_end   : std_logic := '0';
-
-  signal bpm_pos              : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0) := (others => '0');
-  signal bpm_pos_index        : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)  := (others => '0');
-  signal bpm_pos_valid        : std_logic := '0';
-
-  signal coeff_ram_data_arr   : t_arr_coeff_ram_data(c_FOFB_CHANNELS-1 downto 0);
-  signal coeff_ram_addr_arr   : t_arr_coeff_ram_addr(c_FOFB_CHANNELS-1 downto 0);
-  signal coeff_data_arr       : t_word32_arr(511 downto 0) := (others => x"00000000");
-
-  signal sp_max               : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(g_SP_MAX, c_FOFB_SP_WIDTH);
-  signal sp_min               : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(g_SP_MIN, c_FOFB_SP_WIDTH);
-
-  signal sp_arr               : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
-  signal sp_valid_arr         : std_logic_vector(c_FOFB_CHANNELS-1 downto 0) := (others => '0');
-  signal sp_data_arr          : t_word32_arr(511 downto 0) := (others => x"00000000");
-
-  signal clear_acc_arr        : std_logic_vector(c_FOFB_CHANNELS-1 downto 0) := (others => '0');
-
-  signal sp_pos_ram_addr      : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
-  signal sp_pos_ram_data      : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
-
-  signal gain_arr             : t_fofb_processing_gain_arr(c_FOFB_CHANNELS-1 downto 0) := (others => (others => '0'));
+  signal clk                : std_logic := '0';
+  signal rst_n              : std_logic := '0';
+  signal busy               : std_logic;
+  signal bpm_pos            : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal bpm_pos_index      : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)  := (others => '0');
+  signal bpm_pos_valid      : std_logic := '0';
+  signal bpm_time_frame_end : std_logic := '0';
+  signal coeff_ram_data_arr : t_arr_coeff_ram_data(c_FOFB_CHANNELS-1 downto 0);
+  signal coeff_ram_addr_arr : t_arr_coeff_ram_addr(c_FOFB_CHANNELS-1 downto 0);
+  signal coeff_data_arr     : t_word32_arr(511 downto 0) := (others => x"00000000");
+  signal clear_acc_arr      : std_logic_vector(c_FOFB_CHANNELS-1 downto 0) := (others => '0');
+  signal sp_max             : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(g_SP_MAX, c_FOFB_SP_WIDTH);
+  signal sp_min             : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(g_SP_MIN, c_FOFB_SP_WIDTH);
+  signal sp_arr             : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
+  signal sp_valid_arr       : std_logic_vector(c_FOFB_CHANNELS-1 downto 0) := (others => '0');
+  signal sp_data_arr        : t_word32_arr(511 downto 0) := (others => x"00000000");
+  signal sp_pos_ram_addr    : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal sp_pos_ram_data    : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal gain_arr           : t_fofb_processing_gain_arr(c_FOFB_CHANNELS-1 downto 0) := (others => (others => '0'));
 
 begin
 
@@ -113,14 +105,14 @@ begin
   f_gen_clk(100_000_000, clk);
 
   process
-    variable fofb_server: t_fofb_server;
-    variable sp_o       : integer := 0;
-    variable fofb_msg   : t_fofb_server_msg_type;
-    variable connected  : boolean := false;
-    variable end_simu   : boolean := false;
-    variable data       : std_logic_vector(31 downto 0);
-    variable data_sig   : signed(31 downto 0);
-    variable data_int   : integer;
+    variable fofb_server  : t_fofb_server;
+    variable sp_o         : integer := 0;
+    variable fofb_msg     : t_fofb_server_msg_type;
+    variable connected    : boolean := false;
+    variable end_simu     : boolean := false;
+    variable data         : std_logic_vector(31 downto 0);
+    variable data_sig     : signed(31 downto 0);
+    variable data_int     : integer;
   begin
     -- Create a new instance of fofb_server
     fofb_server := new_fofb_server(g_TCP_PORT,
@@ -247,49 +239,40 @@ begin
 
   cmp_fofb_processing: fofb_processing
     generic map (
-    g_COEFF_INT_WIDTH              => g_COEFF_INT_WIDTH,
-    g_COEFF_FRAC_WIDTH             => g_COEFF_FRAC_WIDTH,
-    g_BPM_POS_INT_WIDTH            => g_BPM_POS_INT_WIDTH,
-    g_BPM_POS_FRAC_WIDTH           => g_BPM_POS_FRAC_WIDTH,
-    g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
-    g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
-    g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
-    g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
-    g_CHANNELS                     => c_FOFB_CHANNELS
+      g_COEFF_INT_WIDTH               => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH              => g_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH             => g_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH            => g_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH      => g_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES  => g_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES  => g_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES  => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_CHANNELS                      => c_FOFB_CHANNELS
     )
     port map (
-      clk_i                        => clk,
-      rst_n_i                      => rst_n,
-
-      busy_o                       => busy,
-
-      bpm_pos_i                    => bpm_pos,
-      bpm_pos_index_i              => bpm_pos_index,
-      bpm_pos_valid_i              => bpm_pos_valid,
-      bpm_time_frame_end_i         => bpm_time_frame_end,
-
-      coeff_ram_addr_arr_o         => coeff_ram_addr_arr,
-      coeff_ram_data_arr_i         => coeff_ram_data_arr,
-
-      freeze_acc_arr_i             => (others => '0'),
-      clear_acc_arr_i              => clear_acc_arr,
-
-      sp_pos_ram_addr_o            => sp_pos_ram_addr,
-      sp_pos_ram_data_i            => sp_pos_ram_data,
-
-      gain_arr_i                   => gain_arr,
-
-      sp_max_arr_i                 => (others => sp_max),
-      sp_min_arr_i                 => (others => sp_min),
-
-      sp_arr_o                     => sp_arr,
-      sp_valid_arr_o               => sp_valid_arr,
-
-      loop_intlk_src_en_i          => (others => '0'),
-      loop_intlk_state_clr_i       => '0',
-      loop_intlk_state_o           => open,
-      loop_intlk_distort_limit_i   => (others => '0'),
-      loop_intlk_min_num_meas_i    => (others => '0')
+      clk_i                           => clk,
+      rst_n_i                         => rst_n,
+      busy_o                          => busy,
+      bpm_pos_i                       => bpm_pos,
+      bpm_pos_index_i                 => bpm_pos_index,
+      bpm_pos_valid_i                 => bpm_pos_valid,
+      bpm_time_frame_end_i            => bpm_time_frame_end,
+      coeff_ram_addr_arr_o            => coeff_ram_addr_arr,
+      coeff_ram_data_arr_i            => coeff_ram_data_arr,
+      freeze_acc_arr_i                => (others => '0'),
+      clear_acc_arr_i                 => clear_acc_arr,
+      sp_pos_ram_addr_o               => sp_pos_ram_addr,
+      sp_pos_ram_data_i               => sp_pos_ram_data,
+      gain_arr_i                      => gain_arr,
+      sp_max_arr_i                    => (others => sp_max),
+      sp_min_arr_i                    => (others => sp_min),
+      sp_arr_o                        => sp_arr,
+      sp_valid_arr_o                  => sp_valid_arr,
+      loop_intlk_src_en_i             => (others => '0'),
+      loop_intlk_state_clr_i          => '0',
+      loop_intlk_state_o              => open,
+      loop_intlk_distort_limit_i      => (others => '0'),
+      loop_intlk_min_num_meas_i       => (others => '0')
     );
 
 end architecture rtl;
