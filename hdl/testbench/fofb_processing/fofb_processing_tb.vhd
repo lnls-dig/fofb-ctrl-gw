@@ -68,7 +68,7 @@ entity fofb_processing_tb is
     g_USE_MOVING_AVG               : boolean := true;
 
     -- Number of FOFB cycles to simulate
-    g_FOFB_NUM_CYC                 : natural := 4;
+    g_FOFB_NUM_CYC                 : natural := 20;
 
     -- Inverse response matrix coefficients file
     g_COEFF_RAM_FILE               : string  := "../coeff_norm.dat";
