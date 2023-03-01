@@ -86,46 +86,37 @@ end fofb_processing_tb;
 
 architecture behave of fofb_processing_tb is
   -- Constants
-  constant c_SYS_CLOCK_FREQ   : natural := 100_000_000;
+  constant c_SYS_CLOCK_FREQ           : natural := 100_000_000;
   constant c_LOOP_INTLK_DISTORT_LIMIT : natural := 20000;
   constant c_LOOP_INTLK_MIN_NUM_MEAS  : natural := 10;
 
   -- Signals
-  signal clk                  : std_logic := '0';
-  signal rst_n                : std_logic := '0';
+  signal clk                          : std_logic := '0';
+  signal rst_n                        : std_logic := '0';
+  signal busy                         : std_logic;
+  signal bpm_pos                      : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal bpm_pos_index                : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)  := (others => '0');
+  signal bpm_pos_valid                : std_logic := '0';
+  signal bpm_time_frame_end           : std_logic := '0';
+  signal coeff_ram_data_arr           : t_arr_coeff_ram_data(g_FOFB_CHANNELS-1 downto 0);
+  signal coeff_ram_addr_arr           : t_arr_coeff_ram_addr(g_FOFB_CHANNELS-1 downto 0);
+  signal clear_acc_arr                : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
+  signal gain_arr                     : t_fofb_processing_gain_arr(g_FOFB_CHANNELS-1 downto 0);
+  signal sp_max                       : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(32767, c_FOFB_SP_WIDTH);
+  signal sp_min                       : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(-32768, c_FOFB_SP_WIDTH);
+  signal sp_arr                       : t_fofb_processing_sp_arr(g_FOFB_CHANNELS-1 downto 0);
+  signal sp_valid_arr                 : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
+  signal sp_pos_ram_addr              : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal sp_pos_ram_data              : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal loop_intlk_src_en            : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
+  signal loop_intlk_state_clr         : std_logic := '0';
+  signal loop_intlk_state             : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+  signal loop_intlk_distort_limit     : unsigned(g_BPM_POS_INT_WIDTH-1 downto 0) := (others => '0');
+  signal loop_intlk_min_num_meas      : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
+  shared variable coeff_ram           : t_coeff_ram_data;
+  shared variable sp_ram              : t_sp_ram_data;
+  signal fofb_proc_gains              : real_vector(g_FOFB_CHANNELS-1 downto 0) := (others => 0.0);
 
-  signal busy                 : std_logic;
-  signal bpm_time_frame_end   : std_logic := '0';
-
-  signal bpm_pos              : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0) := (others => '0');
-  signal bpm_pos_index        : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0)  := (others => '0');
-  signal bpm_pos_valid        : std_logic := '0';
-
-  signal coeff_ram_data_arr   : t_arr_coeff_ram_data(g_FOFB_CHANNELS-1 downto 0);
-  signal coeff_ram_addr_arr   : t_arr_coeff_ram_addr(g_FOFB_CHANNELS-1 downto 0);
-
-  signal sp_max               : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(32767, c_FOFB_SP_WIDTH);
-  signal sp_min               : signed(c_FOFB_SP_WIDTH-1 downto 0) := to_signed(-32768, c_FOFB_SP_WIDTH);
-
-  signal sp_arr               : t_fofb_processing_sp_arr(g_FOFB_CHANNELS-1 downto 0);
-  signal sp_valid_arr         : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
-  signal clear_acc_arr        : std_logic_vector(g_FOFB_CHANNELS-1 downto 0) := (others => '0');
-
-  signal sp_pos_ram_addr      : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
-  signal sp_pos_ram_data      : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
-
-  signal gain_arr             : t_fofb_processing_gain_arr(g_FOFB_CHANNELS-1 downto 0);
-
-  shared variable coeff_ram   : t_coeff_ram_data;
-  shared variable sp_ram      : t_sp_ram_data;
-
-  signal fofb_proc_gains      : real_vector(g_FOFB_CHANNELS-1 downto 0) := (others => 0.0);
-
-  signal loop_intlk_src_en        : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0) := (others => '0');
-  signal loop_intlk_state_clr     : std_logic := '0';
-  signal loop_intlk_state         : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
-  signal loop_intlk_distort_limit : unsigned(g_BPM_POS_INT_WIDTH-1 downto 0) := (others => '0');
-  signal loop_intlk_min_num_meas  : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
 begin
   -- Generate clock signal
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
@@ -529,50 +520,41 @@ begin
 
   cmp_fofb_processing: fofb_processing
     generic map (
-    g_COEFF_INT_WIDTH              => g_COEFF_INT_WIDTH,
-    g_COEFF_FRAC_WIDTH             => g_COEFF_FRAC_WIDTH,
-    g_BPM_POS_INT_WIDTH            => g_BPM_POS_INT_WIDTH,
-    g_BPM_POS_FRAC_WIDTH           => g_BPM_POS_FRAC_WIDTH,
-    g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
-    g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
-    g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
-    g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
-    g_USE_MOVING_AVG               => g_USE_MOVING_AVG,
-    g_CHANNELS                     => g_FOFB_CHANNELS
+      g_COEFF_INT_WIDTH               => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH              => g_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH             => g_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH            => g_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH      => g_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES  => g_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES  => g_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES  => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_USE_MOVING_AVG                => g_USE_MOVING_AVG,
+      g_CHANNELS                      => g_FOFB_CHANNELS
     )
     port map (
-      clk_i                        => clk,
-      rst_n_i                      => rst_n,
-
-      busy_o                       => busy,
-
-      bpm_pos_i                    => bpm_pos,
-      bpm_pos_index_i              => bpm_pos_index,
-      bpm_pos_valid_i              => bpm_pos_valid,
-      bpm_time_frame_end_i         => bpm_time_frame_end,
-
-      coeff_ram_addr_arr_o         => coeff_ram_addr_arr,
-      coeff_ram_data_arr_i         => coeff_ram_data_arr,
-
-      freeze_acc_arr_i             => (others => '0'),
-      clear_acc_arr_i              => clear_acc_arr,
-
-      sp_pos_ram_addr_o            => sp_pos_ram_addr,
-      sp_pos_ram_data_i            => sp_pos_ram_data,
-
-      gain_arr_i                   => gain_arr,
-
-      sp_max_arr_i                 => (others => sp_max),
-      sp_min_arr_i                 => (others => sp_min),
-
-      sp_arr_o                     => sp_arr,
-      sp_valid_arr_o               => sp_valid_arr,
-
-      loop_intlk_src_en_i          => loop_intlk_src_en,
-      loop_intlk_state_clr_i       => loop_intlk_state_clr,
-      loop_intlk_state_o           => loop_intlk_state,
-      loop_intlk_distort_limit_i   => loop_intlk_distort_limit,
-      loop_intlk_min_num_meas_i    => loop_intlk_min_num_meas
+      clk_i                           => clk,
+      rst_n_i                         => rst_n,
+      busy_o                          => busy,
+      bpm_pos_i                       => bpm_pos,
+      bpm_pos_index_i                 => bpm_pos_index,
+      bpm_pos_valid_i                 => bpm_pos_valid,
+      bpm_time_frame_end_i            => bpm_time_frame_end,
+      coeff_ram_addr_arr_o            => coeff_ram_addr_arr,
+      coeff_ram_data_arr_i            => coeff_ram_data_arr,
+      freeze_acc_arr_i                => (others => '0'),
+      clear_acc_arr_i                 => clear_acc_arr,
+      sp_pos_ram_addr_o               => sp_pos_ram_addr,
+      sp_pos_ram_data_i               => sp_pos_ram_data,
+      gain_arr_i                      => gain_arr,
+      sp_max_arr_i                    => (others => sp_max),
+      sp_min_arr_i                    => (others => sp_min),
+      sp_arr_o                        => sp_arr,
+      sp_valid_arr_o                  => sp_valid_arr,
+      loop_intlk_src_en_i             => loop_intlk_src_en,
+      loop_intlk_state_clr_i          => loop_intlk_state_clr,
+      loop_intlk_state_o              => loop_intlk_state,
+      loop_intlk_distort_limit_i      => loop_intlk_distort_limit,
+      loop_intlk_min_num_meas_i       => loop_intlk_min_num_meas
     );
 
 end architecture behave;
