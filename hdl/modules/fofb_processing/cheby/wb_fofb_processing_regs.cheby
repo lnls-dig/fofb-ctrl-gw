@@ -139,7 +139,7 @@ memory-map:
           - block:
               name: acc
               description: fofb processing accumulator registers (per channel)
-              size: 64
+              size: 32
               children:
               - reg:
                   name: ctl

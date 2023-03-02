@@ -61,7 +61,7 @@
 
 /* fofb processing accumulator registers (per channel) */
 #define WB_FOFB_PROCESSING_REGS_CH_ACC 0x800UL
-#define WB_FOFB_PROCESSING_REGS_CH_ACC_SIZE 64 /* 0x40 */
+#define WB_FOFB_PROCESSING_REGS_CH_ACC_SIZE 32 /* 0x20 */
 
 /* fofb processing accumulator control register (per channel) */
 #define WB_FOFB_PROCESSING_REGS_CH_ACC_CTL 0x800UL
@@ -74,16 +74,16 @@
 #define WB_FOFB_PROCESSING_REGS_CH_ACC_GAIN_VAL_SHIFT 0
 
 /* fofb processing saturation limits registers (per channel) */
-#define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS 0x840UL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS 0x820UL
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_SIZE 8 /* 0x8 */
 
 /* fofb processing maximum saturation value register (per channel) */
-#define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MAX 0x840UL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MAX 0x820UL
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MAX_VAL_MASK 0xffffffffUL
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MAX_VAL_SHIFT 0
 
 /* fofb processing minimum saturation value register (per channel) */
-#define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MIN 0x844UL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MIN 0x824UL
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MIN_VAL_MASK 0xffffffffUL
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MIN_VAL_SHIFT 0
 
@@ -144,10 +144,10 @@ struct wb_fofb_processing_regs {
       uint32_t gain;
 
       /* padding to: 1 words */
-      uint32_t __padding_0[14];
+      uint32_t __padding_0[6];
     } acc;
 
-    /* [0x840]: BLOCK fofb processing saturation limits registers (per channel) */
+    /* [0x820]: BLOCK fofb processing saturation limits registers (per channel) */
     struct sp_limits {
       /* [0x0]: REG (rw) fofb processing maximum saturation value register (per channel) */
       uint32_t max;
@@ -156,8 +156,8 @@ struct wb_fofb_processing_regs {
       uint32_t min;
     } sp_limits;
 
-    /* padding to: 528 words */
-    uint32_t __padding_0[494];
+    /* padding to: 520 words */
+    uint32_t __padding_0[502];
   } ch[12];
 };
 
