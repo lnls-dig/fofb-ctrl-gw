@@ -1,4 +1,4 @@
--- Do not edit.  Generated on Tue Feb 14 18:19:12 2023 by guilherme.ricioli
+-- Do not edit.  Generated on Thu Mar 02 09:08:53 2023 by guilherme.ricioli
 -- With Cheby 1.4.0 and these options:
 --  -i wb_fofb_processing_regs.cheby --hdl vhdl --gen-hdl wb_fofb_processing_regs.vhd --doc html --gen-doc doc/wb_fofb_processing_regs.html --gen-c wb_fofb_processing_regs.h --consts-style verilog --gen-consts ../../../sim/regs/wb_fofb_processing_regs.vh --consts-style vhdl-ohwr --gen-consts ../../../sim/regs/wb_fofb_processing_regs_consts_pkg.vhd
 
@@ -2308,11 +2308,11 @@ begin
         -- Reg ch_0_acc_gain
         ch_0_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_0_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_0_sp_limits_max
         ch_0_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_0_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_0_sp_limits_min
         ch_0_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_0_sp_limits_min_wack;
@@ -2333,11 +2333,11 @@ begin
         -- Reg ch_1_acc_gain
         ch_1_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_1_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_1_sp_limits_max
         ch_1_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_1_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_1_sp_limits_min
         ch_1_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_1_sp_limits_min_wack;
@@ -2358,11 +2358,11 @@ begin
         -- Reg ch_2_acc_gain
         ch_2_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_2_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_2_sp_limits_max
         ch_2_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_2_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_2_sp_limits_min
         ch_2_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_2_sp_limits_min_wack;
@@ -2383,11 +2383,11 @@ begin
         -- Reg ch_3_acc_gain
         ch_3_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_3_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_3_sp_limits_max
         ch_3_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_3_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_3_sp_limits_min
         ch_3_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_3_sp_limits_min_wack;
@@ -2408,11 +2408,11 @@ begin
         -- Reg ch_4_acc_gain
         ch_4_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_4_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_4_sp_limits_max
         ch_4_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_4_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_4_sp_limits_min
         ch_4_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_4_sp_limits_min_wack;
@@ -2433,11 +2433,11 @@ begin
         -- Reg ch_5_acc_gain
         ch_5_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_5_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_5_sp_limits_max
         ch_5_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_5_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_5_sp_limits_min
         ch_5_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_5_sp_limits_min_wack;
@@ -2458,11 +2458,11 @@ begin
         -- Reg ch_6_acc_gain
         ch_6_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_6_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_6_sp_limits_max
         ch_6_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_6_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_6_sp_limits_min
         ch_6_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_6_sp_limits_min_wack;
@@ -2483,11 +2483,11 @@ begin
         -- Reg ch_7_acc_gain
         ch_7_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_7_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_7_sp_limits_max
         ch_7_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_7_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_7_sp_limits_min
         ch_7_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_7_sp_limits_min_wack;
@@ -2508,11 +2508,11 @@ begin
         -- Reg ch_8_acc_gain
         ch_8_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_8_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_8_sp_limits_max
         ch_8_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_8_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_8_sp_limits_min
         ch_8_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_8_sp_limits_min_wack;
@@ -2533,11 +2533,11 @@ begin
         -- Reg ch_9_acc_gain
         ch_9_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_9_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_9_sp_limits_max
         ch_9_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_9_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_9_sp_limits_min
         ch_9_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_9_sp_limits_min_wack;
@@ -2558,11 +2558,11 @@ begin
         -- Reg ch_10_acc_gain
         ch_10_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_10_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_10_sp_limits_max
         ch_10_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_10_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_10_sp_limits_min
         ch_10_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_10_sp_limits_min_wack;
@@ -2583,11 +2583,11 @@ begin
         -- Reg ch_11_acc_gain
         ch_11_acc_gain_wreq <= wr_req_d0;
         wr_ack_int <= ch_11_acc_gain_wack;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_11_sp_limits_max
         ch_11_sp_limits_max_wreq <= wr_req_d0;
         wr_ack_int <= ch_11_sp_limits_max_wack;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_11_sp_limits_min
         ch_11_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_11_sp_limits_min_wack;
@@ -2673,11 +2673,11 @@ begin
         -- Reg ch_0_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_0_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_0_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_0_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_0_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_0_sp_limits_min_val_reg;
@@ -2701,11 +2701,11 @@ begin
         -- Reg ch_1_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_1_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_1_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_1_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_1_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_1_sp_limits_min_val_reg;
@@ -2729,11 +2729,11 @@ begin
         -- Reg ch_2_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_2_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_2_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_2_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_2_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_2_sp_limits_min_val_reg;
@@ -2757,11 +2757,11 @@ begin
         -- Reg ch_3_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_3_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_3_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_3_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_3_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_3_sp_limits_min_val_reg;
@@ -2785,11 +2785,11 @@ begin
         -- Reg ch_4_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_4_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_4_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_4_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_4_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_4_sp_limits_min_val_reg;
@@ -2813,11 +2813,11 @@ begin
         -- Reg ch_5_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_5_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_5_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_5_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_5_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_5_sp_limits_min_val_reg;
@@ -2841,11 +2841,11 @@ begin
         -- Reg ch_6_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_6_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_6_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_6_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_6_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_6_sp_limits_min_val_reg;
@@ -2869,11 +2869,11 @@ begin
         -- Reg ch_7_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_7_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_7_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_7_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_7_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_7_sp_limits_min_val_reg;
@@ -2897,11 +2897,11 @@ begin
         -- Reg ch_8_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_8_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_8_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_8_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_8_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_8_sp_limits_min_val_reg;
@@ -2925,11 +2925,11 @@ begin
         -- Reg ch_9_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_9_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_9_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_9_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_9_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_9_sp_limits_min_val_reg;
@@ -2953,11 +2953,11 @@ begin
         -- Reg ch_10_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_10_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_10_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_10_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_10_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_10_sp_limits_min_val_reg;
@@ -2981,11 +2981,11 @@ begin
         -- Reg ch_11_acc_gain
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_11_acc_gain_val_reg;
-      when "000010000" =>
+      when "000001000" =>
         -- Reg ch_11_sp_limits_max
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_11_sp_limits_max_val_reg;
-      when "000010001" =>
+      when "000001001" =>
         -- Reg ch_11_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_11_sp_limits_min_val_reg;
