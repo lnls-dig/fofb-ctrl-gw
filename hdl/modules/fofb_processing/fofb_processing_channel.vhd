@@ -137,6 +137,7 @@ entity fofb_processing_channel is
     sp_valid_o                     : out std_logic;
 
     -- Setpoint decimation ratio
+    -- 0 -> decimation at each new sample, 1 -> decimation at each 2 samples, and so on
     sp_decim_ratio_i               : in integer range 0 to g_SP_DECIM_MAX_RATIO := 4600;
 
     -- Decimated setpoint

@@ -25,6 +25,7 @@
 --                                         loop interlock regs
 -- 2023-02-15  3.0      guilherme.ricioli  Update to match the new
 --                                         wb_fofb_processing_regs api
+-- 2023-03-03  3.1      guilherme.ricioli  Test setpoint decimation regs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -149,6 +150,12 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   signal sp_valid_arr                   :
     std_logic_vector(g_CHANNELS-1 downto 0):= (others => '0');
 
+  signal sp_decim_arr                   :
+    t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+  signal sp_decim_valid_arr             :
+    std_logic_vector(g_CHANNELS-1 downto 0);
+  signal is_there_any_sp_decim_valid    : std_logic := '0';
+
   signal wb_slave_i                     : t_wishbone_slave_in;
   signal wb_slave_o                     : t_wishbone_slave_out;
 
@@ -170,6 +177,7 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
 begin
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
 
+  is_there_any_sp_decim_valid <= or sp_decim_valid_arr;
 
   -- main process
   process
@@ -187,6 +195,7 @@ begin
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable wb_gain                      :
       std_logic_vector(c_FOFB_WB_GAIN_WIDTH-1 downto 0);
+    variable wb_ratio                     : std_logic_vector(31 downto 0);
 
     variable coeff_ram                    : t_coeff_ram_data;
     variable sp_ram                       : t_sp_ram_data;
@@ -196,6 +205,10 @@ begin
     variable expec_fofb_proc_sp_arr       :
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable sp_err                       : real := 0.0;
+
+    variable expec_fofb_proc_sp_decim_arr :
+      real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
+    variable sp_decim_err                 : real := 0.0;
 
     variable meas_cnt                     : natural := 0;
     variable expec_loop_intlk_state       : boolean := false;
@@ -333,6 +346,27 @@ begin
         severity error;
     end loop;
 
+    -- setting setpoints decimation ratios
+    report "setting setpoints decimation ratios"
+    severity note;
+
+    offs := c_WB_FOFB_PROCESSING_REGS_CH_0_SP_DECIM_RATIO_ADDR -
+      c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
+    for i in 0 to (g_CHANNELS - 1)
+    loop
+      wb_ratio := std_logic_vector(to_unsigned(i, 32));
+
+      addr := f_get_ch_reg_addr(offs, i);
+
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, wb_ratio);
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      assert (data = wb_ratio)
+        report "wrong setpoint decimation ratio at " & natural'image(addr)
+        severity error;
+
+    end loop;
+
     -- setting limit for loop interlock orbit distortion source via wishbone
     -- bus
     report
@@ -457,6 +491,14 @@ begin
       end loop;
       -- ########## computing expected fofb processing setpoint ##########
 
+      -- ######## computing expected fofb processing decimated setpoint ########
+      for i in 0 to g_CHANNELS-1
+      loop
+        expec_fofb_proc_sp_decim_arr(i) := expec_fofb_proc_sp_decim_arr(i) +
+          expec_fofb_proc_sp_arr(i);
+      end loop;
+      -- ######## computing expected fofb processing decimated setpoint ########
+
       -- time frame ended
       bpm_time_frame_end <= '1';
       f_wait_cycles(clk, 1);
@@ -487,6 +529,55 @@ begin
           report "error: " & to_string(sp_err) & " is ok!"
           severity note;
         end if;
+      end loop;
+
+      -- Checks if any new decimated/filtered setpoint is ready (if more than
+      -- one, they happen at the same cycle)
+      f_wait_clocked_signal(clk, is_there_any_sp_decim_valid, '1', 10);
+
+      for i in 0 to g_CHANNELS-1
+      loop
+        if sp_decim_valid_arr(i) = '1' then
+          -- TODO: this may be problematic for small values
+          sp_decim_err := abs((real(to_integer(sp_decim_arr(i))) /
+            floor(expec_fofb_proc_sp_decim_arr(i))) - 1.0);
+
+          report "channel " & to_string(i) & ": " &
+            "decimated setpoint: " & to_string(to_integer(sp_decim_arr(i))) &
+            " (expected: " &
+            to_string(integer(floor(expec_fofb_proc_sp_decim_arr(i)))) & ")"
+          severity note;
+
+            if sp_decim_err > 0.01 then
+              report "error: " & to_string(sp_decim_err) & " is too large (> 1%)!"
+              severity error;
+            else
+              report "error: " & to_string(sp_decim_err) & " is ok!"
+              severity note;
+            end if;
+
+            expec_fofb_proc_sp_decim_arr(i) := 0.0;
+        end if;
+      end loop;
+
+      -- checking decimated setpoints wishbone reading
+      report "checking decimated setpoints wishbone reading"
+      severity note;
+
+      offs := c_WB_FOFB_PROCESSING_REGS_CH_0_SP_DECIM_DATA_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
+      for i in 0 to (g_CHANNELS - 1)
+      loop
+        addr := f_get_ch_reg_addr(offs, i);
+
+        read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+        assert (data = std_logic_vector(sp_decim_arr(i)))
+          report
+            "wrong decimated setpoints wishbone reading at " &
+            natural'image(addr)
+          severity error;
+
       end loop;
     end loop;
 
@@ -1015,6 +1106,8 @@ begin
       bpm_time_frame_end_i           => bpm_time_frame_end,
       sp_arr_o                       => sp_arr,
       sp_valid_arr_o                 => sp_valid_arr,
+      sp_decim_arr_o                 => sp_decim_arr,
+      sp_decim_valid_arr_o           => sp_decim_valid_arr,
       wb_slv_i                       => wb_slave_i,
       wb_slv_o                       => wb_slave_o
     );
