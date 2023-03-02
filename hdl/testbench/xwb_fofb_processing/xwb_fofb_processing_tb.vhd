@@ -71,7 +71,7 @@ entity xwb_fofb_processing_tb is
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2;
 
     -- number of fofb cycles to simulate
-    g_FOFB_NUM_CYC                 : natural := 4;
+    g_FOFB_NUM_CYC                 : natural := 20;
 
     -- fofb processing saturation maximum value
     g_SP_MAX                       : integer := 15200;
