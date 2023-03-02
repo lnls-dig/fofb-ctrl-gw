@@ -1,4 +1,4 @@
--- Do not edit.  Generated on Thu Mar 02 09:08:53 2023 by guilherme.ricioli
+-- Do not edit.  Generated on Mon Mar 06 16:30:00 2023 by guilherme.ricioli
 -- With Cheby 1.4.0 and these options:
 --  -i wb_fofb_processing_regs.cheby --hdl vhdl --gen-hdl wb_fofb_processing_regs.vhd --doc html --gen-doc doc/wb_fofb_processing_regs.html --gen-c wb_fofb_processing_regs.h --consts-style verilog --gen-consts ../../../sim/regs/wb_fofb_processing_regs.vh --consts-style vhdl-ohwr --gen-consts ../../../sim/regs/wb_fofb_processing_regs_consts_pkg.vhd
 
@@ -51,6 +51,10 @@ entity wb_fofb_processing_regs is
     -- value
     loop_intlk_min_num_pkts_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing maximum setpoint decimation ratio constant
+    -- value
+    sp_decim_ratio_max_cte_i : in    std_logic_vector(31 downto 0);
+
     -- RAM port for sps_ram_bank
     sps_ram_bank_adr_i   : in    std_logic_vector(8 downto 0);
     sps_ram_bank_data_rd_i : in    std_logic;
@@ -81,6 +85,19 @@ entity wb_fofb_processing_regs is
     -- value
     ch_0_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_0_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_0_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
+
     -- RAM port for ch_1_coeff_ram_bank
     ch_1_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
     ch_1_coeff_ram_bank_data_rd_i : in    std_logic;
@@ -105,6 +122,19 @@ entity wb_fofb_processing_regs is
     -- fofb processing minimum saturation value register (per channel)
     -- value
     ch_1_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
+
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_1_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_1_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
 
     -- RAM port for ch_2_coeff_ram_bank
     ch_2_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
@@ -131,6 +161,19 @@ entity wb_fofb_processing_regs is
     -- value
     ch_2_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_2_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_2_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
+
     -- RAM port for ch_3_coeff_ram_bank
     ch_3_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
     ch_3_coeff_ram_bank_data_rd_i : in    std_logic;
@@ -155,6 +198,19 @@ entity wb_fofb_processing_regs is
     -- fofb processing minimum saturation value register (per channel)
     -- value
     ch_3_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
+
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_3_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_3_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
 
     -- RAM port for ch_4_coeff_ram_bank
     ch_4_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
@@ -181,6 +237,19 @@ entity wb_fofb_processing_regs is
     -- value
     ch_4_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_4_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_4_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
+
     -- RAM port for ch_5_coeff_ram_bank
     ch_5_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
     ch_5_coeff_ram_bank_data_rd_i : in    std_logic;
@@ -205,6 +274,19 @@ entity wb_fofb_processing_regs is
     -- fofb processing minimum saturation value register (per channel)
     -- value
     ch_5_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
+
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_5_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_5_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
 
     -- RAM port for ch_6_coeff_ram_bank
     ch_6_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
@@ -231,6 +313,19 @@ entity wb_fofb_processing_regs is
     -- value
     ch_6_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_6_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_6_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
+
     -- RAM port for ch_7_coeff_ram_bank
     ch_7_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
     ch_7_coeff_ram_bank_data_rd_i : in    std_logic;
@@ -255,6 +350,19 @@ entity wb_fofb_processing_regs is
     -- fofb processing minimum saturation value register (per channel)
     -- value
     ch_7_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
+
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_7_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_7_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
 
     -- RAM port for ch_8_coeff_ram_bank
     ch_8_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
@@ -281,6 +389,19 @@ entity wb_fofb_processing_regs is
     -- value
     ch_8_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_8_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_8_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
+
     -- RAM port for ch_9_coeff_ram_bank
     ch_9_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
     ch_9_coeff_ram_bank_data_rd_i : in    std_logic;
@@ -305,6 +426,19 @@ entity wb_fofb_processing_regs is
     -- fofb processing minimum saturation value register (per channel)
     -- value
     ch_9_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
+
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_9_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_9_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
 
     -- RAM port for ch_10_coeff_ram_bank
     ch_10_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
@@ -331,6 +465,19 @@ entity wb_fofb_processing_regs is
     -- value
     ch_10_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
 
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_10_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_10_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0);
+
     -- RAM port for ch_11_coeff_ram_bank
     ch_11_coeff_ram_bank_adr_i : in    std_logic_vector(8 downto 0);
     ch_11_coeff_ram_bank_data_rd_i : in    std_logic;
@@ -354,7 +501,20 @@ entity wb_fofb_processing_regs is
 
     -- fofb processing minimum saturation value register (per channel)
     -- value
-    ch_11_sp_limits_min_val_o : out   std_logic_vector(31 downto 0)
+    ch_11_sp_limits_min_val_o : out   std_logic_vector(31 downto 0);
+
+    -- fofb processing decimated setpoint value register (per channel)
+    -- value
+    ch_11_sp_decim_data_val_i : in    std_logic_vector(31 downto 0);
+
+    -- fofb processing setpoint decimation ratio register (per channel)
+    -- NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+    --       lowest ceil(log2(sp_decim_ratio_max)) bits
+
+    -- 0: decimation at each new sample
+    -- 1: decimation at each 2 samples
+    -- and so on
+    ch_11_sp_decim_ratio_val_o : out   std_logic_vector(31 downto 0)
   );
 end wb_fofb_processing_regs;
 
@@ -402,6 +562,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_0_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_0_sp_limits_min_wreq        : std_logic;
   signal ch_0_sp_limits_min_wack        : std_logic;
+  signal ch_0_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_0_sp_decim_ratio_wreq       : std_logic;
+  signal ch_0_sp_decim_ratio_wack       : std_logic;
   signal ch_1_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_1_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_1_coeff_ram_bank_data_rreq  : std_logic;
@@ -420,6 +583,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_1_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_1_sp_limits_min_wreq        : std_logic;
   signal ch_1_sp_limits_min_wack        : std_logic;
+  signal ch_1_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_1_sp_decim_ratio_wreq       : std_logic;
+  signal ch_1_sp_decim_ratio_wack       : std_logic;
   signal ch_2_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_2_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_2_coeff_ram_bank_data_rreq  : std_logic;
@@ -438,6 +604,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_2_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_2_sp_limits_min_wreq        : std_logic;
   signal ch_2_sp_limits_min_wack        : std_logic;
+  signal ch_2_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_2_sp_decim_ratio_wreq       : std_logic;
+  signal ch_2_sp_decim_ratio_wack       : std_logic;
   signal ch_3_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_3_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_3_coeff_ram_bank_data_rreq  : std_logic;
@@ -456,6 +625,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_3_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_3_sp_limits_min_wreq        : std_logic;
   signal ch_3_sp_limits_min_wack        : std_logic;
+  signal ch_3_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_3_sp_decim_ratio_wreq       : std_logic;
+  signal ch_3_sp_decim_ratio_wack       : std_logic;
   signal ch_4_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_4_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_4_coeff_ram_bank_data_rreq  : std_logic;
@@ -474,6 +646,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_4_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_4_sp_limits_min_wreq        : std_logic;
   signal ch_4_sp_limits_min_wack        : std_logic;
+  signal ch_4_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_4_sp_decim_ratio_wreq       : std_logic;
+  signal ch_4_sp_decim_ratio_wack       : std_logic;
   signal ch_5_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_5_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_5_coeff_ram_bank_data_rreq  : std_logic;
@@ -492,6 +667,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_5_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_5_sp_limits_min_wreq        : std_logic;
   signal ch_5_sp_limits_min_wack        : std_logic;
+  signal ch_5_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_5_sp_decim_ratio_wreq       : std_logic;
+  signal ch_5_sp_decim_ratio_wack       : std_logic;
   signal ch_6_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_6_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_6_coeff_ram_bank_data_rreq  : std_logic;
@@ -510,6 +688,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_6_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_6_sp_limits_min_wreq        : std_logic;
   signal ch_6_sp_limits_min_wack        : std_logic;
+  signal ch_6_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_6_sp_decim_ratio_wreq       : std_logic;
+  signal ch_6_sp_decim_ratio_wack       : std_logic;
   signal ch_7_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_7_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_7_coeff_ram_bank_data_rreq  : std_logic;
@@ -528,6 +709,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_7_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_7_sp_limits_min_wreq        : std_logic;
   signal ch_7_sp_limits_min_wack        : std_logic;
+  signal ch_7_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_7_sp_decim_ratio_wreq       : std_logic;
+  signal ch_7_sp_decim_ratio_wack       : std_logic;
   signal ch_8_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_8_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_8_coeff_ram_bank_data_rreq  : std_logic;
@@ -546,6 +730,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_8_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_8_sp_limits_min_wreq        : std_logic;
   signal ch_8_sp_limits_min_wack        : std_logic;
+  signal ch_8_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_8_sp_decim_ratio_wreq       : std_logic;
+  signal ch_8_sp_decim_ratio_wack       : std_logic;
   signal ch_9_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_9_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_9_coeff_ram_bank_data_rreq  : std_logic;
@@ -564,6 +751,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_9_sp_limits_min_val_reg     : std_logic_vector(31 downto 0);
   signal ch_9_sp_limits_min_wreq        : std_logic;
   signal ch_9_sp_limits_min_wack        : std_logic;
+  signal ch_9_sp_decim_ratio_val_reg    : std_logic_vector(31 downto 0);
+  signal ch_9_sp_decim_ratio_wreq       : std_logic;
+  signal ch_9_sp_decim_ratio_wack       : std_logic;
   signal ch_10_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_10_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_10_coeff_ram_bank_data_rreq : std_logic;
@@ -582,6 +772,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_10_sp_limits_min_val_reg    : std_logic_vector(31 downto 0);
   signal ch_10_sp_limits_min_wreq       : std_logic;
   signal ch_10_sp_limits_min_wack       : std_logic;
+  signal ch_10_sp_decim_ratio_val_reg   : std_logic_vector(31 downto 0);
+  signal ch_10_sp_decim_ratio_wreq      : std_logic;
+  signal ch_10_sp_decim_ratio_wack      : std_logic;
   signal ch_11_coeff_ram_bank_data_int_dato : std_logic_vector(31 downto 0);
   signal ch_11_coeff_ram_bank_data_ext_dat : std_logic_vector(31 downto 0);
   signal ch_11_coeff_ram_bank_data_rreq : std_logic;
@@ -600,6 +793,9 @@ architecture syn of wb_fofb_processing_regs is
   signal ch_11_sp_limits_min_val_reg    : std_logic_vector(31 downto 0);
   signal ch_11_sp_limits_min_wreq       : std_logic;
   signal ch_11_sp_limits_min_wack       : std_logic;
+  signal ch_11_sp_decim_ratio_val_reg   : std_logic_vector(31 downto 0);
+  signal ch_11_sp_decim_ratio_wreq      : std_logic;
+  signal ch_11_sp_decim_ratio_wack      : std_logic;
   signal rd_ack_d0                      : std_logic;
   signal rd_dat_d0                      : std_logic_vector(31 downto 0);
   signal wr_req_d0                      : std_logic;
@@ -771,6 +967,8 @@ begin
     end if;
   end process;
 
+  -- Register sp_decim_ratio_max
+
   -- Memory sps_ram_bank
   process (adr_int, wr_adr_d0, sps_ram_bank_wr) begin
     if sps_ram_bank_wr = '1' then
@@ -932,6 +1130,24 @@ begin
     end if;
   end process;
 
+  -- Register ch_0_sp_decim_data
+
+  -- Register ch_0_sp_decim_ratio
+  ch_0_sp_decim_ratio_val_o <= ch_0_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_0_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_0_sp_decim_ratio_wack <= '0';
+      else
+        if ch_0_sp_decim_ratio_wreq = '1' then
+          ch_0_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_0_sp_decim_ratio_wack <= ch_0_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Memory ch_1_coeff_ram_bank
   process (adr_int, wr_adr_d0, ch_1_coeff_ram_bank_wr) begin
     if ch_1_coeff_ram_bank_wr = '1' then
@@ -1043,6 +1259,24 @@ begin
           ch_1_sp_limits_min_val_reg <= wr_dat_d0;
         end if;
         ch_1_sp_limits_min_wack <= ch_1_sp_limits_min_wreq;
+      end if;
+    end if;
+  end process;
+
+  -- Register ch_1_sp_decim_data
+
+  -- Register ch_1_sp_decim_ratio
+  ch_1_sp_decim_ratio_val_o <= ch_1_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_1_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_1_sp_decim_ratio_wack <= '0';
+      else
+        if ch_1_sp_decim_ratio_wreq = '1' then
+          ch_1_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_1_sp_decim_ratio_wack <= ch_1_sp_decim_ratio_wreq;
       end if;
     end if;
   end process;
@@ -1162,6 +1396,24 @@ begin
     end if;
   end process;
 
+  -- Register ch_2_sp_decim_data
+
+  -- Register ch_2_sp_decim_ratio
+  ch_2_sp_decim_ratio_val_o <= ch_2_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_2_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_2_sp_decim_ratio_wack <= '0';
+      else
+        if ch_2_sp_decim_ratio_wreq = '1' then
+          ch_2_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_2_sp_decim_ratio_wack <= ch_2_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Memory ch_3_coeff_ram_bank
   process (adr_int, wr_adr_d0, ch_3_coeff_ram_bank_wr) begin
     if ch_3_coeff_ram_bank_wr = '1' then
@@ -1273,6 +1525,24 @@ begin
           ch_3_sp_limits_min_val_reg <= wr_dat_d0;
         end if;
         ch_3_sp_limits_min_wack <= ch_3_sp_limits_min_wreq;
+      end if;
+    end if;
+  end process;
+
+  -- Register ch_3_sp_decim_data
+
+  -- Register ch_3_sp_decim_ratio
+  ch_3_sp_decim_ratio_val_o <= ch_3_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_3_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_3_sp_decim_ratio_wack <= '0';
+      else
+        if ch_3_sp_decim_ratio_wreq = '1' then
+          ch_3_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_3_sp_decim_ratio_wack <= ch_3_sp_decim_ratio_wreq;
       end if;
     end if;
   end process;
@@ -1392,6 +1662,24 @@ begin
     end if;
   end process;
 
+  -- Register ch_4_sp_decim_data
+
+  -- Register ch_4_sp_decim_ratio
+  ch_4_sp_decim_ratio_val_o <= ch_4_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_4_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_4_sp_decim_ratio_wack <= '0';
+      else
+        if ch_4_sp_decim_ratio_wreq = '1' then
+          ch_4_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_4_sp_decim_ratio_wack <= ch_4_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Memory ch_5_coeff_ram_bank
   process (adr_int, wr_adr_d0, ch_5_coeff_ram_bank_wr) begin
     if ch_5_coeff_ram_bank_wr = '1' then
@@ -1503,6 +1791,24 @@ begin
           ch_5_sp_limits_min_val_reg <= wr_dat_d0;
         end if;
         ch_5_sp_limits_min_wack <= ch_5_sp_limits_min_wreq;
+      end if;
+    end if;
+  end process;
+
+  -- Register ch_5_sp_decim_data
+
+  -- Register ch_5_sp_decim_ratio
+  ch_5_sp_decim_ratio_val_o <= ch_5_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_5_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_5_sp_decim_ratio_wack <= '0';
+      else
+        if ch_5_sp_decim_ratio_wreq = '1' then
+          ch_5_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_5_sp_decim_ratio_wack <= ch_5_sp_decim_ratio_wreq;
       end if;
     end if;
   end process;
@@ -1622,6 +1928,24 @@ begin
     end if;
   end process;
 
+  -- Register ch_6_sp_decim_data
+
+  -- Register ch_6_sp_decim_ratio
+  ch_6_sp_decim_ratio_val_o <= ch_6_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_6_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_6_sp_decim_ratio_wack <= '0';
+      else
+        if ch_6_sp_decim_ratio_wreq = '1' then
+          ch_6_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_6_sp_decim_ratio_wack <= ch_6_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Memory ch_7_coeff_ram_bank
   process (adr_int, wr_adr_d0, ch_7_coeff_ram_bank_wr) begin
     if ch_7_coeff_ram_bank_wr = '1' then
@@ -1733,6 +2057,24 @@ begin
           ch_7_sp_limits_min_val_reg <= wr_dat_d0;
         end if;
         ch_7_sp_limits_min_wack <= ch_7_sp_limits_min_wreq;
+      end if;
+    end if;
+  end process;
+
+  -- Register ch_7_sp_decim_data
+
+  -- Register ch_7_sp_decim_ratio
+  ch_7_sp_decim_ratio_val_o <= ch_7_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_7_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_7_sp_decim_ratio_wack <= '0';
+      else
+        if ch_7_sp_decim_ratio_wreq = '1' then
+          ch_7_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_7_sp_decim_ratio_wack <= ch_7_sp_decim_ratio_wreq;
       end if;
     end if;
   end process;
@@ -1852,6 +2194,24 @@ begin
     end if;
   end process;
 
+  -- Register ch_8_sp_decim_data
+
+  -- Register ch_8_sp_decim_ratio
+  ch_8_sp_decim_ratio_val_o <= ch_8_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_8_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_8_sp_decim_ratio_wack <= '0';
+      else
+        if ch_8_sp_decim_ratio_wreq = '1' then
+          ch_8_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_8_sp_decim_ratio_wack <= ch_8_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Memory ch_9_coeff_ram_bank
   process (adr_int, wr_adr_d0, ch_9_coeff_ram_bank_wr) begin
     if ch_9_coeff_ram_bank_wr = '1' then
@@ -1963,6 +2323,24 @@ begin
           ch_9_sp_limits_min_val_reg <= wr_dat_d0;
         end if;
         ch_9_sp_limits_min_wack <= ch_9_sp_limits_min_wreq;
+      end if;
+    end if;
+  end process;
+
+  -- Register ch_9_sp_decim_data
+
+  -- Register ch_9_sp_decim_ratio
+  ch_9_sp_decim_ratio_val_o <= ch_9_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_9_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_9_sp_decim_ratio_wack <= '0';
+      else
+        if ch_9_sp_decim_ratio_wreq = '1' then
+          ch_9_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_9_sp_decim_ratio_wack <= ch_9_sp_decim_ratio_wreq;
       end if;
     end if;
   end process;
@@ -2082,6 +2460,24 @@ begin
     end if;
   end process;
 
+  -- Register ch_10_sp_decim_data
+
+  -- Register ch_10_sp_decim_ratio
+  ch_10_sp_decim_ratio_val_o <= ch_10_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_10_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_10_sp_decim_ratio_wack <= '0';
+      else
+        if ch_10_sp_decim_ratio_wreq = '1' then
+          ch_10_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_10_sp_decim_ratio_wack <= ch_10_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Memory ch_11_coeff_ram_bank
   process (adr_int, wr_adr_d0, ch_11_coeff_ram_bank_wr) begin
     if ch_11_coeff_ram_bank_wr = '1' then
@@ -2197,8 +2593,26 @@ begin
     end if;
   end process;
 
+  -- Register ch_11_sp_decim_data
+
+  -- Register ch_11_sp_decim_ratio
+  ch_11_sp_decim_ratio_val_o <= ch_11_sp_decim_ratio_val_reg;
+  process (clk_i) begin
+    if rising_edge(clk_i) then
+      if rst_n_i = '0' then
+        ch_11_sp_decim_ratio_val_reg <= "00000000000000000000000000000000";
+        ch_11_sp_decim_ratio_wack <= '0';
+      else
+        if ch_11_sp_decim_ratio_wreq = '1' then
+          ch_11_sp_decim_ratio_val_reg <= wr_dat_d0;
+        end if;
+        ch_11_sp_decim_ratio_wack <= ch_11_sp_decim_ratio_wreq;
+      end if;
+    end if;
+  end process;
+
   -- Process for write requests.
-  process (wr_adr_d0, wr_req_d0, loop_intlk_ctl_wack, loop_intlk_orb_distort_limit_wack, loop_intlk_min_num_pkts_wack, ch_0_acc_ctl_wack, ch_0_acc_gain_wack, ch_0_sp_limits_max_wack, ch_0_sp_limits_min_wack, ch_1_acc_ctl_wack, ch_1_acc_gain_wack, ch_1_sp_limits_max_wack, ch_1_sp_limits_min_wack, ch_2_acc_ctl_wack, ch_2_acc_gain_wack, ch_2_sp_limits_max_wack, ch_2_sp_limits_min_wack, ch_3_acc_ctl_wack, ch_3_acc_gain_wack, ch_3_sp_limits_max_wack, ch_3_sp_limits_min_wack, ch_4_acc_ctl_wack, ch_4_acc_gain_wack, ch_4_sp_limits_max_wack, ch_4_sp_limits_min_wack, ch_5_acc_ctl_wack, ch_5_acc_gain_wack, ch_5_sp_limits_max_wack, ch_5_sp_limits_min_wack, ch_6_acc_ctl_wack, ch_6_acc_gain_wack, ch_6_sp_limits_max_wack, ch_6_sp_limits_min_wack, ch_7_acc_ctl_wack, ch_7_acc_gain_wack, ch_7_sp_limits_max_wack, ch_7_sp_limits_min_wack, ch_8_acc_ctl_wack, ch_8_acc_gain_wack, ch_8_sp_limits_max_wack, ch_8_sp_limits_min_wack, ch_9_acc_ctl_wack, ch_9_acc_gain_wack, ch_9_sp_limits_max_wack, ch_9_sp_limits_min_wack, ch_10_acc_ctl_wack, ch_10_acc_gain_wack, ch_10_sp_limits_max_wack, ch_10_sp_limits_min_wack, ch_11_acc_ctl_wack, ch_11_acc_gain_wack, ch_11_sp_limits_max_wack, ch_11_sp_limits_min_wack) begin
+  process (wr_adr_d0, wr_req_d0, loop_intlk_ctl_wack, loop_intlk_orb_distort_limit_wack, loop_intlk_min_num_pkts_wack, ch_0_acc_ctl_wack, ch_0_acc_gain_wack, ch_0_sp_limits_max_wack, ch_0_sp_limits_min_wack, ch_0_sp_decim_ratio_wack, ch_1_acc_ctl_wack, ch_1_acc_gain_wack, ch_1_sp_limits_max_wack, ch_1_sp_limits_min_wack, ch_1_sp_decim_ratio_wack, ch_2_acc_ctl_wack, ch_2_acc_gain_wack, ch_2_sp_limits_max_wack, ch_2_sp_limits_min_wack, ch_2_sp_decim_ratio_wack, ch_3_acc_ctl_wack, ch_3_acc_gain_wack, ch_3_sp_limits_max_wack, ch_3_sp_limits_min_wack, ch_3_sp_decim_ratio_wack, ch_4_acc_ctl_wack, ch_4_acc_gain_wack, ch_4_sp_limits_max_wack, ch_4_sp_limits_min_wack, ch_4_sp_decim_ratio_wack, ch_5_acc_ctl_wack, ch_5_acc_gain_wack, ch_5_sp_limits_max_wack, ch_5_sp_limits_min_wack, ch_5_sp_decim_ratio_wack, ch_6_acc_ctl_wack, ch_6_acc_gain_wack, ch_6_sp_limits_max_wack, ch_6_sp_limits_min_wack, ch_6_sp_decim_ratio_wack, ch_7_acc_ctl_wack, ch_7_acc_gain_wack, ch_7_sp_limits_max_wack, ch_7_sp_limits_min_wack, ch_7_sp_decim_ratio_wack, ch_8_acc_ctl_wack, ch_8_acc_gain_wack, ch_8_sp_limits_max_wack, ch_8_sp_limits_min_wack, ch_8_sp_decim_ratio_wack, ch_9_acc_ctl_wack, ch_9_acc_gain_wack, ch_9_sp_limits_max_wack, ch_9_sp_limits_min_wack, ch_9_sp_decim_ratio_wack, ch_10_acc_ctl_wack, ch_10_acc_gain_wack, ch_10_sp_limits_max_wack, ch_10_sp_limits_min_wack, ch_10_sp_decim_ratio_wack, ch_11_acc_ctl_wack, ch_11_acc_gain_wack, ch_11_sp_limits_max_wack, ch_11_sp_limits_min_wack, ch_11_sp_decim_ratio_wack) begin
     loop_intlk_ctl_wreq <= '0';
     loop_intlk_orb_distort_limit_wreq <= '0';
     loop_intlk_min_num_pkts_wreq <= '0';
@@ -2208,61 +2622,73 @@ begin
     ch_0_acc_gain_wreq <= '0';
     ch_0_sp_limits_max_wreq <= '0';
     ch_0_sp_limits_min_wreq <= '0';
+    ch_0_sp_decim_ratio_wreq <= '0';
     ch_1_coeff_ram_bank_data_int_wr <= '0';
     ch_1_acc_ctl_wreq <= '0';
     ch_1_acc_gain_wreq <= '0';
     ch_1_sp_limits_max_wreq <= '0';
     ch_1_sp_limits_min_wreq <= '0';
+    ch_1_sp_decim_ratio_wreq <= '0';
     ch_2_coeff_ram_bank_data_int_wr <= '0';
     ch_2_acc_ctl_wreq <= '0';
     ch_2_acc_gain_wreq <= '0';
     ch_2_sp_limits_max_wreq <= '0';
     ch_2_sp_limits_min_wreq <= '0';
+    ch_2_sp_decim_ratio_wreq <= '0';
     ch_3_coeff_ram_bank_data_int_wr <= '0';
     ch_3_acc_ctl_wreq <= '0';
     ch_3_acc_gain_wreq <= '0';
     ch_3_sp_limits_max_wreq <= '0';
     ch_3_sp_limits_min_wreq <= '0';
+    ch_3_sp_decim_ratio_wreq <= '0';
     ch_4_coeff_ram_bank_data_int_wr <= '0';
     ch_4_acc_ctl_wreq <= '0';
     ch_4_acc_gain_wreq <= '0';
     ch_4_sp_limits_max_wreq <= '0';
     ch_4_sp_limits_min_wreq <= '0';
+    ch_4_sp_decim_ratio_wreq <= '0';
     ch_5_coeff_ram_bank_data_int_wr <= '0';
     ch_5_acc_ctl_wreq <= '0';
     ch_5_acc_gain_wreq <= '0';
     ch_5_sp_limits_max_wreq <= '0';
     ch_5_sp_limits_min_wreq <= '0';
+    ch_5_sp_decim_ratio_wreq <= '0';
     ch_6_coeff_ram_bank_data_int_wr <= '0';
     ch_6_acc_ctl_wreq <= '0';
     ch_6_acc_gain_wreq <= '0';
     ch_6_sp_limits_max_wreq <= '0';
     ch_6_sp_limits_min_wreq <= '0';
+    ch_6_sp_decim_ratio_wreq <= '0';
     ch_7_coeff_ram_bank_data_int_wr <= '0';
     ch_7_acc_ctl_wreq <= '0';
     ch_7_acc_gain_wreq <= '0';
     ch_7_sp_limits_max_wreq <= '0';
     ch_7_sp_limits_min_wreq <= '0';
+    ch_7_sp_decim_ratio_wreq <= '0';
     ch_8_coeff_ram_bank_data_int_wr <= '0';
     ch_8_acc_ctl_wreq <= '0';
     ch_8_acc_gain_wreq <= '0';
     ch_8_sp_limits_max_wreq <= '0';
     ch_8_sp_limits_min_wreq <= '0';
+    ch_8_sp_decim_ratio_wreq <= '0';
     ch_9_coeff_ram_bank_data_int_wr <= '0';
     ch_9_acc_ctl_wreq <= '0';
     ch_9_acc_gain_wreq <= '0';
     ch_9_sp_limits_max_wreq <= '0';
     ch_9_sp_limits_min_wreq <= '0';
+    ch_9_sp_decim_ratio_wreq <= '0';
     ch_10_coeff_ram_bank_data_int_wr <= '0';
     ch_10_acc_ctl_wreq <= '0';
     ch_10_acc_gain_wreq <= '0';
     ch_10_sp_limits_max_wreq <= '0';
     ch_10_sp_limits_min_wreq <= '0';
+    ch_10_sp_decim_ratio_wreq <= '0';
     ch_11_coeff_ram_bank_data_int_wr <= '0';
     ch_11_acc_ctl_wreq <= '0';
     ch_11_acc_gain_wreq <= '0';
     ch_11_sp_limits_max_wreq <= '0';
     ch_11_sp_limits_min_wreq <= '0';
+    ch_11_sp_decim_ratio_wreq <= '0';
     case wr_adr_d0(15 downto 11) is
     when "00000" =>
       case wr_adr_d0(10 downto 2) is
@@ -2287,6 +2713,9 @@ begin
         -- Reg loop_intlk_min_num_pkts
         loop_intlk_min_num_pkts_wreq <= wr_req_d0;
         wr_ack_int <= loop_intlk_min_num_pkts_wack;
+      when "000100000" =>
+        -- Reg sp_decim_ratio_max
+        wr_ack_int <= wr_req_d0;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2316,6 +2745,13 @@ begin
         -- Reg ch_0_sp_limits_min
         ch_0_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_0_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_0_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_0_sp_decim_ratio
+        ch_0_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_0_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2341,6 +2777,13 @@ begin
         -- Reg ch_1_sp_limits_min
         ch_1_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_1_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_1_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_1_sp_decim_ratio
+        ch_1_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_1_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2366,6 +2809,13 @@ begin
         -- Reg ch_2_sp_limits_min
         ch_2_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_2_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_2_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_2_sp_decim_ratio
+        ch_2_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_2_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2391,6 +2841,13 @@ begin
         -- Reg ch_3_sp_limits_min
         ch_3_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_3_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_3_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_3_sp_decim_ratio
+        ch_3_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_3_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2416,6 +2873,13 @@ begin
         -- Reg ch_4_sp_limits_min
         ch_4_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_4_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_4_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_4_sp_decim_ratio
+        ch_4_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_4_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2441,6 +2905,13 @@ begin
         -- Reg ch_5_sp_limits_min
         ch_5_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_5_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_5_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_5_sp_decim_ratio
+        ch_5_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_5_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2466,6 +2937,13 @@ begin
         -- Reg ch_6_sp_limits_min
         ch_6_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_6_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_6_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_6_sp_decim_ratio
+        ch_6_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_6_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2491,6 +2969,13 @@ begin
         -- Reg ch_7_sp_limits_min
         ch_7_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_7_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_7_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_7_sp_decim_ratio
+        ch_7_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_7_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2516,6 +3001,13 @@ begin
         -- Reg ch_8_sp_limits_min
         ch_8_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_8_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_8_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_8_sp_decim_ratio
+        ch_8_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_8_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2541,6 +3033,13 @@ begin
         -- Reg ch_9_sp_limits_min
         ch_9_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_9_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_9_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_9_sp_decim_ratio
+        ch_9_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_9_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2566,6 +3065,13 @@ begin
         -- Reg ch_10_sp_limits_min
         ch_10_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_10_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_10_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_10_sp_decim_ratio
+        ch_10_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_10_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2591,6 +3097,13 @@ begin
         -- Reg ch_11_sp_limits_min
         ch_11_sp_limits_min_wreq <= wr_req_d0;
         wr_ack_int <= ch_11_sp_limits_min_wack;
+      when "000001010" =>
+        -- Reg ch_11_sp_decim_data
+        wr_ack_int <= wr_req_d0;
+      when "000001011" =>
+        -- Reg ch_11_sp_decim_ratio
+        ch_11_sp_decim_ratio_wreq <= wr_req_d0;
+        wr_ack_int <= ch_11_sp_decim_ratio_wack;
       when others =>
         wr_ack_int <= wr_req_d0;
       end case;
@@ -2600,7 +3113,7 @@ begin
   end process;
 
   -- Process for read requests.
-  process (adr_int, rd_req_int, fixed_point_pos_coeff_val_i, fixed_point_pos_accs_gains_val_i, loop_intlk_ctl_src_en_orb_distort_reg, loop_intlk_ctl_src_en_packet_loss_reg, loop_intlk_sta_orb_distort_i, loop_intlk_sta_packet_loss_i, loop_intlk_orb_distort_limit_val_reg, loop_intlk_min_num_pkts_val_reg, sps_ram_bank_data_int_dato, sps_ram_bank_data_rack, ch_0_coeff_ram_bank_data_int_dato, ch_0_coeff_ram_bank_data_rack, ch_0_acc_ctl_freeze_reg, ch_0_acc_gain_val_reg, ch_0_sp_limits_max_val_reg, ch_0_sp_limits_min_val_reg, ch_1_coeff_ram_bank_data_int_dato, ch_1_coeff_ram_bank_data_rack, ch_1_acc_ctl_freeze_reg, ch_1_acc_gain_val_reg, ch_1_sp_limits_max_val_reg, ch_1_sp_limits_min_val_reg, ch_2_coeff_ram_bank_data_int_dato, ch_2_coeff_ram_bank_data_rack, ch_2_acc_ctl_freeze_reg, ch_2_acc_gain_val_reg, ch_2_sp_limits_max_val_reg, ch_2_sp_limits_min_val_reg, ch_3_coeff_ram_bank_data_int_dato, ch_3_coeff_ram_bank_data_rack, ch_3_acc_ctl_freeze_reg, ch_3_acc_gain_val_reg, ch_3_sp_limits_max_val_reg, ch_3_sp_limits_min_val_reg, ch_4_coeff_ram_bank_data_int_dato, ch_4_coeff_ram_bank_data_rack, ch_4_acc_ctl_freeze_reg, ch_4_acc_gain_val_reg, ch_4_sp_limits_max_val_reg, ch_4_sp_limits_min_val_reg, ch_5_coeff_ram_bank_data_int_dato, ch_5_coeff_ram_bank_data_rack, ch_5_acc_ctl_freeze_reg, ch_5_acc_gain_val_reg, ch_5_sp_limits_max_val_reg, ch_5_sp_limits_min_val_reg, ch_6_coeff_ram_bank_data_int_dato, ch_6_coeff_ram_bank_data_rack, ch_6_acc_ctl_freeze_reg, ch_6_acc_gain_val_reg, ch_6_sp_limits_max_val_reg, ch_6_sp_limits_min_val_reg, ch_7_coeff_ram_bank_data_int_dato, ch_7_coeff_ram_bank_data_rack, ch_7_acc_ctl_freeze_reg, ch_7_acc_gain_val_reg, ch_7_sp_limits_max_val_reg, ch_7_sp_limits_min_val_reg, ch_8_coeff_ram_bank_data_int_dato, ch_8_coeff_ram_bank_data_rack, ch_8_acc_ctl_freeze_reg, ch_8_acc_gain_val_reg, ch_8_sp_limits_max_val_reg, ch_8_sp_limits_min_val_reg, ch_9_coeff_ram_bank_data_int_dato, ch_9_coeff_ram_bank_data_rack, ch_9_acc_ctl_freeze_reg, ch_9_acc_gain_val_reg, ch_9_sp_limits_max_val_reg, ch_9_sp_limits_min_val_reg, ch_10_coeff_ram_bank_data_int_dato, ch_10_coeff_ram_bank_data_rack, ch_10_acc_ctl_freeze_reg, ch_10_acc_gain_val_reg, ch_10_sp_limits_max_val_reg, ch_10_sp_limits_min_val_reg, ch_11_coeff_ram_bank_data_int_dato, ch_11_coeff_ram_bank_data_rack, ch_11_acc_ctl_freeze_reg, ch_11_acc_gain_val_reg, ch_11_sp_limits_max_val_reg, ch_11_sp_limits_min_val_reg) begin
+  process (adr_int, rd_req_int, fixed_point_pos_coeff_val_i, fixed_point_pos_accs_gains_val_i, loop_intlk_ctl_src_en_orb_distort_reg, loop_intlk_ctl_src_en_packet_loss_reg, loop_intlk_sta_orb_distort_i, loop_intlk_sta_packet_loss_i, loop_intlk_orb_distort_limit_val_reg, loop_intlk_min_num_pkts_val_reg, sp_decim_ratio_max_cte_i, sps_ram_bank_data_int_dato, sps_ram_bank_data_rack, ch_0_coeff_ram_bank_data_int_dato, ch_0_coeff_ram_bank_data_rack, ch_0_acc_ctl_freeze_reg, ch_0_acc_gain_val_reg, ch_0_sp_limits_max_val_reg, ch_0_sp_limits_min_val_reg, ch_0_sp_decim_data_val_i, ch_0_sp_decim_ratio_val_reg, ch_1_coeff_ram_bank_data_int_dato, ch_1_coeff_ram_bank_data_rack, ch_1_acc_ctl_freeze_reg, ch_1_acc_gain_val_reg, ch_1_sp_limits_max_val_reg, ch_1_sp_limits_min_val_reg, ch_1_sp_decim_data_val_i, ch_1_sp_decim_ratio_val_reg, ch_2_coeff_ram_bank_data_int_dato, ch_2_coeff_ram_bank_data_rack, ch_2_acc_ctl_freeze_reg, ch_2_acc_gain_val_reg, ch_2_sp_limits_max_val_reg, ch_2_sp_limits_min_val_reg, ch_2_sp_decim_data_val_i, ch_2_sp_decim_ratio_val_reg, ch_3_coeff_ram_bank_data_int_dato, ch_3_coeff_ram_bank_data_rack, ch_3_acc_ctl_freeze_reg, ch_3_acc_gain_val_reg, ch_3_sp_limits_max_val_reg, ch_3_sp_limits_min_val_reg, ch_3_sp_decim_data_val_i, ch_3_sp_decim_ratio_val_reg, ch_4_coeff_ram_bank_data_int_dato, ch_4_coeff_ram_bank_data_rack, ch_4_acc_ctl_freeze_reg, ch_4_acc_gain_val_reg, ch_4_sp_limits_max_val_reg, ch_4_sp_limits_min_val_reg, ch_4_sp_decim_data_val_i, ch_4_sp_decim_ratio_val_reg, ch_5_coeff_ram_bank_data_int_dato, ch_5_coeff_ram_bank_data_rack, ch_5_acc_ctl_freeze_reg, ch_5_acc_gain_val_reg, ch_5_sp_limits_max_val_reg, ch_5_sp_limits_min_val_reg, ch_5_sp_decim_data_val_i, ch_5_sp_decim_ratio_val_reg, ch_6_coeff_ram_bank_data_int_dato, ch_6_coeff_ram_bank_data_rack, ch_6_acc_ctl_freeze_reg, ch_6_acc_gain_val_reg, ch_6_sp_limits_max_val_reg, ch_6_sp_limits_min_val_reg, ch_6_sp_decim_data_val_i, ch_6_sp_decim_ratio_val_reg, ch_7_coeff_ram_bank_data_int_dato, ch_7_coeff_ram_bank_data_rack, ch_7_acc_ctl_freeze_reg, ch_7_acc_gain_val_reg, ch_7_sp_limits_max_val_reg, ch_7_sp_limits_min_val_reg, ch_7_sp_decim_data_val_i, ch_7_sp_decim_ratio_val_reg, ch_8_coeff_ram_bank_data_int_dato, ch_8_coeff_ram_bank_data_rack, ch_8_acc_ctl_freeze_reg, ch_8_acc_gain_val_reg, ch_8_sp_limits_max_val_reg, ch_8_sp_limits_min_val_reg, ch_8_sp_decim_data_val_i, ch_8_sp_decim_ratio_val_reg, ch_9_coeff_ram_bank_data_int_dato, ch_9_coeff_ram_bank_data_rack, ch_9_acc_ctl_freeze_reg, ch_9_acc_gain_val_reg, ch_9_sp_limits_max_val_reg, ch_9_sp_limits_min_val_reg, ch_9_sp_decim_data_val_i, ch_9_sp_decim_ratio_val_reg, ch_10_coeff_ram_bank_data_int_dato, ch_10_coeff_ram_bank_data_rack, ch_10_acc_ctl_freeze_reg, ch_10_acc_gain_val_reg, ch_10_sp_limits_max_val_reg, ch_10_sp_limits_min_val_reg, ch_10_sp_decim_data_val_i, ch_10_sp_decim_ratio_val_reg, ch_11_coeff_ram_bank_data_int_dato, ch_11_coeff_ram_bank_data_rack, ch_11_acc_ctl_freeze_reg, ch_11_acc_gain_val_reg, ch_11_sp_limits_max_val_reg, ch_11_sp_limits_min_val_reg, ch_11_sp_decim_data_val_i, ch_11_sp_decim_ratio_val_reg) begin
     -- By default ack read requests
     rd_dat_d0 <= (others => 'X');
     sps_ram_bank_data_rreq <= '0';
@@ -2648,6 +3161,10 @@ begin
         -- Reg loop_intlk_min_num_pkts
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= loop_intlk_min_num_pkts_val_reg;
+      when "000100000" =>
+        -- Reg sp_decim_ratio_max
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= sp_decim_ratio_max_cte_i;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2681,6 +3198,14 @@ begin
         -- Reg ch_0_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_0_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_0_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_0_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_0_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_0_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2709,6 +3234,14 @@ begin
         -- Reg ch_1_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_1_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_1_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_1_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_1_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_1_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2737,6 +3270,14 @@ begin
         -- Reg ch_2_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_2_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_2_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_2_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_2_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_2_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2765,6 +3306,14 @@ begin
         -- Reg ch_3_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_3_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_3_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_3_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_3_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_3_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2793,6 +3342,14 @@ begin
         -- Reg ch_4_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_4_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_4_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_4_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_4_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_4_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2821,6 +3378,14 @@ begin
         -- Reg ch_5_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_5_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_5_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_5_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_5_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_5_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2849,6 +3414,14 @@ begin
         -- Reg ch_6_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_6_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_6_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_6_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_6_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_6_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2877,6 +3450,14 @@ begin
         -- Reg ch_7_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_7_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_7_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_7_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_7_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_7_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2905,6 +3486,14 @@ begin
         -- Reg ch_8_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_8_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_8_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_8_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_8_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_8_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2933,6 +3522,14 @@ begin
         -- Reg ch_9_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_9_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_9_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_9_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_9_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_9_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2961,6 +3558,14 @@ begin
         -- Reg ch_10_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_10_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_10_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_10_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_10_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_10_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;
@@ -2989,6 +3594,14 @@ begin
         -- Reg ch_11_sp_limits_min
         rd_ack_d0 <= rd_req_int;
         rd_dat_d0 <= ch_11_sp_limits_min_val_reg;
+      when "000001010" =>
+        -- Reg ch_11_sp_decim_data
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_11_sp_decim_data_val_i;
+      when "000001011" =>
+        -- Reg ch_11_sp_decim_ratio
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0 <= ch_11_sp_decim_ratio_val_reg;
       when others =>
         rd_ack_d0 <= rd_req_int;
       end case;

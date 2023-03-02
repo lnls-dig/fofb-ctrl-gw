@@ -580,6 +580,12 @@ package fofb_ctrl_pkg is
     -- Set-point valid array (for each channel)
     sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
+    -- Decimated setpoint (for each channel)
+    sp_decim_arr_o                 : out t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+
+    -- Decimated setpoint valid (for each channel)
+    sp_decim_valid_arr_o           : out std_logic_vector(g_CHANNELS-1 downto 0);
+
     dcc_p2p_en_o                   : out std_logic;
 
     ---------------------------------------------------------------------------

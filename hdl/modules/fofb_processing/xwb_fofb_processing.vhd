@@ -19,6 +19,7 @@
 -- 2022-01-11  2.1      guilherme.ricioli     Expose loop interlock regs
 -- 2023-02-10  3.0      guilherme.ricioli     Update to match the new
 --                                            wb_fofb_processing_regs api
+-- 2023-03-02  3.1      guilherme.ricioli     Expose setpoint decimation regs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -101,6 +102,12 @@ entity xwb_fofb_processing is
     -- Set-point valid array (for each channel)
     sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
+    -- Decimated setpoint (for each channel)
+    sp_decim_arr_o                 : out t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+
+    -- Decimated setpoint valid (for each channel)
+    sp_decim_valid_arr_o           : out std_logic_vector(g_CHANNELS-1 downto 0);
+
     dcc_p2p_en_o                   : out std_logic;
 
     ---------------------------------------------------------------------------
@@ -138,6 +145,12 @@ architecture rtl of xwb_fofb_processing is
   constant c_GAIN_FIXED_POINT_POS_VAL : std_logic_vector(31 downto 0) :=
       std_logic_vector(to_unsigned(31 - c_FOFB_GAIN_INT_WIDTH, 32));
 
+  -- Maximum setpoint decimation ratio constant
+  -- Upper software layers can use this to restrict setpoint decimation ratio
+  -- values
+  constant c_SP_DECIM_RATIO_MAX_CTE   : std_logic_vector(31 downto 0) :=
+      std_logic_vector(to_unsigned(c_FOFB_SP_DECIM_MAX_RATIO, 32));
+
   -----------------------------
   -- Signals
   -----------------------------
@@ -170,6 +183,14 @@ architecture rtl of xwb_fofb_processing is
   signal sp_min_arr             : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
   signal sp_limits_max_val_arr  : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
   signal sp_limits_min_val_arr  : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+
+  -----------------------------
+  -- Output decimation signals
+  -----------------------------
+  signal sp_decim_ratio_arr     : t_fofb_processing_sp_decim_ratio_arr(g_CHANNELS-1 downto 0);
+  signal sp_decim_arr           : t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+  signal sp_decim_ratio_val_arr : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+  signal sp_decim_data_val_arr  : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
 
   -----------------------------
   -- Loop interlock signals
@@ -229,9 +250,9 @@ begin
       sp_min_arr_i                    => sp_min_arr,
       sp_arr_o                        => sp_arr_o,
       sp_valid_arr_o                  => sp_valid_arr_o,
-      sp_decim_ratio_arr_i            => (others => 4600), -- at Monit rate (but not synced)
-      sp_decim_arr_o                  => open,
-      sp_decim_valid_arr_o            => open,
+      sp_decim_ratio_arr_i            => sp_decim_ratio_arr,
+      sp_decim_arr_o                  => sp_decim_arr,
+      sp_decim_valid_arr_o            => sp_decim_valid_arr_o,
       loop_intlk_src_en_i             => loop_intlk_src_en,
       loop_intlk_state_clr_i          => loop_intlk_ctl_sta_clr,
       loop_intlk_state_o              => loop_intlk_sta,
@@ -318,6 +339,10 @@ begin
 
     sp_max_arr(i) <= signed(sp_limits_max_val_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
     sp_min_arr(i) <= signed(sp_limits_min_val_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
+
+    -- TODO: sp_decim_ratio_val_arr should be saturated at c_SP_DECIM_RATIO_MAX_CTE
+    sp_decim_ratio_arr(i) <= to_integer(unsigned(sp_decim_ratio_val_arr(i)));
+    sp_decim_data_val_arr(i) <= std_logic_vector(sp_decim_arr(i));
   end generate gen_wb_conn;
 
   loop_intlk_distort_limit <= unsigned(loop_intlk_orb_distort_limit_val(loop_intlk_distort_limit'left downto 0));
@@ -339,6 +364,7 @@ begin
       loop_intlk_sta_packet_loss_i        => loop_intlk_sta(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
       loop_intlk_orb_distort_limit_val_o  => loop_intlk_orb_distort_limit_val,
       loop_intlk_min_num_pkts_val_o       => loop_intlk_min_num_pkts_val,
+      sp_decim_ratio_max_cte_i            => c_SP_DECIM_RATIO_MAX_CTE,
       sps_ram_bank_adr_i                  => sps_ram_bank_adr,
       sps_ram_bank_data_rd_i              => '0',
       sps_ram_bank_data_dat_o             => sps_ram_bank_data_dat,
@@ -350,6 +376,8 @@ begin
       ch_0_acc_gain_val_o                 => acc_gain_val_arr(0),
       ch_0_sp_limits_max_val_o            => sp_limits_max_val_arr(0),
       ch_0_sp_limits_min_val_o            => sp_limits_min_val_arr(0),
+      ch_0_sp_decim_data_val_i            => sp_decim_data_val_arr(0),
+      ch_0_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(0),
       ch_1_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(1),
       ch_1_coeff_ram_bank_data_rd_i       => '0',
       ch_1_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(1),
@@ -358,6 +386,8 @@ begin
       ch_1_acc_gain_val_o                 => acc_gain_val_arr(1),
       ch_1_sp_limits_max_val_o            => sp_limits_max_val_arr(1),
       ch_1_sp_limits_min_val_o            => sp_limits_min_val_arr(1),
+      ch_1_sp_decim_data_val_i            => sp_decim_data_val_arr(1),
+      ch_1_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(1),
       ch_2_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(2),
       ch_2_coeff_ram_bank_data_rd_i       => '0',
       ch_2_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(2),
@@ -366,6 +396,8 @@ begin
       ch_2_acc_gain_val_o                 => acc_gain_val_arr(2),
       ch_2_sp_limits_max_val_o            => sp_limits_max_val_arr(2),
       ch_2_sp_limits_min_val_o            => sp_limits_min_val_arr(2),
+      ch_2_sp_decim_data_val_i            => sp_decim_data_val_arr(2),
+      ch_2_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(2),
       ch_3_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(3),
       ch_3_coeff_ram_bank_data_rd_i       => '0',
       ch_3_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(3),
@@ -374,6 +406,8 @@ begin
       ch_3_acc_gain_val_o                 => acc_gain_val_arr(3),
       ch_3_sp_limits_max_val_o            => sp_limits_max_val_arr(3),
       ch_3_sp_limits_min_val_o            => sp_limits_min_val_arr(3),
+      ch_3_sp_decim_data_val_i            => sp_decim_data_val_arr(3),
+      ch_3_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(3),
       ch_4_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(4),
       ch_4_coeff_ram_bank_data_rd_i       => '0',
       ch_4_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(4),
@@ -382,6 +416,8 @@ begin
       ch_4_acc_gain_val_o                 => acc_gain_val_arr(4),
       ch_4_sp_limits_max_val_o            => sp_limits_max_val_arr(4),
       ch_4_sp_limits_min_val_o            => sp_limits_min_val_arr(4),
+      ch_4_sp_decim_data_val_i            => sp_decim_data_val_arr(4),
+      ch_4_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(4),
       ch_5_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(5),
       ch_5_coeff_ram_bank_data_rd_i       => '0',
       ch_5_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(5),
@@ -390,6 +426,8 @@ begin
       ch_5_acc_gain_val_o                 => acc_gain_val_arr(5),
       ch_5_sp_limits_max_val_o            => sp_limits_max_val_arr(5),
       ch_5_sp_limits_min_val_o            => sp_limits_min_val_arr(5),
+      ch_5_sp_decim_data_val_i            => sp_decim_data_val_arr(5),
+      ch_5_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(5),
       ch_6_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(6),
       ch_6_coeff_ram_bank_data_rd_i       => '0',
       ch_6_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(6),
@@ -398,6 +436,8 @@ begin
       ch_6_acc_gain_val_o                 => acc_gain_val_arr(6),
       ch_6_sp_limits_max_val_o            => sp_limits_max_val_arr(6),
       ch_6_sp_limits_min_val_o            => sp_limits_min_val_arr(6),
+      ch_6_sp_decim_data_val_i            => sp_decim_data_val_arr(6),
+      ch_6_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(6),
       ch_7_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(7),
       ch_7_coeff_ram_bank_data_rd_i       => '0',
       ch_7_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(7),
@@ -406,6 +446,8 @@ begin
       ch_7_acc_gain_val_o                 => acc_gain_val_arr(7),
       ch_7_sp_limits_max_val_o            => sp_limits_max_val_arr(7),
       ch_7_sp_limits_min_val_o            => sp_limits_min_val_arr(7),
+      ch_7_sp_decim_data_val_i            => sp_decim_data_val_arr(7),
+      ch_7_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(7),
       ch_8_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(8),
       ch_8_coeff_ram_bank_data_rd_i       => '0',
       ch_8_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(8),
@@ -414,6 +456,8 @@ begin
       ch_8_acc_gain_val_o                 => acc_gain_val_arr(8),
       ch_8_sp_limits_max_val_o            => sp_limits_max_val_arr(8),
       ch_8_sp_limits_min_val_o            => sp_limits_min_val_arr(8),
+      ch_8_sp_decim_data_val_i            => sp_decim_data_val_arr(8),
+      ch_8_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(8),
       ch_9_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(9),
       ch_9_coeff_ram_bank_data_rd_i       => '0',
       ch_9_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(9),
@@ -422,6 +466,8 @@ begin
       ch_9_acc_gain_val_o                 => acc_gain_val_arr(9),
       ch_9_sp_limits_max_val_o            => sp_limits_max_val_arr(9),
       ch_9_sp_limits_min_val_o            => sp_limits_min_val_arr(9),
+      ch_9_sp_decim_data_val_i            => sp_decim_data_val_arr(9),
+      ch_9_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(9),
       ch_10_coeff_ram_bank_adr_i          => coeff_ram_addr_arr(10),
       ch_10_coeff_ram_bank_data_rd_i      => '0',
       ch_10_coeff_ram_bank_data_dat_o     => coeff_ram_data_arr(10),
@@ -430,6 +476,8 @@ begin
       ch_10_acc_gain_val_o                => acc_gain_val_arr(10),
       ch_10_sp_limits_max_val_o           => sp_limits_max_val_arr(10),
       ch_10_sp_limits_min_val_o           => sp_limits_min_val_arr(10),
+      ch_10_sp_decim_data_val_i           => sp_decim_data_val_arr(10),
+      ch_10_sp_decim_ratio_val_o          => sp_decim_ratio_val_arr(10),
       ch_11_coeff_ram_bank_adr_i          => coeff_ram_addr_arr(11),
       ch_11_coeff_ram_bank_data_rd_i      => '0',
       ch_11_coeff_ram_bank_data_dat_o     => coeff_ram_data_arr(11),
@@ -437,9 +485,12 @@ begin
       ch_11_acc_ctl_freeze_o              => acc_ctl_freeze_arr(11),
       ch_11_acc_gain_val_o                => acc_gain_val_arr(11),
       ch_11_sp_limits_max_val_o           => sp_limits_max_val_arr(11),
-      ch_11_sp_limits_min_val_o           => sp_limits_min_val_arr(11)
+      ch_11_sp_limits_min_val_o           => sp_limits_min_val_arr(11),
+      ch_11_sp_decim_data_val_i           => sp_decim_data_val_arr(11),
+      ch_11_sp_decim_ratio_val_o          => sp_decim_ratio_val_arr(11)
     );
 
     dcc_p2p_en_o <= not loop_intlk_sta(c_FOFB_LOOP_INTLK_PKT_LOSS_ID);
+    sp_decim_arr_o <= sp_decim_arr;
 
 end architecture rtl;

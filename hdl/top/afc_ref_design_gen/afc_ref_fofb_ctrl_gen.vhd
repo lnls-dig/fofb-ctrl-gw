@@ -1766,6 +1766,8 @@ begin
       bpm_time_frame_end_i           => fofb_proc_time_frame_end,
       sp_arr_o                       => fofb_sp_arr,
       sp_valid_arr_o                 => fofb_sp_valid_arr,
+      sp_decim_arr_o                 => open,
+      sp_decim_valid_arr_o           => open,
       dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
       wb_slv_i                       => user_wb_out(c_FOFB_PROCESSING_ID),
       wb_slv_o                       => user_wb_in(c_FOFB_PROCESSING_ID)

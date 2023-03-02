@@ -41,6 +41,11 @@
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_MIN_NUM_PKTS_VAL_MASK 0xffffffffUL
 #define WB_FOFB_PROCESSING_REGS_LOOP_INTLK_MIN_NUM_PKTS_VAL_SHIFT 0
 
+/* fofb processing maximum setpoint decimation ratio constant */
+#define WB_FOFB_PROCESSING_REGS_SP_DECIM_RATIO_MAX 0x80UL
+#define WB_FOFB_PROCESSING_REGS_SP_DECIM_RATIO_MAX_CTE_MASK 0xffffffffUL
+#define WB_FOFB_PROCESSING_REGS_SP_DECIM_RATIO_MAX_CTE_SHIFT 0
+
 /* fofb processing setpoints ram bank */
 #define WB_FOFB_PROCESSING_REGS_SPS_RAM_BANK 0x800UL
 #define WB_FOFB_PROCESSING_REGS_SPS_RAM_BANK_SIZE 4 /* 0x4 */
@@ -87,6 +92,23 @@
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MIN_VAL_MASK 0xffffffffUL
 #define WB_FOFB_PROCESSING_REGS_CH_SP_LIMITS_MIN_VAL_SHIFT 0
 
+/* fofb processing setpoints decimation registers (per channel) */
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM 0x828UL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_SIZE 8 /* 0x8 */
+
+/* fofb processing decimated setpoint value register (per channel) */
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_DATA 0x828UL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_DATA_VAL_MASK 0xffffffffUL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_DATA_VAL_SHIFT 0
+
+/* fofb processing setpoint decimation ratio register (per channel)
+NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+      lowest ceil(log2(sp_decim_ratio_max)) bits
+ */
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_RATIO 0x82cUL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_RATIO_VAL_MASK 0xffffffffUL
+#define WB_FOFB_PROCESSING_REGS_CH_SP_DECIM_RATIO_VAL_SHIFT 0
+
 struct wb_fofb_processing_regs {
   /* [0x0]: BLOCK fofb processing fixed-point position constants */
   struct fixed_point_pos {
@@ -118,8 +140,11 @@ struct wb_fofb_processing_regs {
     uint32_t __padding_0[12];
   } loop_intlk;
 
+  /* [0x80]: REG (ro) fofb processing maximum setpoint decimation ratio constant */
+  uint32_t sp_decim_ratio_max;
+
   /* padding to: 512 words */
-  uint32_t __padding_0[480];
+  uint32_t __padding_0[479];
 
   /* [0x800]: MEMORY fofb processing setpoints ram bank */
   struct sps_ram_bank {
@@ -156,8 +181,20 @@ struct wb_fofb_processing_regs {
       uint32_t min;
     } sp_limits;
 
-    /* padding to: 520 words */
-    uint32_t __padding_0[502];
+    /* [0x828]: BLOCK fofb processing setpoints decimation registers (per channel) */
+    struct sp_decim {
+      /* [0x0]: REG (ro) fofb processing decimated setpoint value register (per channel) */
+      uint32_t data;
+
+      /* [0x4]: REG (rw) fofb processing setpoint decimation ratio register (per channel)
+NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+      lowest ceil(log2(sp_decim_ratio_max)) bits
+ */
+      uint32_t ratio;
+    } sp_decim;
+
+    /* padding to: 522 words */
+    uint32_t __padding_0[500];
   } ch[12];
 };
 

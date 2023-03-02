@@ -207,6 +207,7 @@ package dot_prod_pkg is
       sp_valid_o                     : out std_logic;
 
       -- Setpoint decimation ratio
+      -- 0 -> decimation at each new sample, 1 -> decimation at each 2 samples, and so on
       sp_decim_ratio_i               : in integer range 0 to g_SP_DECIM_MAX_RATIO := 4600;
 
       -- Decimated setpoint
@@ -309,6 +310,7 @@ package dot_prod_pkg is
       sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
       -- Setpoint decimation ratio (for each channel)
+      -- 0 -> decimation at each new sample, 1 -> decimation at each 2 samples, and so on
       sp_decim_ratio_arr_i           : in  t_fofb_processing_sp_decim_ratio_arr(g_CHANNELS-1 downto 0);
 
       -- Decimated setpoint (for each channel)

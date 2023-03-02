@@ -111,6 +111,16 @@ memory-map:
                   name: val
                   range: 31-0
                   description: value
+    - reg:
+        name: sp_decim_ratio_max
+        width: 32
+        access: ro
+        description: fofb processing maximum setpoint decimation ratio constant
+        children:
+          - field:
+              name: cte
+              range: 31-0
+              description: value
     - memory:
         name: sps_ram_bank
         memsize: 2k
@@ -198,3 +208,35 @@ memory-map:
                         name: val
                         range: 31-0
                         description: value
+          - block:
+              name: sp_decim
+              description: fofb processing setpoints decimation registers (per channel)
+              align: False
+              children:
+              - reg:
+                  name: data
+                  width: 32
+                  access: ro
+                  description: fofb processing decimated setpoint value register (per channel)
+                  children:
+                    - field:
+                        name: val
+                        range: 31-0
+                        description: value
+              - reg:
+                  name: ratio
+                  width: 32
+                  access: rw
+                  description: |
+                    fofb processing setpoint decimation ratio register (per channel)
+                    NOTE: if this value is higher than sp_decim_ratio_max, gw will truncate the
+                          lowest ceil(log2(sp_decim_ratio_max)) bits
+                  children:
+                    - field:
+                        name: val
+                        range: 31-0
+                        description: value
+                        comment : |
+                          0: decimation at each new sample
+                          1: decimation at each 2 samples
+                          and so on
