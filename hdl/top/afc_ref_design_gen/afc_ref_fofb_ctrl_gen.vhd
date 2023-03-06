@@ -895,10 +895,9 @@ begin
         g_AFC_SI57x_INIT_RFREQ_VALUE             => c_AFC_SI57x_INIT_RFREQ_VALUE,
         g_AFC_SI57x_INIT_N1_VALUE                => c_AFC_SI57x_INIT_N1_VALUE,
         g_AFC_SI57x_INIT_HS_VALUE                => c_AFC_SI57x_INIT_HS_VALUE,
-        --  If true, instantiate a VIC/UART/DIAG/SPI.
+        --  If true, instantiate a VIC/UART/SPI.
         g_WITH_VIC                               => true,
         g_WITH_UART_MASTER                       => true,
-        g_WITH_DIAG                              => true,
         g_WITH_TRIGGER                           => true,
         g_WITH_SPI                               => false,
         g_WITH_AFC_SI57x                         => true,
@@ -1129,10 +1128,9 @@ begin
         g_AFC_SI57x_INIT_RFREQ_VALUE             => c_AFC_SI57x_INIT_RFREQ_VALUE,
         g_AFC_SI57x_INIT_N1_VALUE                => c_AFC_SI57x_INIT_N1_VALUE,
         g_AFC_SI57x_INIT_HS_VALUE                => c_AFC_SI57x_INIT_HS_VALUE,
-        --  If true, instantiate a VIC/UART/DIAG/SPI.
+        --  If true, instantiate a VIC/UART/SPI.
         g_WITH_VIC                               => true,
         g_WITH_UART_MASTER                       => true,
-        g_WITH_DIAG                              => true,
         g_WITH_TRIGGER                           => true,
         g_WITH_SPI                               => false,
         g_WITH_AFC_SI57x                         => true,
