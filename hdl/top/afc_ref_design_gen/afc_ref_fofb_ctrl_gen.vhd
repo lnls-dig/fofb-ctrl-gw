@@ -701,6 +701,12 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Acquisition channels IDs
   constant c_ACQ_RTM_LAMP_ID                 : natural := 0;
+  -- The way the triggers were conceived, you have a single logical trigger for
+  -- each ACQ channel, and a single wb_trigger_mux for each ACQ core, but
+  -- sometimes we need triggers for things other than the ACQ. Here I'm just
+  -- borrowing an ACQ (core c_ACQ_CORE_RTM_LAMP_ID) trigger for channel 3 that
+  -- is unused and connecting it to the xwb_rtmlamp_ohwr external trigger input.
+  constant c_SP_TRIG_RTM_LAMP_ID             : natural := 3;
   constant c_ACQ_DCC_ID                      : natural := 1;
 
   -- Number of channels per acquisition core
@@ -747,9 +753,10 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   -- Trigger core IDs
-  constant c_TRIG_MUX_CC_FMC_ID              : natural  := 0;
-  constant c_TRIG_MUX_CC_P2P_ID              : natural  := 1;
-  constant c_TRIG_MUX_RTM_LAMP_ID            : natural  := 2;
+  -- These IDs should be kept in sync with the ACQ core IDs
+  constant c_TRIG_MUX_RTM_LAMP_ID            : natural  := c_ACQ_CORE_RTM_LAMP_ID;
+  constant c_TRIG_MUX_CC_FMC_ID              : natural  := c_ACQ_CORE_CC_FMC_OR_RTM_ID;
+  constant c_TRIG_MUX_CC_P2P_ID              : natural  := c_ACQ_CORE_CC_P2P_ID;
 
   constant c_TRIG_MUX_NUM_CORES              : natural  := c_ACQ_NUM_CORES;
 
@@ -2046,7 +2053,7 @@ begin
       ---------------------------------------------------------------------------
       -- External triggers for SP and DAC. Clock domain: clk_i
       ---------------------------------------------------------------------------
-      trig_i                                      => (others => '0'),
+      trig_i                                      => (others => trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_SP_TRIG_RTM_LAMP_ID).pulse),
 
       ---------------------------------------------------------------------------
       -- ADC parallel interface
