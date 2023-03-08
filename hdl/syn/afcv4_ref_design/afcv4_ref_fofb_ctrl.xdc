@@ -59,69 +59,34 @@ set_property DIFF_TERM TRUE                                   [get_ports rtmlamp
 set_property DIFF_TERM TRUE                                   [get_ports rtmlamp_adc_quad_sdoc_p_i]
 
 #######################################################################
-##                          DELAYS                                   ##
+##                 PCB delays for LTC232x ADCs                       ##
 #######################################################################
-#
-# From LTC2324-16 and LTC2320-16 data sheet (page 06)
-#
-# SDO Data Remains Valid Delay from CLKOUT falling edge:
-# tHSDO_SDR 0.00ns (min) / 1.5ns (max)
-#
-# So, the rising edge at 0ns generates the window from 6.5ns to 15ns,
-# or, equivalently, the rising edge at -10ns generates the window from
-# -3.5ns to 5ns.
-#
-# From Xilinx constraints guide:
-#
-# Center-Aligned Rising Edge Source Synchronous Inputs
-#
-# For a center-aligned Source Synchronous interface, the clock
-# transition is aligned with the center of the data valid window.
-# The same clock edge is used for launching and capturing the
-# data. The constraints below rely on the default timing
-# analysis (setup = 1 cycle, hold = 0 cycle).
-#
-# input    ____           __________
-# clock        |_________|          |_____
-#                        |
-#                 dv_bre | dv_are
-#                <------>|<------>
-#          __    ________|________    __
-# data     __XXXX____Rise_Data____XXXX__
-#
-#
-# Input Delay Constraint
-# set_input_delay -clock $input_clock -max [expr $input_clock_period - $dv_bre] [get_ports $input_ports];
-# set_input_delay -clock $input_clock -min $dv_are                              [get_ports $input_ports];
-#
-# For our case:
-#
-# input    ____           __________
-# clock        |_________|          |_____
-#                        |
-#                  3.5ns |  5ns
-#                <------>|<------>
-#          __    ________|________    __
-# data     __XXXX____Rise_Data____XXXX__
-#
 
-# These will be ignored by a clock set_clock_groups -asynchronous, but we
-# keep it here for reference. Also we sample SDO/SCK with IOB FF, so there is
-# not much the tool can improve.
-#
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdob_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdob_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdoc_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdoc_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -max 6.5 [get_ports rtmlamp_adc_octo_sdod_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_octo_sck_ret -min 5.0 [get_ports rtmlamp_adc_octo_sdod_p_i];
-#
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -max 6.5 [get_ports rtmlamp_adc_quad_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -min 5.0 [get_ports rtmlamp_adc_quad_sdoa_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -max 6.5 [get_ports rtmlamp_adc_quad_sdoc_p_i];
-# set_input_delay -clock virt_rtmlamp_adc_quad_sck_ret -min 5.0 [get_ports rtmlamp_adc_quad_sdoc_p_i];
+set rtmlamp_adc_octo_sdoa_delay 0.159
+set rtmlamp_adc_octo_sdob_delay 0.125
+set rtmlamp_adc_octo_sdoc_delay 0.120
+set rtmlamp_adc_octo_sdod_delay 0.107
+set rtmlamp_adc_quad_sdoa_delay -0.161
+set rtmlamp_adc_quad_sdoc_delay -0.144
+
+set rtmlamp_adc_uncertainty_delay 0.020
+
+set_clock_groups -asynchronous -group rtmlamp_adc_octo_sck_ret -group clk_fast_spi
+set_clock_groups -asynchronous -group rtmlamp_adc_quad_sck_ret -group clk_fast_spi
+
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max [expr {$rtmlamp_adc_octo_sdoa_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min [expr {$rtmlamp_adc_octo_sdoa_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max [expr {$rtmlamp_adc_octo_sdob_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdob_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min [expr {$rtmlamp_adc_octo_sdob_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdob_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max [expr {$rtmlamp_adc_octo_sdoc_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdoc_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min [expr {$rtmlamp_adc_octo_sdoc_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdoc_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -max [expr {$rtmlamp_adc_octo_sdod_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdod_p_i];
+set_input_delay -clock rtmlamp_adc_octo_sck_ret -min [expr {$rtmlamp_adc_octo_sdod_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdod_p_i];
+
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -max [expr {$rtmlamp_adc_quad_sdoa_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_quad_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -min [expr {$rtmlamp_adc_quad_sdoa_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_quad_sdoa_p_i];
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -max [expr {$rtmlamp_adc_quad_sdoc_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_quad_sdoc_p_i];
+set_input_delay -clock rtmlamp_adc_quad_sck_ret -min [expr {$rtmlamp_adc_quad_sdoc_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_quad_sdoc_p_i];
 
 #######################################################################
 ##                          DELAY values                             ##
