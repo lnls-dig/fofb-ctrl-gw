@@ -1509,8 +1509,9 @@ begin
     ---------------------------------------------------------------------------
     -- clock and reset interface
     ---------------------------------------------------------------------------
-    adcclk_i                                   => fs_clk_array(c_FOFB_CC_FMC_OR_RTM_ID),
-    adcreset_i                                 => fs_rst_array(c_FOFB_CC_FMC_OR_RTM_ID),
+    -- This is a distributor only instance, there is no ADC data to be read
+    adcclk_i                                   => '0',
+    adcreset_i                                 => '1',
     sysclk_i                                   => clk_sys,
     sysreset_n_i                               => fofb_sysreset_n(c_FOFB_CC_FMC_OR_RTM_ID),
 
@@ -1673,8 +1674,9 @@ begin
     ---------------------------------------------------------------------------
     -- clock and reset interface
     ---------------------------------------------------------------------------
-    adcclk_i                                   => fs_clk_array(c_FOFB_CC_P2P_ID),
-    adcreset_i                                 => fs_rst_array(c_FOFB_CC_P2P_ID),
+    -- This is a distributor only instance, there is no ADC data to be read
+    adcclk_i                                   => '0',
+    adcreset_i                                 => '1',
     sysclk_i                                   => clk_sys,
     sysreset_n_i                               => fofb_sysreset_n(c_FOFB_CC_P2P_ID),
 
