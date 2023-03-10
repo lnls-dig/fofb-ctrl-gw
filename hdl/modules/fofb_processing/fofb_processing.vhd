@@ -228,8 +228,11 @@ begin
           bpm_pos_avg_sum := resize(bpm_pos_i, bpm_pos_avg_sum'length) + bpm_pos_tmp_arr(to_integer(bpm_pos_index_i));
           -- Dived by 2 (take the average)
           bpm_pos_tmp <= bpm_pos_avg_sum(bpm_pos_avg_sum'left downto 1);
-          -- Store the BPM position
-          bpm_pos_tmp_arr(to_integer(bpm_pos_index_i)) <= bpm_pos_i;
+
+          if bpm_pos_valid_i = '1' then
+            -- Store the BPM position
+            bpm_pos_tmp_arr(to_integer(bpm_pos_index_i)) <= bpm_pos_i;
+          end if;
         else
           bpm_pos_tmp <= bpm_pos_i;
         end if;
