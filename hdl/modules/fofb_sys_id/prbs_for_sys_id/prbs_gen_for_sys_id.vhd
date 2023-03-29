@@ -30,6 +30,9 @@ entity prbs_gen_for_sys_id is
     -- Reset
     rst_n_i         : in std_logic;
 
+    -- Enable
+    en_i            : in std_logic;
+
     -- Duration of each PRBS step (in valid_i counts)
     -- NOTE: Changing this signal resets the internal counter. valid_i is ignored
     --       in this cycle.
@@ -88,7 +91,7 @@ begin
         busy_o <= '1';
 
         state <= DRIVE_PRBS_ITERATION;
-      else
+      elsif en_i = '1' then
         case state is
           -- This state is only reached after resetting or changing the PRBS
           -- step duration
@@ -123,6 +126,9 @@ begin
               end if;
             end if;
         end case;
+      else
+        busy_o <= '0';
+        valid_o <= '0';
       end if;
 
       -- Registers step_duration_i so to check if it changes

@@ -190,6 +190,7 @@ begin
     port map (
       clk_i           => clk,
       rst_n_i         => rst_n,
+      en_i            => '1',
       step_duration_i => step_duration,
       lfsr_length_i   => lfsr_length,
       valid_i         => valid,
