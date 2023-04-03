@@ -1,0 +1,32 @@
+memory-map:
+  bus: wb-32-be
+  name: wb_fofb_sys_id_regs
+  description: Interface to FOFB system identification regs
+  x-hdl:
+    busgroup: True
+  children:
+    - block:
+        name: bpm_pos_flatenizer
+        description: Interface to bpm_pos_flatenizer regs
+        address: 0x00000000
+        children:
+          - reg:
+              name: max_num_cte
+              width: 16
+              access: ro
+              address: next
+              description: |
+                Maximum number of BPM positions that can be flatenized per axis
+          - reg:
+              name: base_bpm_id
+              width: 8
+              access: rw
+              address: next
+              description: |
+                Together with max_num_cte, defines the range of BPM position
+                indexes being flatenized, which is given by
+                [base_bpm_id, base_bpm_id + max_num_cte) -> BPM x positions; and
+                [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte) -> BPM y
+                positions. The valid range of this register is [0, 255].
+                Note that only the P2P BPM positions are being driven to
+                flatenizer cores.
