@@ -6,6 +6,7 @@ library work;
 use work.fofb_cc_pkg.all;
 use work.wishbone_pkg.all;
 use work.dot_prod_pkg.all;
+use work.fofb_sys_id_pkg.all;
 
 package fofb_ctrl_pkg is
 
@@ -596,6 +597,29 @@ package fofb_ctrl_pkg is
   );
   end component;
 
+  component xwb_fofb_sys_id is
+    generic (
+      g_MAX_NUM_BPM_POS     : natural range 1 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)) := 16;
+      g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;
+      g_ADDRESS_GRANULARITY : t_wishbone_address_granularity := WORD;
+      g_WITH_EXTRA_WB_REG   : boolean := false
+    );
+    port (
+      clk_i                 : in  std_logic;
+      rst_n_i               : in  std_logic;
+      bpm_pos_i             : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+      bpm_pos_index_i       : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+      bpm_pos_valid_i       : in  std_logic;
+      bpm_pos_flat_clear_i  : in  std_logic;
+      bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+      bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+      bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+      bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+      wb_slv_i              : in t_wishbone_slave_in;
+      wb_slv_o              : out t_wishbone_slave_out
+    );
+  end component;
+
   component fofb_processing_dcc_adapter is
     generic (
       -- DCC packet FIFO depth
@@ -686,6 +710,23 @@ package fofb_ctrl_pkg is
     version       => x"00000002",
     date          => x"20230215",
     name          => "FOFB_PROC_REGS     ")));
+
+  -- FOFB system identification
+  constant c_xwb_fofb_sys_id_regs_sdb : t_sdb_device := (
+    abi_class     => x"0000",                   -- undocumented device
+    abi_ver_major => x"00",
+    abi_ver_minor => x"00",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"4",                      -- 32-bit port granularity (0100)
+    sdb_component => (
+    addr_first    => x"0000000000000000",
+    addr_last     => x"000000000000FFFF",
+    product => (
+    vendor_id     => x"1000000000001215",       -- LNLS
+    device_id     => x"4b2f4872",               -- Last 8 chars of "FOFB_SYS_ID_REGS" md5sum
+    version       => x"00000001",
+    date          => x"20230404",
+    name          => "FOFB_SYS_ID_REGS   ")));
 
 end fofb_ctrl_pkg;
 
