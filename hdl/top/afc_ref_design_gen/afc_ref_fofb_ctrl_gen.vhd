@@ -701,9 +701,10 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- is unused and connecting it to the xwb_rtmlamp_ohwr external trigger input.
   constant c_SP_TRIG_RTM_LAMP_ID             : natural := 3;
   constant c_ACQ_DCC_ID                      : natural := 1;
+  constant c_ACQ_SYS_ID_ID                   : natural := 2;
 
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 2;
+  constant c_ACQ_NUM_CHANNELS                : natural := 3;
 
   constant c_FACQ_PARAMS_RTM_LAMP            : t_facq_chan_param := (
     width                                    => to_unsigned(512, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
@@ -717,10 +718,17 @@ architecture top of afc_ref_fofb_ctrl_gen is
     atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2)
   );
 
+  constant c_FACQ_PARAMS_SYS_ID              : t_facq_chan_param := (
+    width                                    => to_unsigned(768, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
+    num_atoms                                => to_unsigned(24, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
+    atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2)
+  );
+
   constant c_FACQ_CHANNELS                   : t_facq_chan_param_array(c_ACQ_NUM_CHANNELS-1 downto 0) :=
   (
     c_ACQ_RTM_LAMP_ID       => c_FACQ_PARAMS_RTM_LAMP,
-    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC
+    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC,
+    c_ACQ_SYS_ID_ID         => c_FACQ_PARAMS_SYS_ID
   );
 
   signal acq_chan_array                      : t_facq_chan_array2d(c_ACQ_NUM_CORES-1 downto 0, c_ACQ_NUM_CHANNELS-1 downto 0);
