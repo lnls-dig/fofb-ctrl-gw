@@ -424,6 +424,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- FOFB CC
   constant c_NUM_FOFC_CC_CORES               : natural := 2;
 
+  -- SYS ID
+  constant c_NUM_SYS_ID_CORES                : natural := 1;
+
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
@@ -468,6 +471,15 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   signal acq_dcc_fmc_packet                  : t_fofb_cc_packet;
   signal acq_dcc_fmc_valid                   : std_logic := '0';
+
+  -----------------------------------------------------------------------------
+  -- FOFB system identification signals
+  -----------------------------------------------------------------------------
+
+  signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal bpm_pos_flat_y_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- RTM signals
@@ -675,13 +687,14 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   constant c_ACQ_FIFO_SIZE                   : natural := 256;
 
-  -- Number of acquisition cores. Same as the number of DCC
-  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES;
+  -- Number of acquisition cores
+  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + c_NUM_SYS_ID_CORES;
 
   -- Acquisition core IDs
   constant c_ACQ_CORE_RTM_LAMP_ID            : natural := 0;
   constant c_ACQ_CORE_CC_FMC_OR_RTM_ID       : natural := 1;
   constant c_ACQ_CORE_CC_P2P_ID              : natural := 2;
+  constant c_ACQ_CORE_SYS_ID_ID              : natural := 3;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
@@ -758,6 +771,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_TRIG_MUX_RTM_LAMP_ID            : natural  := c_ACQ_CORE_RTM_LAMP_ID;
   constant c_TRIG_MUX_CC_FMC_ID              : natural  := c_ACQ_CORE_CC_FMC_OR_RTM_ID;
   constant c_TRIG_MUX_CC_P2P_ID              : natural  := c_ACQ_CORE_CC_P2P_ID;
+  constant c_TRIG_MUX_SYS_ID_ID              : natural  := c_ACQ_CORE_SYS_ID_ID;
 
   constant c_TRIG_MUX_NUM_CORES              : natural  := c_ACQ_NUM_CORES;
 
@@ -1795,11 +1809,10 @@ begin
       bpm_pos_index_i       => fofb_proc_bpm_pos_index,
       bpm_pos_valid_i       => fofb_proc_bpm_pos_valid,
       bpm_pos_flat_clear_i  => or fofb_sp_valid_arr,
-      -- TODO: connect on acq channel
-      bpm_pos_flat_x_o      => open,
-      bpm_pos_flat_x_rcvd_o => open,
-      bpm_pos_flat_y_o      => open,
-      bpm_pos_flat_y_rcvd_o => open,
+      bpm_pos_flat_x_o      => bpm_pos_flat_x,
+      bpm_pos_flat_x_rcvd_o => bpm_pos_flat_x_rcvd,
+      bpm_pos_flat_y_o      => bpm_pos_flat_y,
+      bpm_pos_flat_y_rcvd_o => bpm_pos_flat_y_rcvd,
       wb_slv_i              => user_wb_out(c_FOFB_SYS_ID_ID),
       wb_slv_o              => user_wb_in(c_FOFB_SYS_ID_ID)
     );
@@ -2124,6 +2137,9 @@ begin
   fs_clk_array(c_ACQ_CORE_RTM_LAMP_ID)        <= clk_sys;
   fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_ID)      <= clk_sys_rstn;
 
+  fs_clk_array(c_ACQ_CORE_SYS_ID_ID)          <= clk_sys;
+  fs_rst_n_array(c_ACQ_CORE_SYS_ID_ID)        <= clk_sys_rstn;
+
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
     fs_ce_array(i)    <= '1';
@@ -2190,6 +2206,26 @@ begin
           std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid               <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
+
+  --------------------
+  -- ACQ Core 4
+  --------------------
+
+  -- SYS ID
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_ID).width)-1 downto 0) <=
+    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- BPM x positions (767 downto 512, 8x32)
+    std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0)) &
+    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- BPM y positions (511 downto 256, 8x32)
+    std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
+    -- TODO: These bits should be filled with channels 11-8, but they aren't instantiated yet
+    std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB setpoints (255 downto 64, 12x16)
+    std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(5)) & std_logic_vector(fofb_sp_arr(4)) &
+    std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(1)) & std_logic_vector(fofb_sp_arr(0)) &
+    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                             -- [DEBUG] Flatenizers' 'received' flag (64 downto 49, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                         -- [DEBUG] Timeframe counter (49 downto 33, 1x16)
+    std_logic_vector(to_unsigned(0, 32));
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_sp_valid_arr;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
