@@ -371,15 +371,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
     max_fp_p2p_gts : integer;
   end record;
 
-  type t_serialize_data_state is
-  (
-    IDLE,
-    DRIVE_X_DATA_OR_TIMEFRAME_END,
-    LOWER_VALID_X_DATA_OR_TIMEFRAME_END,
-    DRIVE_Y_DATA,
-    LOWER_VALID_Y_DATA
-  );
-
   function f_extract_gt_cfg(num_p2p : integer) return t_gt_cfg is
     variable rv : t_gt_cfg;
   begin
