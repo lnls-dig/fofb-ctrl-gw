@@ -53,6 +53,8 @@ use work.pcie_cntr_axi_pkg.all;
 use work.fofb_ctrl_pkg.all;
 -- FOFC CC
 use work.fofb_cc_pkg.all;
+-- FOFB sys id
+use work.fofb_sys_id_pkg.all;
 -- RTM LAMP definitions
 use work.rtm_lamp_pkg.all;
 -- Dot product package
@@ -787,7 +789,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
   constant c_RTM_LAMP_ID                     : natural := 2;
   constant c_FOFB_PROCESSING_ID              : natural := 3;
-  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 1;
+  constant c_FOFB_SYS_ID_ID                  : natural := 4;
+  -- +2 for accounting for FOFB processing and FOFB system identification cores
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 2;
   constant c_RTM_LAMP_SDB                    : boolean := (g_RTM = "RTMLAMP");
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
@@ -795,7 +799,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
     c_FOFB_CC_FMC_OR_RTM_ID    => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,            true),
     c_FOFB_CC_P2P_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,            true),
     c_RTM_LAMP_ID              => f_sdb_auto_device(c_xwb_rtm_lamp_regs_sdb, c_RTM_LAMP_SDB),
-    c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,    true)
+    c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,    true),
+    c_FOFB_SYS_ID_ID           => f_sdb_auto_device(c_xwb_fofb_sys_id_regs_sdb,        true)
   );
 
   -----------------------------------------------------------------------------
@@ -1762,6 +1767,33 @@ begin
       dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
       wb_slv_i                       => user_wb_out(c_FOFB_PROCESSING_ID),
       wb_slv_o                       => user_wb_in(c_FOFB_PROCESSING_ID)
+    );
+
+  ----------------------------------------------------------------------
+  --                    FOFB SYSTEM IDENTIFICATION                    --
+  ----------------------------------------------------------------------
+
+  cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
+    generic map (
+      g_MAX_NUM_BPM_POS     => c_MAX_NUM_P2P_BPM_POS/2,
+      g_INTERFACE_MODE      => PIPELINED,
+      g_ADDRESS_GRANULARITY => BYTE,
+      g_WITH_EXTRA_WB_REG   => false
+    )
+    port map (
+      clk_i                 => clk_sys,
+      rst_n_i               => clk_sys_rstn,
+      bpm_pos_i             => fofb_proc_bpm_pos,
+      bpm_pos_index_i       => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i       => fofb_proc_bpm_pos_valid,
+      bpm_pos_flat_clear_i  => or fofb_sp_valid_arr,
+      -- TODO: connect on acq channel
+      bpm_pos_flat_x_o      => open,
+      bpm_pos_flat_x_rcvd_o => open,
+      bpm_pos_flat_y_o      => open,
+      bpm_pos_flat_y_rcvd_o => open,
+      wb_slv_i              => user_wb_out(c_FOFB_SYS_ID_ID),
+      wb_slv_o              => user_wb_in(c_FOFB_SYS_ID_ID)
     );
 
   ----------------------------------------------------------------------
