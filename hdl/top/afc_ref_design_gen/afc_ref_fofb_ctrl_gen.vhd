@@ -732,8 +732,11 @@ architecture top of afc_ref_fofb_ctrl_gen is
   );
 
   constant c_FACQ_PARAMS_SYS_ID              : t_facq_chan_param := (
-    width                                    => to_unsigned(768, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
-    num_atoms                                => to_unsigned(24, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
+    -- NOTE: Altough 768 bits would be enough, using this value as width somehow
+    --       causes ACQ samples to be weirdly misaligned (see https://github.com/lnls-dig/infra-cores/issues/18).
+    --       This issue isn't manifested when we use 1024 bits.
+    width                                    => to_unsigned(1024, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
+    num_atoms                                => to_unsigned(32, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
     atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2)
   );
 
@@ -2213,17 +2216,18 @@ begin
 
   -- SYS ID
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_ID).width)-1 downto 0) <=
-    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- BPM x positions (767 downto 512, 8x32)
-    std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0)) &
-    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- BPM y positions (511 downto 256, 8x32)
-    std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
+    std_logic_vector(to_unsigned(0, 288)) &                                                                                                                 -- [DEBUG] Padding with 0s (1023 downto 736)
+    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                             -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                         -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
     -- TODO: These bits should be filled with channels 11-8, but they aren't instantiated yet
-    std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB setpoints (255 downto 64, 12x16)
-    std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(5)) & std_logic_vector(fofb_sp_arr(4)) &
-    std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(1)) & std_logic_vector(fofb_sp_arr(0)) &
-    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                             -- [DEBUG] Flatenizers' 'received' flag (64 downto 49, 2x8)
-    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                         -- [DEBUG] Timeframe counter (49 downto 33, 1x16)
-    std_logic_vector(to_unsigned(0, 32));
+    std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
+    std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
+    std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) &
+    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
+    std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
+    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
+    std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_sp_valid_arr;
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
 
