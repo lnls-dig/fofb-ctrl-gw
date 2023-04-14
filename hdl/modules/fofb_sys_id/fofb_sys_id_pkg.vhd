@@ -32,6 +32,8 @@ package fofb_sys_id_pkg is
   constant c_BPM_POS_WIDTH       : natural := c_SP_POS_RAM_DATA_WIDTH;
   type t_bpm_pos_arr is array (natural range <>) of signed(c_BPM_POS_WIDTH-1 downto 0);
 
+  function f_signed_saturate(x : signed; trunc_x_len : natural) return signed;
+
   component bpm_pos_flatenizer is
     generic (
       g_BPM_POS_INDEX_WIDTH : natural := 9;
@@ -51,4 +53,48 @@ package fofb_sys_id_pkg is
     );
   end component bpm_pos_flatenizer;
 
+  component prbs_bpm_pos_distort is
+    generic (
+      g_BPM_POS_INDEX_WIDTH   : natural := 9;
+      g_BPM_POS_WIDTH         : natural := 32;
+      g_DISTORT_LEVEL_WIDTH   : natural := 16
+    );
+    port (
+      clk_i                   : in std_logic;
+      rst_n_i                 : in std_logic;
+      bpm_pos_index_i         : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+      bpm_pos_i               : in signed(g_BPM_POS_WIDTH-1 downto 0);
+      bpm_pos_valid_i         : in std_logic;
+      prbs_i                  : in std_logic;
+      distort_level_0_i       : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
+      distort_level_1_i       : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
+      distort_bpm_pos_index_o : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+      distort_bpm_pos_o       : out signed(g_BPM_POS_WIDTH-1 downto 0);
+      distort_bpm_pos_valid_o : out std_logic
+    );
+  end component prbs_bpm_pos_distort;
 end package fofb_sys_id_pkg;
+
+package body fofb_sys_id_pkg is
+
+  function f_signed_saturate(x : signed; trunc_x_len : natural) return signed
+  is
+    variable v_x_sat : signed(trunc_x_len-1 downto 0);
+  begin
+    assert trunc_x_len <= x'length
+      report "Truncate length is higher than the signal itself!"
+      severity error;
+
+    if x(x'left) = x(trunc_x_len-1) then
+      -- Truncate wouldn't cause {over,under}flow would occur, just drop the
+      -- redundant bits
+      v_x_sat := x(trunc_x_len-1 downto 0);
+    else
+      -- Truncate would cause {over,under}flow would occur, so saturate x
+      v_x_sat := (x(x'left), others => not x(x'left));
+    end if;
+
+    return v_x_sat;
+  end f_signed_saturate;
+
+end package body;
