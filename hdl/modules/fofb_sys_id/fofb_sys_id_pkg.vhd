@@ -73,6 +73,24 @@ package fofb_sys_id_pkg is
       distort_bpm_pos_valid_o : out std_logic
     );
   end component prbs_bpm_pos_distort;
+
+  component prbs_sp_distort is
+    generic (
+      g_SP_WIDTH            : natural := 15;
+      g_DISTORT_LEVEL_WIDTH : natural := 16
+    );
+    port (
+      clk_i                 : in std_logic;
+      rst_n_i               : in std_logic;
+      sp_i                  : in signed(g_SP_WIDTH-1 downto 0);
+      sp_valid_i            : in std_logic;
+      prbs_i                : in std_logic;
+      distort_level_0_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
+      distort_level_1_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
+      distort_sp_o          : out signed(g_SP_WIDTH-1 downto 0);
+      distort_sp_valid_o    : out std_logic
+    );
+  end component prbs_sp_distort;
 end package fofb_sys_id_pkg;
 
 package body fofb_sys_id_pkg is
