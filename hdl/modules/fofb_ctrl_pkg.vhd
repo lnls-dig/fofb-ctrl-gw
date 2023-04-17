@@ -599,7 +599,9 @@ package fofb_ctrl_pkg is
 
   component xwb_fofb_sys_id is
     generic (
-      g_MAX_NUM_BPM_POS     : natural range 1 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)) := 16;
+      g_BPM_POS_INDEX_WIDTH : natural := 9;
+      g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
+      g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2;
       g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;
       g_ADDRESS_GRANULARITY : t_wishbone_address_granularity := WORD;
       g_WITH_EXTRA_WB_REG   : boolean := false

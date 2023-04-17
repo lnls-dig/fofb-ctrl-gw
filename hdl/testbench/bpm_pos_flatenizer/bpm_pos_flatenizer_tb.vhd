@@ -22,7 +22,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.dot_prod_pkg.all;
 use work.fofb_ctrl_pkg.all;
 use work.fofb_tb_pkg.all;
 use work.fofb_sys_id_pkg.all;
@@ -31,7 +30,9 @@ entity bpm_pos_flatenizer_tb is
 end bpm_pos_flatenizer_tb;
 
 architecture test of bpm_pos_flatenizer_tb is
-  constant c_MAX_NUM_BPM_POS      : natural range 1 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)) := c_MAX_NUM_P2P_BPM_POS/2;
+  constant c_BPM_POS_INDEX_WIDTH  : natural := 9;
+  constant c_MAX_NUM_BPM_POS      : natural := c_MAX_NUM_P2P_BPM_POS/2;
+
   signal clk                      : std_logic := '0';
   signal rst_n                    : std_logic := '0';
   signal clk_dcc                  : std_logic := '0';
@@ -39,12 +40,12 @@ architecture test of bpm_pos_flatenizer_tb is
   signal dcc_time_frame_end       : std_logic := '0';
   signal dcc_packet               : t_fofb_cc_packet;
   signal dcc_packet_valid         : std_logic := '0';
-  signal fofb_proc_bpm_pos        : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
-  signal fofb_proc_bpm_pos_index  : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal fofb_proc_bpm_pos        : signed(c_BPM_POS_WIDTH-1 downto 0);
+  signal fofb_proc_bpm_pos_index  : unsigned(c_BPM_POS_INDEX_WIDTH-1 downto 0);
   signal fofb_proc_bpm_pos_valid  : std_logic;
   signal fofb_proc_time_frame_end : std_logic;
   signal clear                    : std_logic;
-  signal bpm_pos_base_index       : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal bpm_pos_base_index       : unsigned(c_BPM_POS_INDEX_WIDTH-1 downto 0) := (others => '0');
   signal bpm_pos_flat             : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0) := (others => (others => '0'));
   signal bpm_pos_flat_rcvd        : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0) := (others => '0');
 begin
@@ -74,7 +75,7 @@ begin
       -- IDs. 'fofb_processing_dcc_adapter' serializes BPM positions and tags'em
       -- using the following:
       -- {BPM position x id, BPM position y id} = {BPM id, BPM id + 256}.
-      for id in 0 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)-1)-1
+      for id in 0 to 2**(c_BPM_POS_INDEX_WIDTH-1)-1
       loop
         dcc_packet.bpm_data_x <= to_signed(id, dcc_packet.bpm_data_x'length);
         dcc_packet.bpm_data_y <= to_signed(id + 256, dcc_packet.bpm_data_y'length);
@@ -131,6 +132,8 @@ begin
 
   uut : bpm_pos_flatenizer
     generic map (
+      g_BPM_POS_INDEX_WIDTH => c_BPM_POS_INDEX_WIDTH,
+      g_BPM_POS_WIDTH       => c_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => c_MAX_NUM_BPM_POS
     )
     port map (

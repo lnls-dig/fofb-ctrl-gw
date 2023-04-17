@@ -30,8 +30,14 @@ use work.fofb_sys_id_pkg.all;
 
 entity xwb_fofb_sys_id is
   generic (
+    -- Width of BPM position indexes
+    g_BPM_POS_INDEX_WIDTH : natural := 9;
+
+    -- Width of BPM positions
+    g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
+
     -- Maximum number of BPM positions to flatenize
-    g_MAX_NUM_BPM_POS     : natural range 1 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)) := 16;
+    g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2;
 
     -- Wishbone generics
     g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;
@@ -46,7 +52,7 @@ entity xwb_fofb_sys_id is
     rst_n_i               : in  std_logic;
 
     -- BPM position
-    bpm_pos_i             : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+    bpm_pos_i             : in  signed(c_BPM_POS_WIDTH-1 downto 0);
 
     -- BPM position index
     bpm_pos_index_i       : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
@@ -100,6 +106,8 @@ begin
   -- BPM positions x flatenizer
   cmp_x_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
+      g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
+      g_BPM_POS_WIDTH       => g_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
     )
     port map (
@@ -119,6 +127,8 @@ begin
   -- BPM positions y flatenizer
   cmp_y_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
+      g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
+      g_BPM_POS_WIDTH       => g_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
     )
     port map (

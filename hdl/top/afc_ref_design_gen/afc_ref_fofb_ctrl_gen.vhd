@@ -1800,6 +1800,8 @@ begin
 
   cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
     generic map (
+      g_BPM_POS_INDEX_WIDTH => c_SP_COEFF_RAM_ADDR_WIDTH,
+      g_BPM_POS_WIDTH       => c_SP_POS_RAM_DATA_WIDTH,
       g_MAX_NUM_BPM_POS     => c_MAX_NUM_P2P_BPM_POS/2,
       g_INTERFACE_MODE      => PIPELINED,
       g_ADDRESS_GRANULARITY => BYTE,

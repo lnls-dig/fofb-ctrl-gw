@@ -195,6 +195,8 @@ begin
 
   uut : xwb_fofb_sys_id
     generic map (
+      g_BPM_POS_INDEX_WIDTH => 9,
+      g_BPM_POS_WIDTH       => c_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => c_MAX_NUM_BPM_POS,
       g_INTERFACE_MODE      => PIPELINED,
       g_ADDRESS_GRANULARITY => BYTE,

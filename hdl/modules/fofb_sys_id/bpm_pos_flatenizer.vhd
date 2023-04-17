@@ -25,12 +25,17 @@ use ieee.numeric_std.all;
 
 library work;
 use work.fofb_sys_id_pkg.all;
-use work.dot_prod_pkg.all;
 
 entity bpm_pos_flatenizer is
   generic (
+    -- Width of BPM position indexes
+    g_BPM_POS_INDEX_WIDTH : natural := 9;
+
+    -- Width of BPM positions
+    g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
+
     -- Maximum number of BPM positions to flatenize
-    g_MAX_NUM_BPM_POS     : natural range 1 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)) := 16
+    g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2
   );
   port (
     -- Clock
@@ -48,13 +53,13 @@ entity bpm_pos_flatenizer is
     -- indexes:
     -- ['bpm_pos_base_index_i', 'bpm_pos_base_index_i' + 'g_MAX_NUM_BPM_POS').
     -- NOTE: Changing this will clear the stored BPM positions.
-    bpm_pos_base_index_i  : in unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+    bpm_pos_base_index_i  : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- BPM position index
-    bpm_pos_index_i       : in unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+    bpm_pos_index_i       : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- BPM position
-    bpm_pos_i             : in signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+    bpm_pos_i             : in signed(g_BPM_POS_WIDTH-1 downto 0);
 
     -- BPM position valid
     bpm_pos_valid_i       : in std_logic;
@@ -74,7 +79,7 @@ end entity bpm_pos_flatenizer;
 architecture beh of bpm_pos_flatenizer is
   signal bpm_pos_flat : t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0) := (others => (others => '0'));
   signal bpm_pos_flat_rcvd : std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0) := (others => '0');
-  signal bpm_pos_base_index_d1 : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal bpm_pos_base_index_d1 : unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0) := (others => '0');
 begin
 
   process(clk_i) is
