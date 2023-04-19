@@ -87,13 +87,18 @@ package fofb_sys_id_pkg is
     port (
       clk_i                 : in std_logic;
       rst_n_i               : in std_logic;
+      en_distort_i          : in std_logic;
+      prbs_rst_n_i          : in std_logic;
+      prbs_step_duration_i  : in natural range 1 to 1024 := 1;
+      prbs_lfsr_length_i    : in natural range 2 to 32 := 32;
+      prbs_valid_i          : in std_logic;
       sp_i                  : in signed(g_SP_WIDTH-1 downto 0);
       sp_valid_i            : in std_logic;
-      prbs_i                : in std_logic;
       distort_level_0_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
       distort_level_1_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
       distort_sp_o          : out signed(g_SP_WIDTH-1 downto 0);
-      distort_sp_valid_o    : out std_logic
+      distort_sp_valid_o    : out std_logic;
+      prbs_o                : out std_logic
     );
   end component prbs_sp_distort;
 end package fofb_sys_id_pkg;

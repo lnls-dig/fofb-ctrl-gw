@@ -16,6 +16,7 @@
 -- Revisions  :
 -- Date         Version  Author              Description
 -- 2023-04-17   1.0      guilherme.ricioli   Created
+-- 2023-04-19   1.1      guilherme.ricioli   Wrap prbs_gen_for_sys_id
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -24,6 +25,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.fofb_sys_id_pkg.all;
+use work.ifc_common_pkg.all;
 
 entity prbs_sp_distort is
   generic (
@@ -40,14 +42,32 @@ entity prbs_sp_distort is
     -- Reset
     rst_n_i               : in std_logic;
 
+    -- This signal enables the PRBS-based distortion.
+    en_distort_i          : in std_logic;
+
+    -- PRBS reset
+    prbs_rst_n_i          : in std_logic;
+
+    -- Duration of each PRBS step (in prbs_valid_i counts)
+    -- NOTE: Changing this signal resets the internal counter. prbs_valid_i is
+    --       ignored in this cycle.
+    prbs_step_duration_i  : in natural range 1 to 1024 := 1;
+
+    -- Length (in bits) of internal PRBS LFSR. This determines the duration of
+    -- the generated sequence, which is given by:
+    -- (2^{prbs_lfsr_length_i} - 1)*prbs_step_duration_i
+    -- NOTE: Changing this signal resets the internal LFSR. prbs_valid_i is
+    --       ignored in this cycle.
+    prbs_lfsr_length_i    : in natural range 2 to 32 := 32;
+
+    -- PRBS iteration signal
+    prbs_valid_i          : in std_logic;
+
     -- Setpoint
     sp_i                  : in signed(g_SP_WIDTH-1 downto 0);
 
     -- Setpoint valid
     sp_valid_i            : in std_logic;
-
-    -- PRBS signal
-    prbs_i                : in std_logic;
 
     -- Distortion level for PRBS value '0'
     distort_level_0_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
@@ -59,11 +79,15 @@ entity prbs_sp_distort is
     distort_sp_o          : out signed(g_SP_WIDTH-1 downto 0);
 
     -- Distorted setpoint valid
-    distort_sp_valid_o    : out std_logic
+    distort_sp_valid_o    : out std_logic;
+
+    -- PRBS signal for debug
+    prbs_o                : out std_logic
   );
 end entity prbs_sp_distort;
 
 architecture beh of prbs_sp_distort is
+  signal prbs : std_logic := '0';
   signal sp_valid_d1 : std_logic := '0';
   -- 1-bit larger than the largest between sp_i and distort_level_{0,1}_i
   -- so to accomodate their sum
@@ -82,12 +106,16 @@ begin
       else
         v_resized_sp := resize(sp_i, maximum(g_SP_WIDTH, g_DISTORT_LEVEL_WIDTH)+1);
 
-        -- Pipeline stage 1 of 2: sum of PRBS distortion
+        -- Pipeline stage 1 of 2: sum or bypass PRBS distortion
         -- #####################################################################
-        if prbs_i = '0' then
-          distort_sp_aux <= v_resized_sp + distort_level_0_i;
-        else  -- prbs_i = '1'
-          distort_sp_aux <= v_resized_sp + distort_level_1_i;
+        if en_distort_i = '1' then
+          if prbs = '0' then
+            distort_sp_aux <= v_resized_sp + distort_level_0_i;
+          else  -- prbs_i = '1'
+            distort_sp_aux <= v_resized_sp + distort_level_1_i;
+          end if;
+        else  -- en_distort_i = '0'
+          distort_sp_aux <= v_resized_sp;
         end if;
 
         sp_valid_d1 <= sp_valid_i;
@@ -101,5 +129,20 @@ begin
       end if;
     end if;
   end process;
+
+  cmp_prbs_gen_for_sys_id : prbs_gen_for_sys_id
+    port map (
+      clk_i           => clk_i,
+      rst_n_i         => rst_n_i and prbs_rst_n_i,
+      en_i            => en_distort_i,
+      step_duration_i => prbs_step_duration_i,
+      lfsr_length_i   => prbs_lfsr_length_i,
+      valid_i         => prbs_valid_i,
+      busy_o          => open,
+      prbs_o          => prbs,
+      valid_o         => open
+    );
+
+  prbs_o <= prbs;
 
 end architecture beh;
