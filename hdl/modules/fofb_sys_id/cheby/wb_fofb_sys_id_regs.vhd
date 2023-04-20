@@ -1,4 +1,4 @@
--- Do not edit.  Generated on Thu Apr 06 14:13:12 2023 by guilherme.ricioli
+-- Do not edit.  Generated on Thu Apr 20 09:20:28 2023 by guilherme.ricioli
 -- With Cheby 1.4.0 and these options:
 --  -i wb_fofb_sys_id_regs.cheby --hdl vhdl --gen-hdl wb_fofb_sys_id_regs.vhd --doc html --gen-doc doc/wb_fofb_sys_id_regs.html --gen-c wb_fofb_sys_id_regs.h --consts-style vhdl-ohwr --gen-consts ../../../sim/regs/wb_fofb_sys_id_regs_consts_pkg.vhd
 
@@ -24,8 +24,6 @@ entity wb_fofb_sys_id_regs is
     -- [base_bpm_id, base_bpm_id + max_num_cte) -> BPM x positions; and
     -- [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte) -> BPM y
     -- positions. The valid range of this register is [0, 255].
-    -- Note that only the P2P BPM positions are being driven to
-    -- flatenizer cores.
 
     bpm_pos_flatenizer_base_bpm_id_o : out   std_logic_vector(7 downto 0)
   );

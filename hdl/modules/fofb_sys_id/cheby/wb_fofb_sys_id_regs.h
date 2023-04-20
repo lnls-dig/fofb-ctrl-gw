@@ -15,8 +15,6 @@ indexes being flatenized, which is given by
 [base_bpm_id, base_bpm_id + max_num_cte) -> BPM x positions; and
 [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte) -> BPM y
 positions. The valid range of this register is [0, 255].
-Note that only the P2P BPM positions are being driven to
-flatenizer cores.
  */
 #define WB_FOFB_SYS_ID_REGS_BPM_POS_FLATENIZER_BASE_BPM_ID 0x4UL
 
@@ -35,8 +33,6 @@ indexes being flatenized, which is given by
 [base_bpm_id, base_bpm_id + max_num_cte) -> BPM x positions; and
 [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte) -> BPM y
 positions. The valid range of this register is [0, 255].
-Note that only the P2P BPM positions are being driven to
-flatenizer cores.
  */
     uint8_t base_bpm_id;
 

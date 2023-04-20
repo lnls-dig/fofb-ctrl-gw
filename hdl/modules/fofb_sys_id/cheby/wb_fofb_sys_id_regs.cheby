@@ -28,5 +28,3 @@ memory-map:
                 [base_bpm_id, base_bpm_id + max_num_cte) -> BPM x positions; and
                 [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte) -> BPM y
                 positions. The valid range of this register is [0, 255].
-                Note that only the P2P BPM positions are being driven to
-                flatenizer cores.
