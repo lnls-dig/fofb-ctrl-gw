@@ -23,6 +23,9 @@
 --                                         accumulators regs
 -- 2022-01-11  2.3      guilherme.ricioli  Test wishbone interface for
 --                                         loop interlock regs
+-- 2023-02-15  3.0      guilherme.ricioli  Update to match the new
+--                                         wb_fofb_processing_regs api
+-- 2023-03-03  3.1      guilherme.ricioli  Test setpoint decimation regs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -69,7 +72,7 @@ entity xwb_fofb_processing_tb is
     g_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2;
 
     -- number of fofb cycles to simulate
-    g_FOFB_NUM_CYC                 : natural := 4;
+    g_FOFB_NUM_CYC                 : natural := 20;
 
     -- fofb processing saturation maximum value
     g_SP_MAX                       : integer := 15200;
@@ -105,11 +108,11 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   constant c_SYS_CLOCK_FREQ             : natural := 100_000_000;
 
   constant c_RAM_BANK_SIZE              : natural :=
-    (c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_1_ADDR -
-      c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_ADDR);
+    (c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_ADDR -
+      c_WB_FOFB_PROCESSING_REGS_CH_0_COEFF_RAM_BANK_ADDR);
 
   constant c_NUM_OF_COEFFS_PER_CHANNEL  : natural :=
-    c_RAM_BANK_SIZE / c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE;
+    c_RAM_BANK_SIZE / c_WB_FOFB_PROCESSING_REGS_CH_0_COEFF_RAM_BANK_SIZE;
 
   constant c_NUM_OF_SETPOINTS           : natural :=
     c_NUM_OF_COEFFS_PER_CHANNEL;
@@ -147,18 +150,39 @@ architecture xwb_fofb_processing_tb_arch of xwb_fofb_processing_tb is
   signal sp_valid_arr                   :
     std_logic_vector(g_CHANNELS-1 downto 0):= (others => '0');
 
+  signal sp_decim_arr                   :
+    t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+  signal sp_decim_valid_arr             :
+    std_logic_vector(g_CHANNELS-1 downto 0);
+  signal is_there_any_sp_decim_valid    : std_logic := '0';
+
   signal wb_slave_i                     : t_wishbone_slave_in;
   signal wb_slave_o                     : t_wishbone_slave_out;
 
   -- TODO: used to solve 'actual signal must be a static name' error
   signal valid_to_check                 : std_logic := '0';
 
+  function f_get_ch_reg_addr(offs: natural; ch: natural) return natural is
+    constant c_CH_REGS_BASE_ADDR : natural := c_WB_FOFB_PROCESSING_REGS_CH_ADDR;
+    constant c_CH_REGS_SIZE_PER_CH : natural := c_WB_FOFB_PROCESSING_REGS_CH_0_SIZE;
+  begin
+    assert (offs <= c_CH_REGS_SIZE_PER_CH and ch <= g_CHANNELS-1)
+      report "improper params: offs: " & natural'image(offs) & ", ch: " &
+        natural'image(ch)
+      severity error;
+
+    return c_CH_REGS_BASE_ADDR + ch * c_CH_REGS_SIZE_PER_CH + offs;
+  end function;
+
 begin
   f_gen_clk(c_SYS_CLOCK_FREQ, clk);
+
+  is_there_any_sp_decim_valid <= or sp_decim_valid_arr;
 
   -- main process
   process
     variable addr                         : natural := 0;
+    variable offs                         : natural := 0;
     variable data                         : std_logic_vector(31 downto 0) :=
       (others => '0');
 
@@ -171,6 +195,7 @@ begin
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable wb_gain                      :
       std_logic_vector(c_FOFB_WB_GAIN_WIDTH-1 downto 0);
+    variable wb_ratio                     : std_logic_vector(31 downto 0);
 
     variable coeff_ram                    : t_coeff_ram_data;
     variable sp_ram                       : t_sp_ram_data;
@@ -180,6 +205,10 @@ begin
     variable expec_fofb_proc_sp_arr       :
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable sp_err                       : real := 0.0;
+
+    variable expec_fofb_proc_sp_decim_arr :
+      real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
+    variable sp_decim_err                 : real := 0.0;
 
     variable meas_cnt                     : natural := 0;
     variable expec_loop_intlk_state       : boolean := false;
@@ -210,38 +239,38 @@ begin
     rst_n <= '1';
     f_wait_cycles(clk, 10);
 
-    -- writing on coefficients rams via wishbone bus
-    report "writing on coefficients rams via wishbone bus"
+    -- writing on coefficients rams
+    report "writing on coefficients rams"
     severity note;
 
     read32_pl(clk, wb_slave_i, wb_slave_o,
-      c_WB_FOFB_PROCESSING_REGS_COEFFS_FIXED_POINT_POS_ADDR, data);
+      c_WB_FOFB_PROCESSING_REGS_FIXED_POINT_POS_COEFF_ADDR, data);
     report "coefficients fixed-point position: " & to_hstring(data)
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_ADDR;
+    offs := c_WB_FOFB_PROCESSING_REGS_CH_0_COEFF_RAM_BANK_ADDR -
+      c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
     for i in 0 to (g_CHANNELS - 1)
     loop
       for j in 0 to (c_NUM_OF_COEFFS_PER_CHANNEL - 1)
       loop
+        addr := f_get_ch_reg_addr(offs +
+          j*c_WB_FOFB_PROCESSING_REGS_CH_0_COEFF_RAM_BANK_SIZE, i);
+
         write32_pl(clk, wb_slave_i, wb_slave_o, addr, coeff_ram.get_coeff(j));
         read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
         assert (data = coeff_ram.get_coeff(j))
-          report "wrong ram coefficient at " & natural'image(addr)
+          report "wrong ram coefficient at " & natural'image(addr) & " " & to_hstring(data)
           severity error;
-
-        -- address should jump c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE
-        -- on each iteration (wishbone bus is using byte-granularity)
-        addr := addr + c_WB_FOFB_PROCESSING_REGS_COEFFS_RAM_BANK_0_SIZE;
       end loop;
     end loop;
 
-    -- writing on setpoints ram via wishbone bus
-    report "writing on setpoints ram via wishbone bus"
+    -- writing on setpoints ram
+    report "writing on setpoints ram"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_SPS_RAM_BANK_ADDR;
     for i in 0 to (c_NUM_OF_SETPOINTS - 1)
     loop
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, sp_ram.get_sp(i));
@@ -251,21 +280,22 @@ begin
         report "wrong ram setpoint at " & natural'image(addr)
         severity error;
 
-      -- address should jump c_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_SIZE
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_SPS_RAM_BANK_SIZE
       -- on each iteration (wishbone bus is using byte-granularity)
-      addr := addr + c_WB_FOFB_PROCESSING_REGS_SETPOINTS_RAM_BANK_SIZE;
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_SPS_RAM_BANK_SIZE;
     end loop;
 
-    -- setting gains via wishbone bus
-    report "setting gains via wishbone bus"
+    -- setting gains
+    report "setting gains"
     severity note;
 
     read32_pl(clk, wb_slave_i, wb_slave_o,
-      c_WB_FOFB_PROCESSING_REGS_ACCS_GAINS_FIXED_POINT_POS_ADDR, data);
+      c_WB_FOFB_PROCESSING_REGS_FIXED_POINT_POS_ACCS_GAINS_ADDR, data);
     report "gains fixed-point position: " & to_hstring(data)
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR;
+    offs := c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_GAIN_ADDR -
+      c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
     for i in 0 to (g_CHANNELS - 1)
     loop
       accs_gains_reader.read_accs_gain(real_gain_arr(i));
@@ -274,6 +304,8 @@ begin
           to_signed(integer(real_gain_arr(i) * 2.0**c_FOFB_GAIN_FRAC_WIDTH),
             c_FOFB_WB_GAIN_WIDTH), c_FOFB_WB_GAIN_WIDTH-c_FOFB_GAIN_WIDTH));
 
+      addr := f_get_ch_reg_addr(offs, i);
+
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, wb_gain);
       read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
@@ -281,29 +313,29 @@ begin
         report "wrong gain at " & natural'image(addr)
         severity error;
 
-      -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_1_ADDR -
-      -- c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR on each iteration
-      addr := addr + c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_1_ADDR -
-        c_WB_FOFB_PROCESSING_REGS_ACC_GAIN_0_ADDR;
     end loop;
 
-    -- setting saturation limits via wishbone bus
-    report "setting saturation limits via wishbone bus"
+    -- setting saturation limits
+    report "setting saturation limits"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_SP_MAX_0_ADDR;
     for i in 0 to (g_CHANNELS - 1)
     loop
+      offs := c_WB_FOFB_PROCESSING_REGS_CH_0_SP_LIMITS_MAX_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
+      addr := f_get_ch_reg_addr(offs, i);
+
       -- writing maximum saturation value
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_SP_MAX);
       read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
-      addr := addr + c_WB_FOFB_PROCESSING_REGS_SP_MIN_0_ADDR -
-        c_WB_FOFB_PROCESSING_REGS_SP_MAX_0_ADDR;
-
       assert (data = c_WB_SP_MAX)
         report "wrong saturation limit at " & natural'image(addr)
         severity error;
+
+      offs := c_WB_FOFB_PROCESSING_REGS_CH_0_SP_LIMITS_MIN_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
+      addr := f_get_ch_reg_addr(offs, i);
 
       -- writing minimum saturation value
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_SP_MIN);
@@ -312,9 +344,27 @@ begin
       assert (data = c_WB_SP_MIN)
         report "wrong saturation limit at " & natural'image(addr)
         severity error;
+    end loop;
 
-      addr := addr + c_WB_FOFB_PROCESSING_REGS_SP_MAX_1_ADDR -
-        c_WB_FOFB_PROCESSING_REGS_SP_MIN_0_ADDR;
+    -- setting setpoints decimation ratios
+    report "setting setpoints decimation ratios"
+    severity note;
+
+    offs := c_WB_FOFB_PROCESSING_REGS_CH_0_SP_DECIM_RATIO_ADDR -
+      c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
+    for i in 0 to (g_CHANNELS - 1)
+    loop
+      wb_ratio := std_logic_vector(to_unsigned(i, 32));
+
+      addr := f_get_ch_reg_addr(offs, i);
+
+      write32_pl(clk, wb_slave_i, wb_slave_o, addr, wb_ratio);
+      read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+      assert (data = wb_ratio)
+        report "wrong setpoint decimation ratio at " & natural'image(addr)
+        severity error;
+
     end loop;
 
     -- setting limit for loop interlock orbit distortion source via wishbone
@@ -324,7 +374,7 @@ begin
       " bus"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_ORB_DISTORT_LIMIT_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_ORB_DISTORT_LIMIT_ADDR;
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_ORB_DISTORT_LIMIT);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
@@ -337,10 +387,10 @@ begin
     -- bus
     report
       "setting minimum number of packets for loop interlock source via " &
-      " wishbone bus"
+      "wishbone bus"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_MIN_NUM_PKTS_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_MIN_NUM_PKTS_ADDR;
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, c_WB_MIN_NUM_PKTS);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
@@ -349,31 +399,31 @@ begin
       report "minimum number of packets was not set"
       severity error;
 
-    -- disabling loop interlock sources via wishbone bus
-    report "disabling loop interlock sources via wishbone bus"
+    -- disabling loop interlock sources
+    report "disabling loop interlock sources"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) :=
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_ORB_DISTORT_OFFSET) :=
         '0';
     data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN_OFFSET) :=
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_PACKET_LOSS_OFFSET) :=
         '0';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     assert (data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) =
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_ORB_DISTORT_OFFSET) =
         '0')
       report "loop interlock orbit distortion source was not disabled"
       severity error;
 
     assert (data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN_OFFSET) =
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_PACKET_LOSS_OFFSET) =
         '0')
       report "loop interlock packet loss source was not disabled"
       severity error;
@@ -441,6 +491,14 @@ begin
       end loop;
       -- ########## computing expected fofb processing setpoint ##########
 
+      -- ######## computing expected fofb processing decimated setpoint ########
+      for i in 0 to g_CHANNELS-1
+      loop
+        expec_fofb_proc_sp_decim_arr(i) := expec_fofb_proc_sp_decim_arr(i) +
+          expec_fofb_proc_sp_arr(i);
+      end loop;
+      -- ######## computing expected fofb processing decimated setpoint ########
+
       -- time frame ended
       bpm_time_frame_end <= '1';
       f_wait_cycles(clk, 1);
@@ -472,24 +530,73 @@ begin
           severity note;
         end if;
       end loop;
+
+      -- Checks if any new decimated/filtered setpoint is ready (if more than
+      -- one, they happen at the same cycle)
+      f_wait_clocked_signal(clk, is_there_any_sp_decim_valid, '1', 10);
+
+      for i in 0 to g_CHANNELS-1
+      loop
+        if sp_decim_valid_arr(i) = '1' then
+          -- TODO: this may be problematic for small values
+          sp_decim_err := abs((real(to_integer(sp_decim_arr(i))) /
+            floor(expec_fofb_proc_sp_decim_arr(i))) - 1.0);
+
+          report "channel " & to_string(i) & ": " &
+            "decimated setpoint: " & to_string(to_integer(sp_decim_arr(i))) &
+            " (expected: " &
+            to_string(integer(floor(expec_fofb_proc_sp_decim_arr(i)))) & ")"
+          severity note;
+
+            if sp_decim_err > 0.01 then
+              report "error: " & to_string(sp_decim_err) & " is too large (> 1%)!"
+              severity error;
+            else
+              report "error: " & to_string(sp_decim_err) & " is ok!"
+              severity note;
+            end if;
+
+            expec_fofb_proc_sp_decim_arr(i) := 0.0;
+        end if;
+      end loop;
+
+      -- checking decimated setpoints wishbone reading
+      report "checking decimated setpoints wishbone reading"
+      severity note;
+
+      offs := c_WB_FOFB_PROCESSING_REGS_CH_0_SP_DECIM_DATA_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_CH_0_ADDR;
+      for i in 0 to (g_CHANNELS - 1)
+      loop
+        addr := f_get_ch_reg_addr(offs, i);
+
+        read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
+
+        assert (data = std_logic_vector(sp_decim_arr(i)))
+          report
+            "wrong decimated setpoints wishbone reading at " &
+            natural'image(addr)
+          severity error;
+
+      end loop;
     end loop;
 
-    -- enabling loop interlock orbit distortion source via wishbone bus
-    report "enabling loop interlock orbit distortion source via wishbone bus"
+    -- enabling loop interlock orbit distortion source
+    report "enabling loop interlock orbit distortion source"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) :=
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_ORB_DISTORT_OFFSET) :=
         '1';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     assert (data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) =
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_ORB_DISTORT_OFFSET) =
         '1')
       report "loop interlock orbit distortion source was not enabled"
       severity error;
@@ -596,9 +703,9 @@ begin
         end if;
       end loop;
 
-      -- checking loop interlock orbit distortion source state via wishbone bus
+      -- checking loop interlock orbit distortion source state
       report
-        "checking loop interlock orbit distortion source state via wishbone bus"
+        "checking loop interlock orbit distortion source state"
       severity note;
 
       addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ADDR;
@@ -623,43 +730,43 @@ begin
     report "end of two extra fofb processing cycles"
     severity note;
 
-    -- disabling loop interlock orbit distortion source via wishbone bus
-    report "disabling loop interlock orbit distortion source via wishbone bus"
+    -- disabling loop interlock orbit distortion source
+    report "disabling loop interlock orbit distortion source"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) :=
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_ORB_DISTORT_OFFSET) :=
         '0';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     assert (data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ORB_DISTORT_EN_OFFSET) =
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_ORB_DISTORT_OFFSET) =
         '0')
       report "loop interlock orbit distortion source was not disabled"
       severity error;
 
-    -- clearing loop interlock state via wishbone bus
-    report "clearing loop interlock state via wishbone bus"
+    -- clearing loop interlock state
+    report "clearing loop interlock state"
     severity note;
 
     addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
-    data(c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_CLR_OFFSET) := '1';
+    data(c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_STA_CLR_OFFSET) := '1';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     -- NOTE: must wait 4 clk cycles for status register to update
     f_wait_cycles(clk, 4);
 
-    -- checking if loop interlock state was cleared via wishbone bus
+    -- checking if loop interlock state was cleared
     report
-      "checking if loop interlock state was cleared via wishbone bus"
+      "checking if loop interlock state was cleared"
     severity note;
 
     addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ADDR;
@@ -671,22 +778,22 @@ begin
       severity error;
     expec_loop_intlk_state := false;
 
-    -- enabling loop interlock packet loss source via wishbone bus
-    report "enabling loop interlock packet loss source via wishbone bus"
+    -- enabling loop interlock packet loss source
+    report "enabling loop interlock packet loss source"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN_OFFSET) :=
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_PACKET_LOSS_OFFSET) :=
         '1';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     assert (data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN_OFFSET) =
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_PACKET_LOSS_OFFSET) =
         '1')
       report "loop interlock packet loss source was not enabled"
       severity error;
@@ -790,9 +897,9 @@ begin
         end if;
       end loop;
 
-      -- checking loop interlock packet loss source state via wishbone bus
+      -- checking loop interlock packet loss source state
       report
-        "checking loop interlock packet loss source state via wishbone bus"
+        "checking loop interlock packet loss source state"
       severity note;
 
       addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ADDR;
@@ -817,43 +924,43 @@ begin
     report "end of two extra fofb processing cycles"
     severity note;
 
-    -- disabling loop interlock packet loss source via wishbone bus
-    report "disabling loop interlock packet loss source via wishbone bus"
+    -- disabling loop interlock packet loss source
+    report "disabling loop interlock packet loss source"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN_OFFSET) :=
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_PACKET_LOSS_OFFSET) :=
         '0';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     assert (data(
-      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_SRC_EN_CTL_PACKET_LOSS_EN_OFFSET) =
+      c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_SRC_EN_PACKET_LOSS_OFFSET) =
         '0')
       report "loop interlock packet loss source was not disabled"
       severity error;
 
-    -- clearing loop interlock state via wishbone bus
-    report "clearing loop interlock state via wishbone bus"
+    -- clearing loop interlock state
+    report "clearing loop interlock state"
     severity note;
 
     addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_ADDR;
 
     read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
-    data(c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_CLR_OFFSET) := '1';
+    data(c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_CTL_STA_CLR_OFFSET) := '1';
 
     write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
     -- NOTE: must wait 4 clk cycles for status register to update
     f_wait_cycles(clk, 4);
 
-    -- checking if loop interlock state was cleared via wishbone bus
+    -- checking if loop interlock state was cleared
     report
-      "checking if loop interlock state was cleared via wishbone bus"
+      "checking if loop interlock state was cleared"
     severity note;
 
     addr := c_WB_FOFB_PROCESSING_REGS_LOOP_INTLK_STA_ADDR;
@@ -865,23 +972,23 @@ begin
       severity error;
     expec_loop_intlk_state := false;
 
-    -- freezing accumulators via wishbone bus
-    report "freezing accumulators via wishbone bus"
+    -- freezing accumulators
+    report "freezing accumulators"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_ADDR;
     for i in 0 to (g_CHANNELS - 1)
     loop
       read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
-      data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_FREEZE_OFFSET) := '1';
+      data(c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_FREEZE_OFFSET) := '1';
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
       frozen_sp_arr(i) <= sp_arr(i);
 
-      -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
-      -- c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR on each iteration
-      addr := addr + c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
-        c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_CH_1_ACC_CTL_ADDR -
+      -- c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_ADDR on each iteration
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_CH_1_ACC_CTL_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_ADDR;
     end loop;
 
     -- ########## performing an extra fofb processing cycle ##########
@@ -930,15 +1037,15 @@ begin
     end loop;
     -- ########## end of: performing an extra fofb processing cycle ##########
 
-    -- clearing accumulators via wishbone bus
-    report "clearing accumulators via wishbone bus"
+    -- clearing accumulators
+    report "clearing accumulators"
     severity note;
 
-    addr := c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+    addr := c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_ADDR;
     for i in 0 to (g_CHANNELS - 1)
     loop
       read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
-      data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_CLEAR_OFFSET) := '1';
+      data(c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_CLEAR_OFFSET) := '1';
       write32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
       valid_to_check <= sp_valid_arr(i);
@@ -957,15 +1064,18 @@ begin
       -- checking if autoclear is working
       read32_pl(clk, wb_slave_i, wb_slave_o, addr, data);
 
-      assert (data(c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_CLEAR_OFFSET) = '0')
+      assert (data(c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_CLEAR_OFFSET) = '0')
         report "autoclear not working at " & natural'image(addr)
         severity error;
 
-      -- address should jump c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
-      -- c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR on each iteration
-      addr := addr + c_WB_FOFB_PROCESSING_REGS_ACC_CTL_1_ADDR -
-        c_WB_FOFB_PROCESSING_REGS_ACC_CTL_0_ADDR;
+      -- address should jump c_WB_FOFB_PROCESSING_REGS_CH_1_ACC_CTL_ADDR -
+      -- c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_ADDR on each iteration
+      addr := addr + c_WB_FOFB_PROCESSING_REGS_CH_1_ACC_CTL_ADDR -
+        c_WB_FOFB_PROCESSING_REGS_CH_0_ACC_CTL_ADDR;
     end loop;
+
+    report "success!"
+    severity note;
 
     finish;
   end process;
@@ -996,6 +1106,8 @@ begin
       bpm_time_frame_end_i           => bpm_time_frame_end,
       sp_arr_o                       => sp_arr,
       sp_valid_arr_o                 => sp_valid_arr,
+      sp_decim_arr_o                 => sp_decim_arr,
+      sp_decim_valid_arr_o           => sp_decim_valid_arr,
       wb_slv_i                       => wb_slave_i,
       wb_slv_o                       => wb_slave_o
     );

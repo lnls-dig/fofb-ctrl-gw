@@ -16,7 +16,10 @@
 -- 2022-07-27  1.1      guilherme.ricioli     Changed coeffs RAMs' wb interface
 -- 2022-09-05  2.0      augusto.fraga         Update to match the new
 --                                            fofb_processing API
--- 2022-01-11  2.3      guilherme.ricioli     Expose loop interlock regs
+-- 2022-01-11  2.1      guilherme.ricioli     Expose loop interlock regs
+-- 2023-02-10  3.0      guilherme.ricioli     Update to match the new
+--                                            wb_fofb_processing_regs api
+-- 2023-03-02  3.1      guilherme.ricioli     Expose setpoint decimation regs
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -99,13 +102,19 @@ entity xwb_fofb_processing is
     -- Set-point valid array (for each channel)
     sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
+    -- Decimated setpoint (for each channel)
+    sp_decim_arr_o                 : out t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+
+    -- Decimated setpoint valid (for each channel)
+    sp_decim_valid_arr_o           : out std_logic_vector(g_CHANNELS-1 downto 0);
+
     dcc_p2p_en_o                   : out std_logic;
 
     ---------------------------------------------------------------------------
     -- Wishbone Control Interface signals
     ---------------------------------------------------------------------------
-    wb_slv_i                     : in t_wishbone_slave_in;
-    wb_slv_o                     : out t_wishbone_slave_out
+    wb_slv_i                       : in t_wishbone_slave_in;
+    wb_slv_o                       : out t_wishbone_slave_out
   );
   end xwb_fofb_processing;
 
@@ -136,49 +145,63 @@ architecture rtl of xwb_fofb_processing is
   constant c_GAIN_FIXED_POINT_POS_VAL : std_logic_vector(31 downto 0) :=
       std_logic_vector(to_unsigned(31 - c_FOFB_GAIN_INT_WIDTH, 32));
 
+  -- Maximum setpoint decimation ratio constant
+  -- Upper software layers can use this to restrict setpoint decimation ratio
+  -- values
+  constant c_SP_DECIM_RATIO_MAX_CTE   : std_logic_vector(31 downto 0) :=
+      std_logic_vector(to_unsigned(c_FOFB_SP_DECIM_MAX_RATIO, 32));
+
   -----------------------------
   -- Signals
   -----------------------------
 
   -- Accumulator clear bit array (for each fofb channel)
-  signal clear_acc_arr        : std_logic_vector(c_MAX_CHANNELS-1 downto 0) := (others => '0');
+  signal acc_ctl_clear_arr  : std_logic_vector(c_MAX_CHANNELS-1 downto 0) := (others => '0');
   -- Accumulator freeze bit array  (for each fofb channel)
-  signal freeze_acc_arr       : std_logic_vector(c_MAX_CHANNELS-1 downto 0) := (others => '0');
+  signal acc_ctl_freeze_arr : std_logic_vector(c_MAX_CHANNELS-1 downto 0) := (others => '0');
 
   -----------------------------
   -- Set-point RAM signals
   -----------------------------
-  signal sp_pos_ram_addr      : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
-  signal sp_pos_ram_data      : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal sps_ram_bank_adr       : std_logic_vector(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal sps_ram_bank_data_dat  : std_logic_vector(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
 
   -- Gain array
-  signal gain_arr             : t_fofb_processing_gain_arr(g_CHANNELS-1 downto 0);
-  signal wb_gain_arr          : t_fofb_processing_wb_gain_arr(c_MAX_CHANNELS-1 downto 0) := (others => (others => '0'));
+  signal gain_arr         : t_fofb_processing_gain_arr(g_CHANNELS-1 downto 0);
+  signal acc_gain_val_arr : t_fofb_processing_wb_gain_arr(c_MAX_CHANNELS-1 downto 0) := (others => (others => '0'));
 
   -----------------------------
   -- Coefficients RAM signals
   -----------------------------
-  signal coeff_ram_addr_arr      : t_arr_coeff_ram_addr(c_MAX_CHANNELS-1 downto 0);
-  signal coeff_ram_data_arr      : t_arr_coeff_ram_data(c_MAX_CHANNELS-1 downto 0);
+  signal coeff_ram_addr_arr : t_arr_coeff_ram_addr(c_MAX_CHANNELS-1 downto 0);
+  signal coeff_ram_data_arr : t_arr_coeff_ram_data(c_MAX_CHANNELS-1 downto 0);
 
   -----------------------------
   -- Output saturation signals
   -----------------------------
-  signal sp_max_arr              : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
-  signal sp_min_arr              : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
-  signal wb_sp_max_arr           : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
-  signal wb_sp_min_arr           : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+  signal sp_max_arr             : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+  signal sp_min_arr             : t_fofb_processing_sp_arr(g_CHANNELS-1 downto 0);
+  signal sp_limits_max_val_arr  : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+  signal sp_limits_min_val_arr  : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+
+  -----------------------------
+  -- Output decimation signals
+  -----------------------------
+  signal sp_decim_ratio_arr     : t_fofb_processing_sp_decim_ratio_arr(g_CHANNELS-1 downto 0);
+  signal sp_decim_arr           : t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+  signal sp_decim_ratio_val_arr : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
+  signal sp_decim_data_val_arr  : t_fofb_processing_wb_sp_arr(c_MAX_CHANNELS-1 downto 0);
 
   -----------------------------
   -- Loop interlock signals
   -----------------------------
-  signal loop_intlk_src_en            : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
-  signal loop_intlk_state_clr         : std_logic;
-  signal loop_intlk_state             : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
-  signal loop_intlk_distort_limit     : unsigned(g_BPM_POS_INT_WIDTH-1 downto 0);
-  signal loop_intlk_min_num_meas      : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
-  signal orb_distort_limit_val        : std_logic_vector(31 downto 0);
-  signal min_num_pkts_val             : std_logic_vector(31 downto 0);
+  signal loop_intlk_src_en                : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+  signal loop_intlk_ctl_sta_clr           : std_logic;
+  signal loop_intlk_sta                   : std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
+  signal loop_intlk_distort_limit         : unsigned(g_BPM_POS_INT_WIDTH-1 downto 0);
+  signal loop_intlk_min_num_meas          : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal loop_intlk_orb_distort_limit_val : std_logic_vector(31 downto 0);
+  signal loop_intlk_min_num_pkts_val      : std_logic_vector(31 downto 0);
 
   -----------------------------
   -- Wishbone slave adapter signals/structures
@@ -195,6 +218,48 @@ architecture rtl of xwb_fofb_processing is
 
 begin
 
+  cmp_fofb_processing: fofb_processing
+    generic map (
+      g_COEFF_INT_WIDTH               => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH              => g_COEFF_FRAC_WIDTH,
+      g_BPM_POS_INT_WIDTH             => g_BPM_POS_INT_WIDTH,
+      g_BPM_POS_FRAC_WIDTH            => g_BPM_POS_FRAC_WIDTH,
+      g_DOT_PROD_ACC_EXTRA_WIDTH      => g_DOT_PROD_ACC_EXTRA_WIDTH,
+      g_DOT_PROD_MUL_PIPELINE_STAGES  => g_DOT_PROD_MUL_PIPELINE_STAGES,
+      g_DOT_PROD_ACC_PIPELINE_STAGES  => g_DOT_PROD_ACC_PIPELINE_STAGES,
+      g_ACC_GAIN_MUL_PIPELINE_STAGES  => g_ACC_GAIN_MUL_PIPELINE_STAGES,
+      g_USE_MOVING_AVG                => g_USE_MOVING_AVG,
+      g_CHANNELS                      => g_CHANNELS
+    )
+    port map (
+      clk_i                           => clk_i,
+      rst_n_i                         => rst_n_i,
+      busy_o                          => busy_o,
+      bpm_pos_i                       => bpm_pos_i,
+      bpm_pos_index_i                 => bpm_pos_index_i,
+      bpm_pos_valid_i                 => bpm_pos_valid_i,
+      bpm_time_frame_end_i            => bpm_time_frame_end_i,
+      coeff_ram_addr_arr_o            => coeff_ram_addr_arr(g_CHANNELS-1 downto 0),
+      coeff_ram_data_arr_i            => coeff_ram_data_arr(g_CHANNELS-1 downto 0),
+      sp_pos_ram_addr_o               => sps_ram_bank_adr,
+      sp_pos_ram_data_i               => sps_ram_bank_data_dat,
+      gain_arr_i                      => gain_arr(g_CHANNELS-1 downto 0),
+      clear_acc_arr_i                 => acc_ctl_clear_arr(g_CHANNELS-1 downto 0),
+      freeze_acc_arr_i                => acc_ctl_freeze_arr(g_CHANNELS-1 downto 0),
+      sp_max_arr_i                    => sp_max_arr,
+      sp_min_arr_i                    => sp_min_arr,
+      sp_arr_o                        => sp_arr_o,
+      sp_valid_arr_o                  => sp_valid_arr_o,
+      sp_decim_ratio_arr_i            => sp_decim_ratio_arr,
+      sp_decim_arr_o                  => sp_decim_arr,
+      sp_decim_valid_arr_o            => sp_decim_valid_arr_o,
+      loop_intlk_src_en_i             => loop_intlk_src_en,
+      loop_intlk_state_clr_i          => loop_intlk_ctl_sta_clr,
+      loop_intlk_state_o              => loop_intlk_sta,
+      loop_intlk_distort_limit_i      => loop_intlk_distort_limit,
+      loop_intlk_min_num_meas_i       => loop_intlk_min_num_meas
+    );
+
   -----------------------------
   -- Insert extra Wishbone registering stage for ease timing.
   -- It effectively cuts the bandwidth in half!
@@ -202,274 +267,230 @@ begin
   gen_with_extra_wb_reg : if g_WITH_EXTRA_WB_REG generate
     cmp_register_link : xwb_register_link -- puts a register of delay between crossbars
       port map (
-        clk_sys_i                => clk_i,
-        rst_n_i                  => rst_n_i,
-        slave_i                  => wb_slave_in_reg0(0),
-        slave_o                  => wb_slave_out_reg0(0),
-        master_i                 => wb_slave_out(0),
-        master_o                 => wb_slave_in(0)
+        clk_sys_i => clk_i,
+        rst_n_i   => rst_n_i,
+        slave_i   => wb_slave_in_reg0(0),
+        slave_o   => wb_slave_out_reg0(0),
+        master_i  => wb_slave_out(0),
+        master_o  => wb_slave_in(0)
       );
 
-      wb_slave_in_reg0(0)        <= wb_slv_i;
-      wb_slv_o                   <= wb_slave_out_reg0(0);
+      wb_slave_in_reg0(0) <= wb_slv_i;
+      wb_slv_o            <= wb_slave_out_reg0(0);
     end generate;
 
   gen_without_extra_wb_reg : if not g_WITH_EXTRA_WB_REG generate
     -- External master connection
-    wb_slave_in(0)           <= wb_slv_i;
-    wb_slv_o                 <= wb_slave_out(0);
+    wb_slave_in(0)  <= wb_slv_i;
+    wb_slv_o        <= wb_slave_out(0);
   end generate;
-
-  cmp_fofb_processing: fofb_processing
-    generic map (
-      g_COEFF_INT_WIDTH              => g_COEFF_INT_WIDTH,
-      g_COEFF_FRAC_WIDTH             => g_COEFF_FRAC_WIDTH,
-      g_BPM_POS_INT_WIDTH            => g_BPM_POS_INT_WIDTH,
-      g_BPM_POS_FRAC_WIDTH           => g_BPM_POS_FRAC_WIDTH,
-      g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
-      g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
-      g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
-      g_ACC_GAIN_MUL_PIPELINE_STAGES => g_ACC_GAIN_MUL_PIPELINE_STAGES,
-      g_USE_MOVING_AVG               => g_USE_MOVING_AVG,
-      g_CHANNELS                     => g_CHANNELS
-    )
-    port map (
-      clk_i                        => clk_i,
-      rst_n_i                      => rst_n_i,
-
-      busy_o                       => busy_o,
-
-      bpm_pos_i                    => bpm_pos_i,
-      bpm_pos_index_i              => bpm_pos_index_i,
-      bpm_pos_valid_i              => bpm_pos_valid_i,
-      bpm_time_frame_end_i         => bpm_time_frame_end_i,
-
-      coeff_ram_addr_arr_o         => coeff_ram_addr_arr(g_CHANNELS-1 downto 0),
-      coeff_ram_data_arr_i         => coeff_ram_data_arr(g_CHANNELS-1 downto 0),
-
-      sp_pos_ram_addr_o            => sp_pos_ram_addr,
-      sp_pos_ram_data_i            => sp_pos_ram_data,
-
-      gain_arr_i                   => gain_arr(g_CHANNELS-1 downto 0),
-
-      clear_acc_arr_i              => clear_acc_arr(g_CHANNELS-1 downto 0),
-      freeze_acc_arr_i             => freeze_acc_arr(g_CHANNELS-1 downto 0),
-
-      sp_max_arr_i                 => sp_max_arr,
-      sp_min_arr_i                 => sp_min_arr,
-
-      sp_arr_o                     => sp_arr_o,
-      sp_valid_arr_o               => sp_valid_arr_o,
-
-      loop_intlk_src_en_i          => loop_intlk_src_en,
-      loop_intlk_state_clr_i       => loop_intlk_state_clr,
-      loop_intlk_state_o           => loop_intlk_state,
-      loop_intlk_distort_limit_i   => loop_intlk_distort_limit,
-      loop_intlk_min_num_meas_i    => loop_intlk_min_num_meas
-    );
 
   -----------------------------
   -- Slave adapter for Wishbone Register Interface
   -----------------------------
   cmp_slave_adapter : wb_slave_adapter
     generic map (
-      g_master_use_struct        => true,
-      g_master_mode              => PIPELINED,
-      g_master_granularity       => WORD,
-      g_slave_use_struct         => false,
-      g_slave_mode               => g_INTERFACE_MODE,
-      g_slave_granularity        => g_ADDRESS_GRANULARITY
+      g_MASTER_USE_STRUCT   => true,
+      g_MASTER_MODE         => PIPELINED,
+      -- TODO: it seems that using cheby without wbgen compatibility requires
+      -- g_MASTER_GRANULARITY to be byte
+      g_MASTER_GRANULARITY  => BYTE,
+      g_SLAVE_USE_STRUCT    => false,
+      g_SLAVE_MODE          => g_INTERFACE_MODE,
+      g_SLAVE_GRANULARITY   => g_ADDRESS_GRANULARITY
     )
     port map (
-      clk_sys_i                  => clk_i,
-      rst_n_i                    => rst_n_i,
-      master_i                   => wb_slv_adp_in,
-      master_o                   => wb_slv_adp_out,
-      sl_adr_i                   => resized_addr,
-      sl_dat_i                   => wb_slave_in(0).dat,
-      sl_sel_i                   => wb_slave_in(0).sel,
-      sl_cyc_i                   => wb_slave_in(0).cyc,
-      sl_stb_i                   => wb_slave_in(0).stb,
-      sl_we_i                    => wb_slave_in(0).we,
-      sl_dat_o                   => wb_slave_out(0).dat,
-      sl_ack_o                   => wb_slave_out(0).ack,
-      sl_rty_o                   => wb_slave_out(0).rty,
-      sl_err_o                   => wb_slave_out(0).err,
-      sl_stall_o                 => wb_slave_out(0).stall
+      clk_sys_i             => clk_i,
+      rst_n_i               => rst_n_i,
+      master_i              => wb_slv_adp_in,
+      master_o              => wb_slv_adp_out,
+      sl_adr_i              => resized_addr,
+      sl_dat_i              => wb_slave_in(0).dat,
+      sl_sel_i              => wb_slave_in(0).sel,
+      sl_cyc_i              => wb_slave_in(0).cyc,
+      sl_stb_i              => wb_slave_in(0).stb,
+      sl_we_i               => wb_slave_in(0).we,
+      sl_dat_o              => wb_slave_out(0).dat,
+      sl_ack_o              => wb_slave_out(0).ack,
+      sl_rty_o              => wb_slave_out(0).rty,
+      sl_err_o              => wb_slave_out(0).err,
+      sl_stall_o            => wb_slave_out(0).stall
     );
-    -- By doing this zeroing we avoid the issue related to BYTE -> WORD  conversion
-    -- slave addressing (possibly performed by the slave adapter component)
-    -- in which a bit in the MSB of the peripheral addressing part (31 downto c_PERIPH_ADDR_SIZE in our case)
-    -- is shifted to the internal register adressing part (c_PERIPH_ADDR_SIZE-1 downto 0 in our case).
-    -- Therefore, possibly changing the these bits!
-    resized_addr(c_PERIPH_ADDR_SIZE-1 downto 0)
-                                 <= wb_slave_in(0).adr(c_PERIPH_ADDR_SIZE-1 downto 0);
-    resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
-                                 <= (others => '0');
+
+    gen_wb_slave_in_addr_conn : if g_ADDRESS_GRANULARITY = WORD generate
+      -- By doing this zeroing we avoid the issue related to BYTE -> WORD  conversion
+      -- slave addressing (possibly performed by the slave adapter component)
+      -- in which a bit in the MSB of the peripheral addressing part (31 downto c_PERIPH_ADDR_SIZE in our case)
+      -- is shifted to the internal register adressing part (c_PERIPH_ADDR_SIZE-1 downto 0 in our case).
+      -- Therefore, possibly changing the these bits!
+      resized_addr(c_PERIPH_ADDR_SIZE-1 downto 0)
+                                   <= wb_slave_in(0).adr(c_PERIPH_ADDR_SIZE-1 downto 0);
+      resized_addr(c_WISHBONE_ADDRESS_WIDTH-1 downto c_PERIPH_ADDR_SIZE)
+                                   <= (others => '0');
+    else generate
+      resized_addr <= wb_slave_in(0).adr;
+    end generate;
+
 
   gen_wb_conn: for i in 0 to g_CHANNELS-1
   generate
     -- fixed-point values are aligned to the left
-    gain_arr(i) <= signed(wb_gain_arr(i)(c_FOFB_WB_GAIN_WIDTH-1 downto c_FOFB_WB_GAIN_WIDTH-c_FOFB_GAIN_WIDTH));
+    gain_arr(i) <= signed(acc_gain_val_arr(i)(c_FOFB_WB_GAIN_WIDTH-1 downto c_FOFB_WB_GAIN_WIDTH-c_FOFB_GAIN_WIDTH));
 
-    sp_max_arr(i) <= signed(wb_sp_max_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
-    sp_min_arr(i) <= signed(wb_sp_min_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
+    sp_max_arr(i) <= signed(sp_limits_max_val_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
+    sp_min_arr(i) <= signed(sp_limits_min_val_arr(i)(c_FOFB_SP_WIDTH-1 downto 0));
+
+    -- TODO: sp_decim_ratio_val_arr should be saturated at c_SP_DECIM_RATIO_MAX_CTE
+    sp_decim_ratio_arr(i) <= to_integer(unsigned(sp_decim_ratio_val_arr(i)));
+    sp_decim_data_val_arr(i) <= std_logic_vector(sp_decim_arr(i));
   end generate gen_wb_conn;
 
-  loop_intlk_distort_limit <= unsigned(orb_distort_limit_val(loop_intlk_distort_limit'left downto 0));
+  loop_intlk_distort_limit <= unsigned(loop_intlk_orb_distort_limit_val(loop_intlk_distort_limit'left downto 0));
   -- Each DCC packet has 2 measurements
-  loop_intlk_min_num_meas <= shift_left(unsigned(min_num_pkts_val(loop_intlk_min_num_meas'left downto 0)), 1);
+  loop_intlk_min_num_meas <= shift_left(unsigned(loop_intlk_min_num_pkts_val(loop_intlk_min_num_meas'left downto 0)), 1);
 
   cmp_wb_fofb_processing_regs: entity work.wb_fofb_processing_regs
     port map (
-      rst_n_i                                                         => rst_n_i,
-      clk_sys_i                                                       => clk_i,
-      wb_adr_i                                                        => wb_slv_adp_out.adr(12 downto 0),
-      wb_dat_i                                                        => wb_slv_adp_out.dat(31 downto 0),
-      wb_dat_o                                                        => wb_slv_adp_in.dat(31 downto 0),
-      wb_cyc_i                                                        => wb_slv_adp_out.cyc,
-      wb_sel_i                                                        => wb_slv_adp_out.sel(3 downto 0),
-      wb_stb_i                                                        => wb_slv_adp_out.stb,
-      wb_we_i                                                         => wb_slv_adp_out.we,
-      wb_ack_o                                                        => wb_slv_adp_in.ack,
-      wb_stall_o                                                      => wb_slv_adp_in.stall,
-      wb_fofb_processing_regs_clk_i                                   => clk_i,
-      wb_fofb_processing_regs_coeffs_fixed_point_pos_val_i            => c_COEFF_FIXED_POINT_POS_VAL,
-      wb_fofb_processing_regs_accs_gains_fixed_point_pos_val_i        => c_GAIN_FIXED_POINT_POS_VAL,
-      wb_fofb_processing_regs_acc_gain_0_val_o                        => wb_gain_arr(0),
-      wb_fofb_processing_regs_acc_ctl_0_clear_o                       => clear_acc_arr(0),
-      wb_fofb_processing_regs_acc_ctl_0_freeze_o                      => freeze_acc_arr(0),
-      wb_fofb_processing_regs_acc_gain_1_val_o                        => wb_gain_arr(1),
-      wb_fofb_processing_regs_acc_ctl_1_clear_o                       => clear_acc_arr(1),
-      wb_fofb_processing_regs_acc_ctl_1_freeze_o                      => freeze_acc_arr(1),
-      wb_fofb_processing_regs_acc_gain_2_val_o                        => wb_gain_arr(2),
-      wb_fofb_processing_regs_acc_ctl_2_clear_o                       => clear_acc_arr(2),
-      wb_fofb_processing_regs_acc_ctl_2_freeze_o                      => freeze_acc_arr(2),
-      wb_fofb_processing_regs_acc_gain_3_val_o                        => wb_gain_arr(3),
-      wb_fofb_processing_regs_acc_ctl_3_clear_o                       => clear_acc_arr(3),
-      wb_fofb_processing_regs_acc_ctl_3_freeze_o                      => freeze_acc_arr(3),
-      wb_fofb_processing_regs_acc_gain_4_val_o                        => wb_gain_arr(4),
-      wb_fofb_processing_regs_acc_ctl_4_clear_o                       => clear_acc_arr(4),
-      wb_fofb_processing_regs_acc_ctl_4_freeze_o                      => freeze_acc_arr(4),
-      wb_fofb_processing_regs_acc_gain_5_val_o                        => wb_gain_arr(5),
-      wb_fofb_processing_regs_acc_ctl_5_clear_o                       => clear_acc_arr(5),
-      wb_fofb_processing_regs_acc_ctl_5_freeze_o                      => freeze_acc_arr(5),
-      wb_fofb_processing_regs_acc_gain_6_val_o                        => wb_gain_arr(6),
-      wb_fofb_processing_regs_acc_ctl_6_clear_o                       => clear_acc_arr(6),
-      wb_fofb_processing_regs_acc_ctl_6_freeze_o                      => freeze_acc_arr(6),
-      wb_fofb_processing_regs_acc_gain_7_val_o                        => wb_gain_arr(7),
-      wb_fofb_processing_regs_acc_ctl_7_clear_o                       => clear_acc_arr(7),
-      wb_fofb_processing_regs_acc_ctl_7_freeze_o                      => freeze_acc_arr(7),
-      wb_fofb_processing_regs_acc_gain_8_val_o                        => wb_gain_arr(8),
-      wb_fofb_processing_regs_acc_ctl_8_clear_o                       => clear_acc_arr(8),
-      wb_fofb_processing_regs_acc_ctl_8_freeze_o                      => freeze_acc_arr(8),
-      wb_fofb_processing_regs_acc_gain_9_val_o                        => wb_gain_arr(9),
-      wb_fofb_processing_regs_acc_ctl_9_clear_o                       => clear_acc_arr(9),
-      wb_fofb_processing_regs_acc_ctl_9_freeze_o                      => freeze_acc_arr(9),
-      wb_fofb_processing_regs_acc_gain_10_val_o                       => wb_gain_arr(10),
-      wb_fofb_processing_regs_acc_ctl_10_clear_o                      => clear_acc_arr(10),
-      wb_fofb_processing_regs_acc_ctl_10_freeze_o                     => freeze_acc_arr(10),
-      wb_fofb_processing_regs_acc_gain_11_val_o                       => wb_gain_arr(11),
-      wb_fofb_processing_regs_acc_ctl_11_clear_o                      => clear_acc_arr(11),
-      wb_fofb_processing_regs_acc_ctl_11_freeze_o                     => freeze_acc_arr(11),
-      wb_fofb_processing_regs_sp_max_0_val_o                          => wb_sp_max_arr(0),
-      wb_fofb_processing_regs_sp_min_0_val_o                          => wb_sp_min_arr(0),
-      wb_fofb_processing_regs_sp_max_1_val_o                          => wb_sp_max_arr(1),
-      wb_fofb_processing_regs_sp_min_1_val_o                          => wb_sp_min_arr(1),
-      wb_fofb_processing_regs_sp_max_2_val_o                          => wb_sp_max_arr(2),
-      wb_fofb_processing_regs_sp_min_2_val_o                          => wb_sp_min_arr(2),
-      wb_fofb_processing_regs_sp_max_3_val_o                          => wb_sp_max_arr(3),
-      wb_fofb_processing_regs_sp_min_3_val_o                          => wb_sp_min_arr(3),
-      wb_fofb_processing_regs_sp_max_4_val_o                          => wb_sp_max_arr(4),
-      wb_fofb_processing_regs_sp_min_4_val_o                          => wb_sp_min_arr(4),
-      wb_fofb_processing_regs_sp_max_5_val_o                          => wb_sp_max_arr(5),
-      wb_fofb_processing_regs_sp_min_5_val_o                          => wb_sp_min_arr(5),
-      wb_fofb_processing_regs_sp_max_6_val_o                          => wb_sp_max_arr(6),
-      wb_fofb_processing_regs_sp_min_6_val_o                          => wb_sp_min_arr(6),
-      wb_fofb_processing_regs_sp_max_7_val_o                          => wb_sp_max_arr(7),
-      wb_fofb_processing_regs_sp_min_7_val_o                          => wb_sp_min_arr(7),
-      wb_fofb_processing_regs_sp_max_8_val_o                          => wb_sp_max_arr(8),
-      wb_fofb_processing_regs_sp_min_8_val_o                          => wb_sp_min_arr(8),
-      wb_fofb_processing_regs_sp_max_9_val_o                          => wb_sp_max_arr(9),
-      wb_fofb_processing_regs_sp_min_9_val_o                          => wb_sp_min_arr(9),
-      wb_fofb_processing_regs_sp_max_10_val_o                         => wb_sp_max_arr(10),
-      wb_fofb_processing_regs_sp_min_10_val_o                         => wb_sp_min_arr(10),
-      wb_fofb_processing_regs_sp_max_11_val_o                         => wb_sp_max_arr(11),
-      wb_fofb_processing_regs_sp_min_11_val_o                         => wb_sp_min_arr(11),
-      wb_fofb_processing_regs_coeffs_ram_bank_0_addr_i                => coeff_ram_addr_arr(0),
-      wb_fofb_processing_regs_coeffs_ram_bank_0_data_o                => coeff_ram_data_arr(0),
-      wb_fofb_processing_regs_coeffs_ram_bank_0_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_0_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_0_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_1_addr_i                => coeff_ram_addr_arr(1),
-      wb_fofb_processing_regs_coeffs_ram_bank_1_data_o                => coeff_ram_data_arr(1),
-      wb_fofb_processing_regs_coeffs_ram_bank_1_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_1_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_1_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_2_addr_i                => coeff_ram_addr_arr(2),
-      wb_fofb_processing_regs_coeffs_ram_bank_2_data_o                => coeff_ram_data_arr(2),
-      wb_fofb_processing_regs_coeffs_ram_bank_2_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_2_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_2_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_3_addr_i                => coeff_ram_addr_arr(3),
-      wb_fofb_processing_regs_coeffs_ram_bank_3_data_o                => coeff_ram_data_arr(3),
-      wb_fofb_processing_regs_coeffs_ram_bank_3_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_3_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_3_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_4_addr_i                => coeff_ram_addr_arr(4),
-      wb_fofb_processing_regs_coeffs_ram_bank_4_data_o                => coeff_ram_data_arr(4),
-      wb_fofb_processing_regs_coeffs_ram_bank_4_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_4_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_4_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_5_addr_i                => coeff_ram_addr_arr(5),
-      wb_fofb_processing_regs_coeffs_ram_bank_5_data_o                => coeff_ram_data_arr(5),
-      wb_fofb_processing_regs_coeffs_ram_bank_5_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_5_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_5_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_6_addr_i                => coeff_ram_addr_arr(6),
-      wb_fofb_processing_regs_coeffs_ram_bank_6_data_o                => coeff_ram_data_arr(6),
-      wb_fofb_processing_regs_coeffs_ram_bank_6_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_6_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_6_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_7_addr_i                => coeff_ram_addr_arr(7),
-      wb_fofb_processing_regs_coeffs_ram_bank_7_data_o                => coeff_ram_data_arr(7),
-      wb_fofb_processing_regs_coeffs_ram_bank_7_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_7_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_7_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_8_addr_i                => coeff_ram_addr_arr(8),
-      wb_fofb_processing_regs_coeffs_ram_bank_8_data_o                => coeff_ram_data_arr(8),
-      wb_fofb_processing_regs_coeffs_ram_bank_8_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_8_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_8_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_9_addr_i                => coeff_ram_addr_arr(9),
-      wb_fofb_processing_regs_coeffs_ram_bank_9_data_o                => coeff_ram_data_arr(9),
-      wb_fofb_processing_regs_coeffs_ram_bank_9_rd_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_9_data_i                => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_9_wr_i                  => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_10_addr_i               => coeff_ram_addr_arr(10),
-      wb_fofb_processing_regs_coeffs_ram_bank_10_data_o               => coeff_ram_data_arr(10),
-      wb_fofb_processing_regs_coeffs_ram_bank_10_rd_i                 => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_10_data_i               => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_10_wr_i                 => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_11_addr_i               => coeff_ram_addr_arr(11),
-      wb_fofb_processing_regs_coeffs_ram_bank_11_data_o               => coeff_ram_data_arr(11),
-      wb_fofb_processing_regs_coeffs_ram_bank_11_rd_i                 => '0',
-      wb_fofb_processing_regs_coeffs_ram_bank_11_data_i               => (others => '0'),
-      wb_fofb_processing_regs_coeffs_ram_bank_11_wr_i                 => '0',
-      wb_fofb_processing_regs_setpoints_ram_bank_addr_i               => sp_pos_ram_addr,
-      wb_fofb_processing_regs_setpoints_ram_bank_data_o               => sp_pos_ram_data,
-      wb_fofb_processing_regs_setpoints_ram_bank_rd_i                 => '0',
-      wb_fofb_processing_regs_setpoints_ram_bank_data_i               => (others => '0'),
-      wb_fofb_processing_regs_setpoints_ram_bank_wr_i                 => '0',
-      wb_fofb_processing_regs_loop_intlk_src_en_ctl_orb_distort_en_o  => loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID),
-      wb_fofb_processing_regs_loop_intlk_src_en_ctl_packet_loss_en_o  => loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
-      wb_fofb_processing_regs_loop_intlk_ctl_clr_o                    => loop_intlk_state_clr,
-      wb_fofb_processing_regs_loop_intlk_sta_orb_distort_i            => loop_intlk_state(c_FOFB_LOOP_INTLK_DISTORT_ID),
-      wb_fofb_processing_regs_loop_intlk_sta_packet_loss_i            => loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
-      wb_fofb_processing_regs_orb_distort_limit_val_o                 => orb_distort_limit_val,
-      wb_fofb_processing_regs_min_num_pkts_val_o                      => min_num_pkts_val
+      rst_n_i                             => rst_n_i,
+      clk_i                               => clk_i,
+      wb_i                                => wb_slv_adp_out,
+      wb_o                                => wb_slv_adp_in,
+      fixed_point_pos_coeff_val_i         => c_COEFF_FIXED_POINT_POS_VAL,
+      fixed_point_pos_accs_gains_val_i    => c_GAIN_FIXED_POINT_POS_VAL,
+      loop_intlk_ctl_sta_clr_o            => loop_intlk_ctl_sta_clr,
+      loop_intlk_ctl_src_en_orb_distort_o => loop_intlk_src_en(c_FOFB_LOOP_INTLK_DISTORT_ID),
+      loop_intlk_ctl_src_en_packet_loss_o => loop_intlk_src_en(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
+      loop_intlk_sta_orb_distort_i        => loop_intlk_sta(c_FOFB_LOOP_INTLK_DISTORT_ID),
+      loop_intlk_sta_packet_loss_i        => loop_intlk_sta(c_FOFB_LOOP_INTLK_PKT_LOSS_ID),
+      loop_intlk_orb_distort_limit_val_o  => loop_intlk_orb_distort_limit_val,
+      loop_intlk_min_num_pkts_val_o       => loop_intlk_min_num_pkts_val,
+      sp_decim_ratio_max_cte_i            => c_SP_DECIM_RATIO_MAX_CTE,
+      sps_ram_bank_adr_i                  => sps_ram_bank_adr,
+      sps_ram_bank_data_rd_i              => '0',
+      sps_ram_bank_data_dat_o             => sps_ram_bank_data_dat,
+      ch_0_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(0),
+      ch_0_coeff_ram_bank_data_rd_i       => '0',
+      ch_0_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(0),
+      ch_0_acc_ctl_clear_o                => acc_ctl_clear_arr(0),
+      ch_0_acc_ctl_freeze_o               => acc_ctl_freeze_arr(0),
+      ch_0_acc_gain_val_o                 => acc_gain_val_arr(0),
+      ch_0_sp_limits_max_val_o            => sp_limits_max_val_arr(0),
+      ch_0_sp_limits_min_val_o            => sp_limits_min_val_arr(0),
+      ch_0_sp_decim_data_val_i            => sp_decim_data_val_arr(0),
+      ch_0_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(0),
+      ch_1_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(1),
+      ch_1_coeff_ram_bank_data_rd_i       => '0',
+      ch_1_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(1),
+      ch_1_acc_ctl_clear_o                => acc_ctl_clear_arr(1),
+      ch_1_acc_ctl_freeze_o               => acc_ctl_freeze_arr(1),
+      ch_1_acc_gain_val_o                 => acc_gain_val_arr(1),
+      ch_1_sp_limits_max_val_o            => sp_limits_max_val_arr(1),
+      ch_1_sp_limits_min_val_o            => sp_limits_min_val_arr(1),
+      ch_1_sp_decim_data_val_i            => sp_decim_data_val_arr(1),
+      ch_1_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(1),
+      ch_2_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(2),
+      ch_2_coeff_ram_bank_data_rd_i       => '0',
+      ch_2_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(2),
+      ch_2_acc_ctl_clear_o                => acc_ctl_clear_arr(2),
+      ch_2_acc_ctl_freeze_o               => acc_ctl_freeze_arr(2),
+      ch_2_acc_gain_val_o                 => acc_gain_val_arr(2),
+      ch_2_sp_limits_max_val_o            => sp_limits_max_val_arr(2),
+      ch_2_sp_limits_min_val_o            => sp_limits_min_val_arr(2),
+      ch_2_sp_decim_data_val_i            => sp_decim_data_val_arr(2),
+      ch_2_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(2),
+      ch_3_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(3),
+      ch_3_coeff_ram_bank_data_rd_i       => '0',
+      ch_3_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(3),
+      ch_3_acc_ctl_clear_o                => acc_ctl_clear_arr(3),
+      ch_3_acc_ctl_freeze_o               => acc_ctl_freeze_arr(3),
+      ch_3_acc_gain_val_o                 => acc_gain_val_arr(3),
+      ch_3_sp_limits_max_val_o            => sp_limits_max_val_arr(3),
+      ch_3_sp_limits_min_val_o            => sp_limits_min_val_arr(3),
+      ch_3_sp_decim_data_val_i            => sp_decim_data_val_arr(3),
+      ch_3_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(3),
+      ch_4_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(4),
+      ch_4_coeff_ram_bank_data_rd_i       => '0',
+      ch_4_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(4),
+      ch_4_acc_ctl_clear_o                => acc_ctl_clear_arr(4),
+      ch_4_acc_ctl_freeze_o               => acc_ctl_freeze_arr(4),
+      ch_4_acc_gain_val_o                 => acc_gain_val_arr(4),
+      ch_4_sp_limits_max_val_o            => sp_limits_max_val_arr(4),
+      ch_4_sp_limits_min_val_o            => sp_limits_min_val_arr(4),
+      ch_4_sp_decim_data_val_i            => sp_decim_data_val_arr(4),
+      ch_4_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(4),
+      ch_5_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(5),
+      ch_5_coeff_ram_bank_data_rd_i       => '0',
+      ch_5_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(5),
+      ch_5_acc_ctl_clear_o                => acc_ctl_clear_arr(5),
+      ch_5_acc_ctl_freeze_o               => acc_ctl_freeze_arr(5),
+      ch_5_acc_gain_val_o                 => acc_gain_val_arr(5),
+      ch_5_sp_limits_max_val_o            => sp_limits_max_val_arr(5),
+      ch_5_sp_limits_min_val_o            => sp_limits_min_val_arr(5),
+      ch_5_sp_decim_data_val_i            => sp_decim_data_val_arr(5),
+      ch_5_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(5),
+      ch_6_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(6),
+      ch_6_coeff_ram_bank_data_rd_i       => '0',
+      ch_6_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(6),
+      ch_6_acc_ctl_clear_o                => acc_ctl_clear_arr(6),
+      ch_6_acc_ctl_freeze_o               => acc_ctl_freeze_arr(6),
+      ch_6_acc_gain_val_o                 => acc_gain_val_arr(6),
+      ch_6_sp_limits_max_val_o            => sp_limits_max_val_arr(6),
+      ch_6_sp_limits_min_val_o            => sp_limits_min_val_arr(6),
+      ch_6_sp_decim_data_val_i            => sp_decim_data_val_arr(6),
+      ch_6_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(6),
+      ch_7_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(7),
+      ch_7_coeff_ram_bank_data_rd_i       => '0',
+      ch_7_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(7),
+      ch_7_acc_ctl_clear_o                => acc_ctl_clear_arr(7),
+      ch_7_acc_ctl_freeze_o               => acc_ctl_freeze_arr(7),
+      ch_7_acc_gain_val_o                 => acc_gain_val_arr(7),
+      ch_7_sp_limits_max_val_o            => sp_limits_max_val_arr(7),
+      ch_7_sp_limits_min_val_o            => sp_limits_min_val_arr(7),
+      ch_7_sp_decim_data_val_i            => sp_decim_data_val_arr(7),
+      ch_7_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(7),
+      ch_8_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(8),
+      ch_8_coeff_ram_bank_data_rd_i       => '0',
+      ch_8_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(8),
+      ch_8_acc_ctl_clear_o                => acc_ctl_clear_arr(8),
+      ch_8_acc_ctl_freeze_o               => acc_ctl_freeze_arr(8),
+      ch_8_acc_gain_val_o                 => acc_gain_val_arr(8),
+      ch_8_sp_limits_max_val_o            => sp_limits_max_val_arr(8),
+      ch_8_sp_limits_min_val_o            => sp_limits_min_val_arr(8),
+      ch_8_sp_decim_data_val_i            => sp_decim_data_val_arr(8),
+      ch_8_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(8),
+      ch_9_coeff_ram_bank_adr_i           => coeff_ram_addr_arr(9),
+      ch_9_coeff_ram_bank_data_rd_i       => '0',
+      ch_9_coeff_ram_bank_data_dat_o      => coeff_ram_data_arr(9),
+      ch_9_acc_ctl_clear_o                => acc_ctl_clear_arr(9),
+      ch_9_acc_ctl_freeze_o               => acc_ctl_freeze_arr(9),
+      ch_9_acc_gain_val_o                 => acc_gain_val_arr(9),
+      ch_9_sp_limits_max_val_o            => sp_limits_max_val_arr(9),
+      ch_9_sp_limits_min_val_o            => sp_limits_min_val_arr(9),
+      ch_9_sp_decim_data_val_i            => sp_decim_data_val_arr(9),
+      ch_9_sp_decim_ratio_val_o           => sp_decim_ratio_val_arr(9),
+      ch_10_coeff_ram_bank_adr_i          => coeff_ram_addr_arr(10),
+      ch_10_coeff_ram_bank_data_rd_i      => '0',
+      ch_10_coeff_ram_bank_data_dat_o     => coeff_ram_data_arr(10),
+      ch_10_acc_ctl_clear_o               => acc_ctl_clear_arr(10),
+      ch_10_acc_ctl_freeze_o              => acc_ctl_freeze_arr(10),
+      ch_10_acc_gain_val_o                => acc_gain_val_arr(10),
+      ch_10_sp_limits_max_val_o           => sp_limits_max_val_arr(10),
+      ch_10_sp_limits_min_val_o           => sp_limits_min_val_arr(10),
+      ch_10_sp_decim_data_val_i           => sp_decim_data_val_arr(10),
+      ch_10_sp_decim_ratio_val_o          => sp_decim_ratio_val_arr(10),
+      ch_11_coeff_ram_bank_adr_i          => coeff_ram_addr_arr(11),
+      ch_11_coeff_ram_bank_data_rd_i      => '0',
+      ch_11_coeff_ram_bank_data_dat_o     => coeff_ram_data_arr(11),
+      ch_11_acc_ctl_clear_o               => acc_ctl_clear_arr(11),
+      ch_11_acc_ctl_freeze_o              => acc_ctl_freeze_arr(11),
+      ch_11_acc_gain_val_o                => acc_gain_val_arr(11),
+      ch_11_sp_limits_max_val_o           => sp_limits_max_val_arr(11),
+      ch_11_sp_limits_min_val_o           => sp_limits_min_val_arr(11),
+      ch_11_sp_decim_data_val_i           => sp_decim_data_val_arr(11),
+      ch_11_sp_decim_ratio_val_o          => sp_decim_ratio_val_arr(11)
     );
 
-    dcc_p2p_en_o <= not loop_intlk_state(c_FOFB_LOOP_INTLK_PKT_LOSS_ID);
+    dcc_p2p_en_o <= not loop_intlk_sta(c_FOFB_LOOP_INTLK_PKT_LOSS_ID);
+    sp_decim_arr_o <= sp_decim_arr;
 
 end architecture rtl;

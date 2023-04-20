@@ -22,6 +22,8 @@
 --                                            mechanisms and orbit distortion
 --                                            loop interlocking
 -- 2022-11-04  2.2      guilherme.ricioli     Add packet loss loop interlocking
+-- 2023-03-01  2.3      guilherme.ricioli     Connected decimated setpoint
+--                                            signals
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -119,6 +121,16 @@ entity fofb_processing is
     -- Set-point valid array (for each channel)
     sp_valid_arr_o                 : out std_logic_vector(g_CHANNELS-1 downto 0);
 
+    -- Setpoint decimation ratio (for each channel)
+    -- 0 -> decimation at each new sample, 1 -> decimation at each 2 samples, and so on
+    sp_decim_ratio_arr_i           : in  t_fofb_processing_sp_decim_ratio_arr(g_CHANNELS-1 downto 0);
+
+    -- Decimated setpoint (for each channel)
+    sp_decim_arr_o                 : out t_fofb_processing_sp_decim_arr(g_CHANNELS-1 downto 0);
+
+    -- Decimated setpoint valid (for each channel)
+    sp_decim_valid_arr_o           : out std_logic_vector(g_CHANNELS-1 downto 0);
+
     -- Loop interlock sources enable
     loop_intlk_src_en_i            : in std_logic_vector(c_FOFB_LOOP_INTLK_TRIGS_WIDTH-1 downto 0);
 
@@ -163,6 +175,7 @@ begin
         g_GAIN_FRAC_WIDTH              => c_FOFB_GAIN_FRAC_WIDTH,
         g_SP_INT_WIDTH                 => c_FOFB_SP_INT_WIDTH,
         g_SP_FRAC_WIDTH                => c_FOFB_SP_FRAC_WIDTH,
+        g_SP_DECIM_MAX_RATIO           => c_FOFB_SP_DECIM_MAX_RATIO,
         g_DOT_PROD_ACC_EXTRA_WIDTH     => g_DOT_PROD_ACC_EXTRA_WIDTH,
         g_DOT_PROD_MUL_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
         g_DOT_PROD_ACC_PIPELINE_STAGES => g_DOT_PROD_ACC_PIPELINE_STAGES,
@@ -187,6 +200,9 @@ begin
         sp_min_i                       => sp_min_arr_i(i),
         sp_o                           => sp_arr_o(i),
         sp_valid_o                     => sp_valid_arr_o(i),
+        sp_decim_ratio_i               => sp_decim_ratio_arr_i(i),
+        sp_decim_o                     => sp_decim_arr_o(i),
+        sp_decim_valid_o               => sp_decim_valid_arr_o(i),
         loop_intlk_i                   => or loop_intlk_state
       );
   end generate;

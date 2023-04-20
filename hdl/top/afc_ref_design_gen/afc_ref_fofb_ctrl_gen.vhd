@@ -53,6 +53,8 @@ use work.pcie_cntr_axi_pkg.all;
 use work.fofb_ctrl_pkg.all;
 -- FOFC CC
 use work.fofb_cc_pkg.all;
+-- FOFB sys id
+use work.fofb_sys_id_pkg.all;
 -- RTM LAMP definitions
 use work.rtm_lamp_pkg.all;
 -- Dot product package
@@ -371,15 +373,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
     max_fp_p2p_gts : integer;
   end record;
 
-  type t_serialize_data_state is
-  (
-    IDLE,
-    DRIVE_X_DATA_OR_TIMEFRAME_END,
-    LOWER_VALID_X_DATA_OR_TIMEFRAME_END,
-    DRIVE_Y_DATA,
-    LOWER_VALID_Y_DATA
-  );
-
   function f_extract_gt_cfg(num_p2p : integer) return t_gt_cfg is
     variable rv : t_gt_cfg;
   begin
@@ -431,6 +424,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- FOFB CC
   constant c_NUM_FOFC_CC_CORES               : natural := 2;
 
+  -- SYS ID
+  constant c_NUM_SYS_ID_CORES                : natural := 1;
+
   constant c_BPMS                            : integer := 1;
   constant c_FAI_DW                          : integer := 16;
   constant c_DMUX                            : integer := 2;
@@ -475,6 +471,15 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   signal acq_dcc_fmc_packet                  : t_fofb_cc_packet;
   signal acq_dcc_fmc_valid                   : std_logic := '0';
+
+  -----------------------------------------------------------------------------
+  -- FOFB system identification signals
+  -----------------------------------------------------------------------------
+
+  signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal bpm_pos_flat_y_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- RTM signals
@@ -682,13 +687,14 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   constant c_ACQ_FIFO_SIZE                   : natural := 256;
 
-  -- Number of acquisition cores. Same as the number of DCC
-  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES;
+  -- Number of acquisition cores
+  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + c_NUM_SYS_ID_CORES;
 
   -- Acquisition core IDs
   constant c_ACQ_CORE_RTM_LAMP_ID            : natural := 0;
   constant c_ACQ_CORE_CC_FMC_OR_RTM_ID       : natural := 1;
   constant c_ACQ_CORE_CC_P2P_ID              : natural := 2;
+  constant c_ACQ_CORE_SYS_ID_ID              : natural := 3;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
@@ -708,9 +714,10 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- is unused and connecting it to the xwb_rtmlamp_ohwr external trigger input.
   constant c_SP_TRIG_RTM_LAMP_ID             : natural := 3;
   constant c_ACQ_DCC_ID                      : natural := 1;
+  constant c_ACQ_SYS_ID_ID                   : natural := 2;
 
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 2;
+  constant c_ACQ_NUM_CHANNELS                : natural := 3;
 
   constant c_FACQ_PARAMS_RTM_LAMP            : t_facq_chan_param := (
     width                                    => to_unsigned(512, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
@@ -724,10 +731,20 @@ architecture top of afc_ref_fofb_ctrl_gen is
     atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2)
   );
 
+  constant c_FACQ_PARAMS_SYS_ID              : t_facq_chan_param := (
+    -- NOTE: Altough 768 bits would be enough, using this value as width somehow
+    --       causes ACQ samples to be weirdly misaligned (see https://github.com/lnls-dig/infra-cores/issues/18).
+    --       This issue isn't manifested when we use 1024 bits.
+    width                                    => to_unsigned(1024, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
+    num_atoms                                => to_unsigned(32, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
+    atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2)
+  );
+
   constant c_FACQ_CHANNELS                   : t_facq_chan_param_array(c_ACQ_NUM_CHANNELS-1 downto 0) :=
   (
     c_ACQ_RTM_LAMP_ID       => c_FACQ_PARAMS_RTM_LAMP,
-    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC
+    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC,
+    c_ACQ_SYS_ID_ID         => c_FACQ_PARAMS_SYS_ID
   );
 
   signal acq_chan_array                      : t_facq_chan_array2d(c_ACQ_NUM_CORES-1 downto 0, c_ACQ_NUM_CHANNELS-1 downto 0);
@@ -757,6 +774,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_TRIG_MUX_RTM_LAMP_ID            : natural  := c_ACQ_CORE_RTM_LAMP_ID;
   constant c_TRIG_MUX_CC_FMC_ID              : natural  := c_ACQ_CORE_CC_FMC_OR_RTM_ID;
   constant c_TRIG_MUX_CC_P2P_ID              : natural  := c_ACQ_CORE_CC_P2P_ID;
+  constant c_TRIG_MUX_SYS_ID_ID              : natural  := c_ACQ_CORE_SYS_ID_ID;
 
   constant c_TRIG_MUX_NUM_CORES              : natural  := c_ACQ_NUM_CORES;
 
@@ -796,7 +814,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_FOFB_CC_P2P_ID                  : natural := 1;
   constant c_RTM_LAMP_ID                     : natural := 2;
   constant c_FOFB_PROCESSING_ID              : natural := 3;
-  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 1;
+  constant c_FOFB_SYS_ID_ID                  : natural := 4;
+  -- +2 for accounting for FOFB processing and FOFB system identification cores
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 2;
   constant c_RTM_LAMP_SDB                    : boolean := (g_RTM = "RTMLAMP");
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
@@ -804,7 +824,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
     c_FOFB_CC_FMC_OR_RTM_ID    => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,            true),
     c_FOFB_CC_P2P_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,            true),
     c_RTM_LAMP_ID              => f_sdb_auto_device(c_xwb_rtm_lamp_regs_sdb, c_RTM_LAMP_SDB),
-    c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,    true)
+    c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,    true),
+    c_FOFB_SYS_ID_ID           => f_sdb_auto_device(c_xwb_fofb_sys_id_regs_sdb,        true)
   );
 
   -----------------------------------------------------------------------------
@@ -1766,9 +1787,39 @@ begin
       bpm_time_frame_end_i           => fofb_proc_time_frame_end,
       sp_arr_o                       => fofb_sp_arr,
       sp_valid_arr_o                 => fofb_sp_valid_arr,
+      sp_decim_arr_o                 => open,
+      sp_decim_valid_arr_o           => open,
       dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
       wb_slv_i                       => user_wb_out(c_FOFB_PROCESSING_ID),
       wb_slv_o                       => user_wb_in(c_FOFB_PROCESSING_ID)
+    );
+
+  ----------------------------------------------------------------------
+  --                    FOFB SYSTEM IDENTIFICATION                    --
+  ----------------------------------------------------------------------
+
+  cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
+    generic map (
+      g_BPM_POS_INDEX_WIDTH => c_SP_COEFF_RAM_ADDR_WIDTH,
+      g_BPM_POS_WIDTH       => c_SP_POS_RAM_DATA_WIDTH,
+      g_MAX_NUM_BPM_POS     => c_MAX_NUM_P2P_BPM_POS/2,
+      g_INTERFACE_MODE      => PIPELINED,
+      g_ADDRESS_GRANULARITY => BYTE,
+      g_WITH_EXTRA_WB_REG   => false
+    )
+    port map (
+      clk_i                 => clk_sys,
+      rst_n_i               => clk_sys_rstn,
+      bpm_pos_i             => fofb_proc_bpm_pos,
+      bpm_pos_index_i       => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i       => fofb_proc_bpm_pos_valid,
+      bpm_pos_flat_clear_i  => or fofb_sp_valid_arr,
+      bpm_pos_flat_x_o      => bpm_pos_flat_x,
+      bpm_pos_flat_x_rcvd_o => bpm_pos_flat_x_rcvd,
+      bpm_pos_flat_y_o      => bpm_pos_flat_y,
+      bpm_pos_flat_y_rcvd_o => bpm_pos_flat_y_rcvd,
+      wb_slv_i              => user_wb_out(c_FOFB_SYS_ID_ID),
+      wb_slv_o              => user_wb_in(c_FOFB_SYS_ID_ID)
     );
 
   ----------------------------------------------------------------------
@@ -2091,6 +2142,9 @@ begin
   fs_clk_array(c_ACQ_CORE_RTM_LAMP_ID)        <= clk_sys;
   fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_ID)      <= clk_sys_rstn;
 
+  fs_clk_array(c_ACQ_CORE_SYS_ID_ID)          <= clk_sys;
+  fs_rst_n_array(c_ACQ_CORE_SYS_ID_ID)        <= clk_sys_rstn;
+
   gen_acq_clks : for i in 0 to c_ACQ_NUM_CORES-1 generate
 
     fs_ce_array(i)    <= '1';
@@ -2157,6 +2211,27 @@ begin
           std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid               <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
+
+  --------------------
+  -- ACQ Core 4
+  --------------------
+
+  -- SYS ID
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_ID).width)-1 downto 0) <=
+    std_logic_vector(to_unsigned(0, 288)) &                                                                                                                 -- [DEBUG] Padding with 0s (1023 downto 736)
+    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                             -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                         -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
+    -- TODO: These bits should be filled with channels 11-8, but they aren't instantiated yet
+    std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
+    std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
+    std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) &
+    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
+    std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
+    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
+    std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_sp_valid_arr;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
