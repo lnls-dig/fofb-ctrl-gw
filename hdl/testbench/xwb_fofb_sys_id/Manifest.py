@@ -7,8 +7,9 @@ files = [
 
 modules = {
     "local" : [
-        "../../ip_cores/general-cores",
         "../../ip_cores/CommsCtrlFPGA",
+        "../../ip_cores/general-cores",
+        "../../ip_cores/infra-cores",
         "../../modules",
         ],
 }
