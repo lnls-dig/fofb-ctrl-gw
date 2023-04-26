@@ -133,7 +133,6 @@ begin
   uut : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => c_BPM_POS_INDEX_WIDTH,
-      g_BPM_POS_WIDTH       => c_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => c_MAX_NUM_BPM_POS
     )
     port map (

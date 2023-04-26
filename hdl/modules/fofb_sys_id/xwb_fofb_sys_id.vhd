@@ -33,9 +33,6 @@ entity xwb_fofb_sys_id is
     -- Width of BPM position indexes
     g_BPM_POS_INDEX_WIDTH : natural := 9;
 
-    -- Width of BPM positions
-    g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
-
     -- Maximum number of BPM positions to flatenize
     g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2;
 
@@ -55,7 +52,7 @@ entity xwb_fofb_sys_id is
     bpm_pos_i             : in  signed(c_BPM_POS_WIDTH-1 downto 0);
 
     -- BPM position index
-    bpm_pos_index_i       : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+    bpm_pos_index_i       : in  unsigned(c_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- BPM position valid
     bpm_pos_valid_i       : in  std_logic;
@@ -107,7 +104,6 @@ begin
   cmp_x_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
-      g_BPM_POS_WIDTH       => g_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
     )
     port map (
@@ -128,7 +124,6 @@ begin
   cmp_y_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
-      g_BPM_POS_WIDTH       => g_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
     )
     port map (

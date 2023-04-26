@@ -53,7 +53,7 @@ architecture test of xwb_fofb_sys_id_tb is
 
   signal clk                  : std_logic := '0';
   signal rst_n                : std_logic := '0';
-  signal bpm_pos              : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal bpm_pos              : signed(c_BPM_POS_WIDTH-1 downto 0);
   signal bpm_pos_index        : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal bpm_pos_valid        : std_logic := '0';
   signal bpm_pos_flat_clear   : std_logic := '0';
@@ -196,7 +196,6 @@ begin
   uut : xwb_fofb_sys_id
     generic map (
       g_BPM_POS_INDEX_WIDTH => 9,
-      g_BPM_POS_WIDTH       => c_BPM_POS_WIDTH,
       g_MAX_NUM_BPM_POS     => c_MAX_NUM_BPM_POS,
       g_INTERFACE_MODE      => PIPELINED,
       g_ADDRESS_GRANULARITY => BYTE,

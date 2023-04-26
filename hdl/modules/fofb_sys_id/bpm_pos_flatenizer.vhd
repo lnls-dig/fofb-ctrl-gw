@@ -31,9 +31,6 @@ entity bpm_pos_flatenizer is
     -- Width of BPM position indexes
     g_BPM_POS_INDEX_WIDTH : natural := 9;
 
-    -- Width of BPM positions
-    g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
-
     -- Maximum number of BPM positions to flatenize
     g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2
   );
@@ -59,7 +56,7 @@ entity bpm_pos_flatenizer is
     bpm_pos_index_i       : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- BPM position
-    bpm_pos_i             : in signed(g_BPM_POS_WIDTH-1 downto 0);
+    bpm_pos_i             : in signed(c_BPM_POS_WIDTH-1 downto 0);
 
     -- BPM position valid
     bpm_pos_valid_i       : in std_logic;

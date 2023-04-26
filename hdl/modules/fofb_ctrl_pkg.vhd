@@ -600,7 +600,6 @@ package fofb_ctrl_pkg is
   component xwb_fofb_sys_id is
     generic (
       g_BPM_POS_INDEX_WIDTH : natural := 9;
-      g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
       g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2;
       g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;
       g_ADDRESS_GRANULARITY : t_wishbone_address_granularity := WORD;
@@ -609,7 +608,7 @@ package fofb_ctrl_pkg is
     port (
       clk_i                 : in  std_logic;
       rst_n_i               : in  std_logic;
-      bpm_pos_i             : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+      bpm_pos_i             : in  signed(c_BPM_POS_WIDTH-1 downto 0);
       bpm_pos_index_i       : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
       bpm_pos_valid_i       : in  std_logic;
       bpm_pos_flat_clear_i  : in  std_logic;
