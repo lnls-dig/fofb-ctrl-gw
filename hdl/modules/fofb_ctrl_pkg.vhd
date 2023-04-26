@@ -609,7 +609,7 @@ package fofb_ctrl_pkg is
       clk_i                 : in  std_logic;
       rst_n_i               : in  std_logic;
       bpm_pos_i             : in  signed(c_BPM_POS_WIDTH-1 downto 0);
-      bpm_pos_index_i       : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+      bpm_pos_index_i       : in  unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
       bpm_pos_valid_i       : in  std_logic;
       bpm_pos_flat_clear_i  : in  std_logic;
       bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);

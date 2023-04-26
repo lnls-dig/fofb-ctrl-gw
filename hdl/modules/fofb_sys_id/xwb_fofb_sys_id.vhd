@@ -52,7 +52,7 @@ entity xwb_fofb_sys_id is
     bpm_pos_i             : in  signed(c_BPM_POS_WIDTH-1 downto 0);
 
     -- BPM position index
-    bpm_pos_index_i       : in  unsigned(c_BPM_POS_INDEX_WIDTH-1 downto 0);
+    bpm_pos_index_i       : in  unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- BPM position valid
     bpm_pos_valid_i       : in  std_logic;
