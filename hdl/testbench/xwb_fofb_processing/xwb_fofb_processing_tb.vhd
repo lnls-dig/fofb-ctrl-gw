@@ -462,8 +462,8 @@ begin
 
         -- ########## computing expected dot product internal state ##########
         -- computing bpm position errors
-        bpm_x_err := bpm_x - sp_ram.get_sp_integer(i);
-        bpm_y_err := bpm_y - sp_ram.get_sp_integer(i + 256);
+        bpm_x_err := sp_ram.get_sp_integer(i) - bpm_x;
+        bpm_y_err := sp_ram.get_sp_integer(i + 256) - bpm_y;
 
         -- computing expected dot product internal state
         for j in 0 to g_CHANNELS-1
@@ -635,8 +635,8 @@ begin
 
       -- ########## computing expected dot product internal state ##########
       -- computing bpm position errors
-      bpm_x_err := bpm_x - sp_ram.get_sp_integer(0);
-      bpm_y_err := bpm_y - sp_ram.get_sp_integer(256);
+      bpm_x_err := sp_ram.get_sp_integer(0) - bpm_x;
+      bpm_y_err := sp_ram.get_sp_integer(256) - bpm_y;
 
       -- checking orbit distortion
       if abs(bpm_x_err) > g_ORB_DISTORT_LIMIT or
@@ -832,7 +832,7 @@ begin
 
         -- ########## computing expected dot product internal state ##########
         -- computing bpm position errors
-        bpm_x_err := bpm_x - sp_ram.get_sp_integer(0);
+        bpm_x_err := sp_ram.get_sp_integer(0) - bpm_x;
 
         -- computing expected dot product internal state
         for j in 0 to g_CHANNELS-1

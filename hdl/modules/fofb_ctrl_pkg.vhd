@@ -699,7 +699,7 @@ package fofb_ctrl_pkg is
   -- FOFB Processing
   constant c_xwb_fofb_processing_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
-    abi_ver_major => x"03",
+    abi_ver_major => x"04",
     abi_ver_minor => x"00",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)

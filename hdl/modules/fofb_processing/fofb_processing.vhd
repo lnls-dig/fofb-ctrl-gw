@@ -256,7 +256,7 @@ begin
         -- Add an extra clock cycle to ease timing for the subtraction
         -- operation between the received BPM position data and the orbit
         -- set-point
-        bpm_pos_err <= resize(bpm_pos_tmp - signed(sp_pos_ram_data_i), g_BPM_POS_INT_WIDTH + g_BPM_POS_FRAC_WIDTH + 1);
+        bpm_pos_err <= resize(signed(sp_pos_ram_data_i) - bpm_pos_tmp, g_BPM_POS_INT_WIDTH + g_BPM_POS_FRAC_WIDTH + 1);
         bpm_pos_err_valid <= bpm_pos_valid_tmp;
         bpm_time_frame_end <= bpm_time_frame_end_tmp;
         bpm_pos_err_index <= to_integer(bpm_index_tmp);
