@@ -41,12 +41,13 @@ architecture test of prbs_sp_distort_tb is
   signal prbs_rst_n                   : std_logic := '1';
   signal prbs_step_duration           : natural range 1 to 1024 := 1;
   signal prbs_lfsr_length             : natural range 2 to 32 := 32;
-  signal prbs_valid                   : std_logic;
+  signal prbs_iterate                 : std_logic := '0';
   signal sp                           : signed(c_SP_WIDTH-1 downto 0);
   signal sp_valid                     : std_logic := '0';
   signal distort_sp                   : signed(c_SP_WIDTH-1 downto 0);
   signal distort_sp_valid             : std_logic := '0';
   signal prbs                         : std_logic := '0';
+  signal prbs_valid                   : std_logic;
 begin
   f_gen_clk(100_000_000, clk);
 
@@ -70,10 +71,10 @@ begin
     for sp_val in -(2**(c_SP_WIDTH-1)) to 2**(c_SP_WIDTH-1)-1
     loop
       -- Iterate PRBS
-      prbs_valid <= '1';
+      prbs_iterate <= '1';
       f_wait_cycles(clk, 1);
-      prbs_valid <= '0';
-      f_wait_cycles(clk, 1);
+      prbs_iterate <= '0';
+      f_wait_clocked_signal(clk, prbs_valid, '1');
 
       -- Drive setpoint
       sp <= to_signed(sp_val, sp'length);
@@ -143,14 +144,15 @@ begin
       prbs_rst_n_i          => prbs_rst_n,
       prbs_step_duration_i  => prbs_step_duration,
       prbs_lfsr_length_i    => prbs_lfsr_length,
-      prbs_valid_i          => prbs_valid,
+      prbs_valid_i          => prbs_iterate,
       sp_i                  => sp,
       sp_valid_i            => sp_valid,
       distort_level_0_i     => c_DISTORT_LEVEL_0,
       distort_level_1_i     => c_DISTORT_LEVEL_1,
       distort_sp_o          => distort_sp,
       distort_sp_valid_o    => distort_sp_valid,
-      prbs_o                => prbs
+      prbs_o                => prbs,
+      prbs_valid_o          => prbs_valid
     );
 
 end architecture test;

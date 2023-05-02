@@ -82,7 +82,10 @@ entity prbs_sp_distort is
     distort_sp_valid_o    : out std_logic;
 
     -- PRBS signal for debug
-    prbs_o                : out std_logic
+    prbs_o                : out std_logic;
+
+    -- PRBS valid signal for debug
+    prbs_valid_o          : out std_logic
   );
 end entity prbs_sp_distort;
 
@@ -134,13 +137,13 @@ begin
     port map (
       clk_i           => clk_i,
       rst_n_i         => rst_n_i and prbs_rst_n_i,
-      en_i            => en_distort_i,
+      en_i            => '1',
       step_duration_i => prbs_step_duration_i,
       lfsr_length_i   => prbs_lfsr_length_i,
       valid_i         => prbs_valid_i,
       busy_o          => open,
       prbs_o          => prbs,
-      valid_o         => open
+      valid_o         => prbs_valid_o
     );
 
   prbs_o <= prbs;

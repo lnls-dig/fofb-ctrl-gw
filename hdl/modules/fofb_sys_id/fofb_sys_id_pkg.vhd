@@ -74,7 +74,8 @@ package fofb_sys_id_pkg is
       distort_bpm_pos_index_o : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
       distort_bpm_pos_o       : out signed(g_BPM_POS_WIDTH-1 downto 0);
       distort_bpm_pos_valid_o : out std_logic;
-      prbs_o                  : out std_logic
+      prbs_o                  : out std_logic;
+      prbs_valid_o            : out std_logic
     );
   end component prbs_bpm_pos_distort;
 
@@ -97,7 +98,8 @@ package fofb_sys_id_pkg is
       distort_level_1_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
       distort_sp_o          : out signed(g_SP_WIDTH-1 downto 0);
       distort_sp_valid_o    : out std_logic;
-      prbs_o                : out std_logic
+      prbs_o                : out std_logic;
+      prbs_valid_o          : out std_logic
     );
   end component prbs_sp_distort;
 end package fofb_sys_id_pkg;
