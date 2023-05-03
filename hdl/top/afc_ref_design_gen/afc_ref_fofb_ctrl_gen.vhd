@@ -450,7 +450,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
-  constant c_FOFB_CHANNELS                   : natural := 8;
+  constant c_FOFB_CHANNELS                   : natural := 12;
 
   constant c_DOT_PROD_ACC_EXTRA_WIDTH        : natural := 4;
 
