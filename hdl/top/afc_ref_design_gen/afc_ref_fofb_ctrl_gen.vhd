@@ -458,8 +458,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_SERIALIZE_FIFO_SIZE             : natural := 32;
   constant c_TIMEFRAME_END_POS               : natural := c_SERIALIZE_FIFO_DATA_SIZE - 1;  -- dcc timeframe end is the msb of q
 
-  signal fofb_sp_arr                         : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
-  signal fofb_sp_valid_arr                   : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_proc_sp_arr                    : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_proc_sp_valid_arr              : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
   signal fofb_proc_busy                      : std_logic;
   signal fofb_proc_bpm_pos                   : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
   signal fofb_proc_bpm_pos_index             : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
@@ -1785,8 +1785,8 @@ begin
       bpm_pos_index_i                => fofb_proc_bpm_pos_index,
       bpm_pos_valid_i                => fofb_proc_bpm_pos_valid,
       bpm_time_frame_end_i           => fofb_proc_time_frame_end,
-      sp_arr_o                       => fofb_sp_arr,
-      sp_valid_arr_o                 => fofb_sp_valid_arr,
+      sp_arr_o                       => fofb_proc_sp_arr,
+      sp_valid_arr_o                 => fofb_proc_sp_valid_arr,
       sp_decim_arr_o                 => open,
       sp_decim_valid_arr_o           => open,
       dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
@@ -1813,7 +1813,7 @@ begin
       bpm_pos_i             => fofb_proc_bpm_pos,
       bpm_pos_index_i       => fofb_proc_bpm_pos_index,
       bpm_pos_valid_i       => fofb_proc_bpm_pos_valid,
-      bpm_pos_flat_clear_i  => or fofb_sp_valid_arr,
+      bpm_pos_flat_clear_i  => or fofb_proc_sp_valid_arr,
       bpm_pos_flat_x_o      => bpm_pos_flat_x,
       bpm_pos_flat_x_rcvd_o => bpm_pos_flat_x_rcvd,
       bpm_pos_flat_y_o      => bpm_pos_flat_y,
@@ -2126,7 +2126,7 @@ begin
 
   -- Convert signed elements to std_logic_vector
   gen_conv_pi_sp: for i in 0 to c_FOFB_CHANNELS-1 generate
-    pi_sp_ext(i) <= std_logic_vector(fofb_sp_arr(i));
+    pi_sp_ext(i) <= std_logic_vector(fofb_proc_sp_arr(i));
   end generate;
 
   ----------------------------------------------------------------------
@@ -2198,8 +2198,8 @@ begin
 
   -- DCC FMC
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
-          std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
+          std_logic_vector(fofb_proc_sp_arr(6)) & std_logic_vector(fofb_proc_sp_arr(7)) & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
+          std_logic_vector(fofb_proc_sp_arr(2)) & std_logic_vector(fofb_proc_sp_arr(3)) & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
 
@@ -2224,13 +2224,13 @@ begin
     -- TODO: These bits should be filled with channels 11-8, but they aren't instantiated yet
     std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
     -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
-    std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
-    std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) &
+    std_logic_vector(fofb_proc_sp_arr(6)) & std_logic_vector(fofb_proc_sp_arr(7)) & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
+    std_logic_vector(fofb_proc_sp_arr(2)) & std_logic_vector(fofb_proc_sp_arr(3)) & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) &
     std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
     std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
     std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
     std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
-  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_sp_valid_arr;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_proc_sp_valid_arr;
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
 
   ----------------------------------------------------------------------
