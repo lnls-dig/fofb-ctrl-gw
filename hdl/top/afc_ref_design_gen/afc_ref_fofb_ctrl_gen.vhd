@@ -1813,7 +1813,7 @@ begin
       bpm_pos_i             => fofb_proc_bpm_pos,
       bpm_pos_index_i       => fofb_proc_bpm_pos_index,
       bpm_pos_valid_i       => fofb_proc_bpm_pos_valid,
-      bpm_pos_flat_clear_i  => or fofb_proc_sp_valid_arr,
+      bpm_pos_flat_clear_i  => fofb_proc_sp_valid_arr(0),   -- all valids are synced
       bpm_pos_flat_x_o      => bpm_pos_flat_x,
       bpm_pos_flat_x_rcvd_o => bpm_pos_flat_x_rcvd,
       bpm_pos_flat_y_o      => bpm_pos_flat_y,
@@ -2230,7 +2230,7 @@ begin
     std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
     std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
     std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
-  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_proc_sp_valid_arr;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= fofb_proc_sp_valid_arr(0);   -- all valids are synced
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
 
   ----------------------------------------------------------------------
