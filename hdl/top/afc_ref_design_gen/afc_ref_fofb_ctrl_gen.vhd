@@ -722,6 +722,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ACQ_DCC_ID                      : natural := 1;
   constant c_ACQ_SYS_ID_ID                   : natural := 2;
 
+  -- Trigger MUX channels used for things other than acquisitions [c_ACQ_NUM_CHANNELS, c_TRIG_MUX_INTERN_NUM-1]
+  constant c_TRIG_SYS_ID_EFF_REGS_ID         : natural := c_ACQ_NUM_CHANNELS + 1;
+
   -- Number of channels per acquisition core
   constant c_ACQ_NUM_CHANNELS                : natural := 3;
 
@@ -1823,6 +1826,7 @@ begin
       sp_arr_i                  => t_sp_arr(fofb_proc_sp_arr),
       sp_valid_arr_i            => fofb_proc_sp_valid_arr,
       prbs_valid_i              => fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      trig_i                    => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_TRIG_SYS_ID_EFF_REGS_ID).pulse,
       bpm_pos_flat_x_o          => bpm_pos_flat_x,
       bpm_pos_flat_x_rcvd_o     => bpm_pos_flat_x_rcvd,
       bpm_pos_flat_y_o          => bpm_pos_flat_y,

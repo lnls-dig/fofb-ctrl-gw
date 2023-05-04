@@ -74,6 +74,11 @@ entity xwb_fofb_sys_id is
     -- PRBS iteration signal
     prbs_valid_i            : in std_logic;
 
+    -- External trigger
+    -- A pulse on this effectivates what was set via Wishbone on PRBS_CTL_RST,
+    -- PRBS_CTL_BPM_POS_DISTORT_EN and PRBS_CTL_SP_DISTORT_EN.
+    trig_i                  : in std_logic;
+
     -- BPM positions flatenized (instance x)
     bpm_pos_flat_x_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
 
@@ -137,8 +142,11 @@ architecture beh of xwb_fofb_sys_id is
   constant c_DISTORT_LEVELS_ZEROED  : t_prbs_distort_levels :=
     (level_0 => (others => '0'), level_1 => (others => '0'));
 
+  signal prbs_rst_n                   : std_logic := '1';
   signal prbs_step_duration           : natural range 1 to 1024 := 1;
   signal prbs_lfsr_length             : natural range 2 to 32 := 2;
+  signal prbs_bpm_pos_distort_en      : std_logic := '0';
+  signal prbs_sp_distort_en           : std_logic := '0';
   signal prbs_bpm_pos_distort_levels  : t_prbs_distort_levels := c_DISTORT_LEVELS_ZEROED;
   signal prbs_sp_distort_levels_arr   : t_prbs_distort_levels_arr(c_MAX_CHANNELS-1 downto 0) := (others => c_DISTORT_LEVELS_ZEROED);
   signal bpm_pos_d1                   : signed(c_BPM_POS_WIDTH-1 downto 0);
@@ -172,6 +180,16 @@ begin
       bpm_pos_d1 <= bpm_pos_i;
       bpm_pos_index_d1 <= bpm_pos_index_i;
       bpm_pos_valid_d1 <= bpm_pos_valid_i;
+
+      -- Effectivates what was set via Wishbone on PRBS_CTL_RST,
+      -- PRBS_CTL_BPM_POS_DISTORT_EN and PRBS_CTL_SP_DISTORT_EN.
+      -- NOTE: PRBS_CTL_RST = '1' generates a reset pulse
+      prbs_rst_n <= '1';
+      if trig_i = '1' then
+        prbs_rst_n <= not prbs_ctl_rst;
+        prbs_bpm_pos_distort_en <= prbs_ctl_bpm_pos_distort_en;
+        prbs_sp_distort_en <= prbs_ctl_sp_distort_en;
+      end if;
     end if;
   end process;
 
@@ -225,8 +243,8 @@ begin
     port map (
       clk_i                   => clk_i,
       rst_n_i                 => rst_n_i,
-      en_distort_i            => prbs_ctl_bpm_pos_distort_en,
-      prbs_rst_n_i            => not prbs_ctl_rst,
+      en_distort_i            => prbs_bpm_pos_distort_en,
+      prbs_rst_n_i            => prbs_rst_n,
       prbs_step_duration_i    => prbs_step_duration,
       prbs_lfsr_length_i      => prbs_lfsr_length,
       prbs_valid_i            => prbs_valid_i,
@@ -253,8 +271,8 @@ begin
           port map (
             clk_i                 => clk_i,
             rst_n_i               => rst_n_i,
-            en_distort_i          => prbs_ctl_sp_distort_en,
-            prbs_rst_n_i          => not prbs_ctl_rst,
+            en_distort_i          => prbs_sp_distort_en,
+            prbs_rst_n_i          => prbs_rst_n,
             prbs_step_duration_i  => prbs_step_duration,
             prbs_lfsr_length_i    => prbs_lfsr_length,
             prbs_valid_i          => prbs_valid_i,

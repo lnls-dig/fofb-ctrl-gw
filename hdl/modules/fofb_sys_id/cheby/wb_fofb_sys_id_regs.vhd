@@ -1,4 +1,4 @@
--- Do not edit.  Generated on Thu Apr 27 16:21:24 2023 by guilherme.ricioli
+-- Do not edit.  Generated on Mon May 08 18:02:08 2023 by guilherme.ricioli
 -- With Cheby 1.4.0 and these options:
 --  -i wb_fofb_sys_id_regs.cheby --hdl vhdl --gen-hdl wb_fofb_sys_id_regs.vhd --doc html --gen-doc doc/wb_fofb_sys_id_regs.html --gen-c wb_fofb_sys_id_regs.h --consts-style vhdl-ohwr --gen-consts ../../../sim/regs/wb_fofb_sys_id_regs_consts_pkg.vhd
 
@@ -34,9 +34,10 @@ entity wb_fofb_sys_id_regs is
     -- PRBS distortion control register
 
     -- Resets PRBS
+    -- NOTE: This is only effectived via external trigger.
 
     -- write 0: no effect
-    -- write 1: resets PRBS (this bit autoclears)
+    -- write 1: resets PRBS
 
     prbs_ctl_rst_o       : out   std_logic;
     -- Duration of each PRBS step in FOFB cycles (max: 0x3FF)
@@ -58,12 +59,14 @@ entity wb_fofb_sys_id_regs is
 
     prbs_ctl_lfsr_length_o : out   std_logic_vector(4 downto 0);
     -- Enables/disables PRBS-based distortion on BPM positions
+    -- NOTE: This is only effectived via external trigger.
 
     -- write 0: distortion disabled
     -- write 1: distortion enabled
 
     prbs_ctl_bpm_pos_distort_en_o : out   std_logic;
     -- Enables/disables PRBS-based distortion on setpoints
+    -- NOTE: This is only effectived via external trigger.
 
     -- write 0: distortion disabled
     -- write 1: distortion enabled
@@ -431,8 +434,6 @@ begin
           prbs_ctl_lfsr_length_reg <= wr_dat_d0(15 downto 11);
           prbs_ctl_bpm_pos_distort_en_reg <= wr_dat_d0(16);
           prbs_ctl_sp_distort_en_reg <= wr_dat_d0(17);
-        else
-          prbs_ctl_rst_reg <= '0';
         end if;
         prbs_ctl_wack <= prbs_ctl_wreq;
       end if;
@@ -810,7 +811,7 @@ begin
   end process;
 
   -- Process for read requests.
-  process (adr_int, rd_req_int, bpm_pos_flatenizer_ctl_base_bpm_id_reg, bpm_pos_flatenizer_max_num_cte_i, prbs_ctl_step_duration_reg, prbs_ctl_lfsr_length_reg, prbs_ctl_bpm_pos_distort_en_reg, prbs_ctl_sp_distort_en_reg, prbs_sp_distort_ch_0_levels_level_0_reg, prbs_sp_distort_ch_0_levels_level_1_reg, prbs_sp_distort_ch_1_levels_level_0_reg, prbs_sp_distort_ch_1_levels_level_1_reg, prbs_sp_distort_ch_2_levels_level_0_reg, prbs_sp_distort_ch_2_levels_level_1_reg, prbs_sp_distort_ch_3_levels_level_0_reg, prbs_sp_distort_ch_3_levels_level_1_reg, prbs_sp_distort_ch_4_levels_level_0_reg, prbs_sp_distort_ch_4_levels_level_1_reg, prbs_sp_distort_ch_5_levels_level_0_reg, prbs_sp_distort_ch_5_levels_level_1_reg, prbs_sp_distort_ch_6_levels_level_0_reg, prbs_sp_distort_ch_6_levels_level_1_reg, prbs_sp_distort_ch_7_levels_level_0_reg, prbs_sp_distort_ch_7_levels_level_1_reg, prbs_sp_distort_ch_8_levels_level_0_reg, prbs_sp_distort_ch_8_levels_level_1_reg, prbs_sp_distort_ch_9_levels_level_0_reg, prbs_sp_distort_ch_9_levels_level_1_reg, prbs_sp_distort_ch_10_levels_level_0_reg, prbs_sp_distort_ch_10_levels_level_1_reg, prbs_sp_distort_ch_11_levels_level_0_reg, prbs_sp_distort_ch_11_levels_level_1_reg, prbs_bpm_pos_distort_distort_ram_levels_int_dato, prbs_bpm_pos_distort_distort_ram_levels_rack) begin
+  process (adr_int, rd_req_int, bpm_pos_flatenizer_ctl_base_bpm_id_reg, bpm_pos_flatenizer_max_num_cte_i, prbs_ctl_rst_reg, prbs_ctl_step_duration_reg, prbs_ctl_lfsr_length_reg, prbs_ctl_bpm_pos_distort_en_reg, prbs_ctl_sp_distort_en_reg, prbs_sp_distort_ch_0_levels_level_0_reg, prbs_sp_distort_ch_0_levels_level_1_reg, prbs_sp_distort_ch_1_levels_level_0_reg, prbs_sp_distort_ch_1_levels_level_1_reg, prbs_sp_distort_ch_2_levels_level_0_reg, prbs_sp_distort_ch_2_levels_level_1_reg, prbs_sp_distort_ch_3_levels_level_0_reg, prbs_sp_distort_ch_3_levels_level_1_reg, prbs_sp_distort_ch_4_levels_level_0_reg, prbs_sp_distort_ch_4_levels_level_1_reg, prbs_sp_distort_ch_5_levels_level_0_reg, prbs_sp_distort_ch_5_levels_level_1_reg, prbs_sp_distort_ch_6_levels_level_0_reg, prbs_sp_distort_ch_6_levels_level_1_reg, prbs_sp_distort_ch_7_levels_level_0_reg, prbs_sp_distort_ch_7_levels_level_1_reg, prbs_sp_distort_ch_8_levels_level_0_reg, prbs_sp_distort_ch_8_levels_level_1_reg, prbs_sp_distort_ch_9_levels_level_0_reg, prbs_sp_distort_ch_9_levels_level_1_reg, prbs_sp_distort_ch_10_levels_level_0_reg, prbs_sp_distort_ch_10_levels_level_1_reg, prbs_sp_distort_ch_11_levels_level_0_reg, prbs_sp_distort_ch_11_levels_level_1_reg, prbs_bpm_pos_distort_distort_ram_levels_int_dato, prbs_bpm_pos_distort_distort_ram_levels_rack) begin
     -- By default ack read requests
     rd_dat_d0 <= (others => 'X');
     prbs_bpm_pos_distort_distort_ram_levels_rreq <= '0';
@@ -835,7 +836,7 @@ begin
       when "000000000" =>
         -- Reg prbs_ctl
         rd_ack_d0 <= rd_req_int;
-        rd_dat_d0(0) <= '0';
+        rd_dat_d0(0) <= prbs_ctl_rst_reg;
         rd_dat_d0(10 downto 1) <= prbs_ctl_step_duration_reg;
         rd_dat_d0(15 downto 11) <= prbs_ctl_lfsr_length_reg;
         rd_dat_d0(16) <= prbs_ctl_bpm_pos_distort_en_reg;

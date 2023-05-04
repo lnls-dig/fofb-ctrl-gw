@@ -619,6 +619,7 @@ package fofb_ctrl_pkg is
       sp_arr_i                : in t_sp_arr(g_CHANNELS-1 downto 0);
       sp_valid_arr_i          : in std_logic_vector(g_CHANNELS-1 downto 0);
       prbs_valid_i            : in std_logic;
+      trig_i                  : in std_logic;
       bpm_pos_flat_x_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
       bpm_pos_flat_x_rcvd_o   : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
       bpm_pos_flat_y_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
@@ -730,7 +731,7 @@ package fofb_ctrl_pkg is
   constant c_xwb_fofb_sys_id_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
     abi_ver_major => x"01",
-    abi_ver_minor => x"00",
+    abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
@@ -740,7 +741,7 @@ package fofb_ctrl_pkg is
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"4b2f4872",               -- Last 8 chars of "FOFB_SYS_ID_REGS" md5sum
     version       => x"00000001",
-    date          => x"20230427",
+    date          => x"20230504",
     name          => "FOFB_SYS_ID_REGS   ")));
 
 end fofb_ctrl_pkg;

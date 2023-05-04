@@ -50,14 +50,13 @@ memory-map:
               children:
                 - field:
                     name: rst
-                    x-hdl:
-                      type: autoclear
                     range: 0
                     description: |
                       Resets PRBS
+                      NOTE: This is only effectived via external trigger.
 
                       write 0: no effect
-                      write 1: resets PRBS (this bit autoclears)
+                      write 1: resets PRBS
                 - field:
                     name: step_duration
                     range: 10-1
@@ -85,6 +84,7 @@ memory-map:
                     range: 16
                     description: |
                       Enables/disables PRBS-based distortion on BPM positions
+                      NOTE: This is only effectived via external trigger.
 
                       write 0: distortion disabled
                       write 1: distortion enabled
@@ -93,6 +93,7 @@ memory-map:
                     range: 17
                     description: |
                       Enables/disables PRBS-based distortion on setpoints
+                      NOTE: This is only effectived via external trigger.
 
                       write 0: distortion disabled
                       write 1: distortion enabled

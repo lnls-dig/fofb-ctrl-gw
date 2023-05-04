@@ -520,9 +520,10 @@ PRBS distortion control register<br>
 <li><b>
 rst
 </b>[<i>rw</i>]: Resets PRBS
+NOTE: This is only effectived via external trigger.
 
 write 0: no effect
-write 1: resets PRBS (this bit autoclears)
+write 1: resets PRBS
 
 <li><b>
 step_duration
@@ -547,6 +548,7 @@ write 0x1E: set LFSR length to 32
 <li><b>
 bpm_pos_distort_en
 </b>[<i>rw</i>]: Enables/disables PRBS-based distortion on BPM positions
+NOTE: This is only effectived via external trigger.
 
 write 0: distortion disabled
 write 1: distortion enabled
@@ -554,6 +556,7 @@ write 1: distortion enabled
 <li><b>
 sp_distort_en
 </b>[<i>rw</i>]: Enables/disables PRBS-based distortion on setpoints
+NOTE: This is only effectived via external trigger.
 
 write 0: distortion disabled
 write 1: distortion enabled

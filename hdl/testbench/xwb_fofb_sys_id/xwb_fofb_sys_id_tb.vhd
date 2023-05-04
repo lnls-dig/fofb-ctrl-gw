@@ -76,6 +76,7 @@ architecture test of xwb_fofb_sys_id_tb is
   signal sp_arr                 : t_sp_arr(c_CHANNELS-1 downto 0);
   signal sp_valid_arr           : std_logic_vector(c_CHANNELS-1 downto 0) := (others => '0');
   signal prbs_iterate           : std_logic := '0';
+  signal trig                   : std_logic := '0';
   signal bpm_pos_flat_x         : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
   signal bpm_pos_flat_x_rcvd    : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
   signal bpm_pos_flat_y         : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
@@ -177,8 +178,23 @@ begin
 
     read32_pl(clk, wb_slave_i, wb_slave_o, c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_ADDR,
       data);
+    assert data(c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_RST_OFFSET) = '1'
+      report "PRBS_CTL_RST is expected to be '1'"
+      severity error;
+
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
+
+    data(c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_RST_OFFSET) := '0';
+    write32_pl(clk, wb_slave_i, wb_slave_o, c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_ADDR,
+      data);
+
+    read32_pl(clk, wb_slave_i, wb_slave_o, c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_ADDR,
+      data);
     assert data(c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_RST_OFFSET) = '0'
-      report "PRBS_CTL_RST is expected to be cleared"
+      report "PRBS_CTL_RST is expected to be '0'"
       severity error;
 
     -- ############# BPM POSITIONS DISTORTION LEVELS CONFIGURATION #############
@@ -345,6 +361,11 @@ begin
         "PRBS_CTL_BPM_POS_DISTORT_EN is expected to be '0'"
       severity error;
 
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
+
     for trial in 0 to 200
     loop
       prbs_iterate <= '1';
@@ -390,6 +411,11 @@ begin
       report
         "PRBS_CTL_BPM_POS_DISTORT_EN is expected to be '1'"
       severity error;
+
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
 
     for trial in 0 to 200
     loop
@@ -445,6 +471,11 @@ begin
         "PRBS_CTL_BPM_POS_DISTORT_EN is expected to be '0'"
       severity error;
 
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
+
     -- ######################### SETPOINTS PASSTHROUGH #########################
 
     -- Disables setpoints distortion and checks if passthrough is working
@@ -462,6 +493,11 @@ begin
       report
         "PRBS_CTL_SP_DISTORT_EN is expected to be '0'"
       severity error;
+
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
 
     for trial in 0 to 200
     loop
@@ -512,6 +548,11 @@ begin
       report
         "PRBS_CTL_SP_DISTORT_EN is expected to be '1'"
       severity error;
+
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
 
     for trial in 0 to 200
     loop
@@ -572,6 +613,11 @@ begin
         "PRBS_CTL_SP_DISTORT_EN is expected to be '0'"
       severity error;
 
+    trig <= '1';
+    f_wait_cycles(clk, 1);
+    trig <= '0';
+    f_wait_cycles(clk, 1);
+
     report "success!"
     severity note;
 
@@ -597,6 +643,7 @@ begin
       sp_arr_i                  => sp_arr,
       sp_valid_arr_i            => sp_valid_arr,
       prbs_valid_i              => prbs_iterate,
+      trig_i                    => trig,
       bpm_pos_flat_x_o          => bpm_pos_flat_x,
       bpm_pos_flat_x_rcvd_o     => bpm_pos_flat_x_rcvd,
       bpm_pos_flat_y_o          => bpm_pos_flat_y,
