@@ -2238,18 +2238,17 @@ begin
 
   -- SYS ID
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_ID).width)-1 downto 0) <=
-    std_logic_vector(to_unsigned(0, 287)) &                                                                                                                 -- [DEBUG] Padding with 0s (1023 downto 737)
-    prbs &                                                                                                                                                  -- [DEBUG] PRBS (736)
-    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                             -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
-    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                         -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
-    -- TODO: These bits should be filled with channels 11-8, but they aren't instantiated yet
-    std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(to_unsigned(0, 287)) &                                                                                                                             -- [DEBUG] Padding with 0s (1023 downto 737)
+    prbs &                                                                                                                                                              -- [DEBUG] PRBS (736)
+    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                                         -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                     -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
     -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
-    std_logic_vector(fofb_proc_sp_arr(6)) & std_logic_vector(fofb_proc_sp_arr(7)) & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
-    std_logic_vector(fofb_proc_sp_arr(2)) & std_logic_vector(fofb_proc_sp_arr(3)) & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) &
-    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
+    std_logic_vector(fofb_proc_sp_arr(10)) & std_logic_vector(fofb_proc_sp_arr(11)) & std_logic_vector(fofb_proc_sp_arr(8)) & std_logic_vector(fofb_proc_sp_arr(9)) &   -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(fofb_proc_sp_arr(6))  & std_logic_vector(fofb_proc_sp_arr(7))  & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
+    std_logic_vector(fofb_proc_sp_arr(2))  & std_logic_vector(fofb_proc_sp_arr(3))  & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) &
+    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) &             -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
     std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
-    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
+    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) &             -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
     std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= fofb_proc_sp_valid_arr(0);   -- all valids are synced
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
