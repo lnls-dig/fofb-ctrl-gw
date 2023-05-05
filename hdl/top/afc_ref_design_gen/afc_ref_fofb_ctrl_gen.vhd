@@ -713,20 +713,21 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Acquisition channels IDs
   constant c_ACQ_RTM_LAMP_ID                 : natural := 0;
-  -- The way the triggers were conceived, you have a single logical trigger for
-  -- each ACQ channel, and a single wb_trigger_mux for each ACQ core, but
-  -- sometimes we need triggers for things other than the ACQ. Here I'm just
-  -- borrowing an ACQ (core c_ACQ_CORE_RTM_LAMP_ID) trigger for channel 3 that
-  -- is unused and connecting it to the xwb_rtmlamp_ohwr external trigger input.
-  constant c_SP_TRIG_RTM_LAMP_ID             : natural := 3;
   constant c_ACQ_DCC_ID                      : natural := 1;
   constant c_ACQ_SYS_ID_ID                   : natural := 2;
 
-  -- Trigger MUX channels used for things other than acquisitions [c_ACQ_NUM_CHANNELS, c_TRIG_MUX_INTERN_NUM-1]
-  constant c_TRIG_SYS_ID_EFF_REGS_ID         : natural := c_ACQ_NUM_CHANNELS + 1;
-
   -- Number of channels per acquisition core
   constant c_ACQ_NUM_CHANNELS                : natural := 3;
+
+  -- The way the triggers were conceived, you have a single logical trigger for
+  -- each ACQ channel. Since we don't use all of those channels, we can use the
+  -- remaining logical triggers for things other than acquisitions.
+
+  -- Trigger MUX channels used for things other than acquisitions
+  -- [c_ACQ_NUM_CHANNELS, c_TRIG_MUX_INTERN_NUM-1]
+  constant c_TRIG_SP_RTM_LAMP_ID             : natural := c_ACQ_NUM_CHANNELS;
+  constant c_TRIG_SYS_ID_EFF_REGS_ID         : natural := c_ACQ_NUM_CHANNELS + 1;
+
 
   constant c_FACQ_PARAMS_RTM_LAMP            : t_facq_chan_param := (
     width                                    => to_unsigned(512, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
@@ -2130,7 +2131,7 @@ begin
       ---------------------------------------------------------------------------
       -- External triggers for SP and DAC. Clock domain: clk_i
       ---------------------------------------------------------------------------
-      trig_i                                      => (others => trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_SP_TRIG_RTM_LAMP_ID).pulse),
+      trig_i                                      => (others => trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_SP_RTM_LAMP_ID).pulse),
 
       ---------------------------------------------------------------------------
       -- ADC parallel interface
