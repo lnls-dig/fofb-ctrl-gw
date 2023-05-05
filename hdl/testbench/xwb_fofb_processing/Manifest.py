@@ -1,7 +1,7 @@
 files = [
     "xwb_fofb_processing_tb.vhd",
-    "sim_vhdl_sim_wishbone.vhd",
     "../../sim/regs/wb_fofb_processing_regs_consts_pkg.vhd",
+    "../../sim/sim_wishbone.vhd",
     "../fofb_tb_pkg.vhd",
 ]
 
