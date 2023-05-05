@@ -476,20 +476,24 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- FOFB system identification signals
   -----------------------------------------------------------------------------
 
-  signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal bpm_pos_flat_y_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  -- Maximum number of BPM positions to flatenize per flatenizer
+  -- Each flatenizer holds at most half of c_MAX_NUM_P2P_BPM_POS.
+  constant c_MAX_NUM_BPM_POS_PER_FLAT        : natural := c_MAX_NUM_P2P_BPM_POS/2;
+
+  signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_y_rcvd                 : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
   signal distort_fofb_proc_bpm_pos_index     : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal distort_fofb_proc_bpm_pos           : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
   signal distort_fofb_proc_bpm_pos_valid     : std_logic;
   signal distort_fofb_proc_sp_arr            : t_sp_arr(c_FOFB_CHANNELS-1 downto 0);
   signal distort_fofb_proc_sp_valid_arr      : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
   signal prbs                                : std_logic;
-  signal distort_bpm_pos_flat_x              : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal distort_bpm_pos_flat_x_rcvd         : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal distort_bpm_pos_flat_y              : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal distort_bpm_pos_flat_y_rcvd         : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  signal distort_bpm_pos_flat_x              : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_x_rcvd         : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_y              : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_y_rcvd         : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- RTM signals
@@ -1817,7 +1821,7 @@ begin
   cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
     generic map (
       g_BPM_POS_INDEX_WIDTH         => c_SP_COEFF_RAM_ADDR_WIDTH,
-      g_MAX_NUM_BPM_POS             => c_MAX_NUM_P2P_BPM_POS/2,
+      g_MAX_NUM_BPM_POS_PER_FLAT    => c_MAX_NUM_BPM_POS_PER_FLAT,
       g_CHANNELS                    => c_FOFB_CHANNELS,
       g_INTERFACE_MODE              => PIPELINED,
       g_ADDRESS_GRANULARITY         => BYTE,

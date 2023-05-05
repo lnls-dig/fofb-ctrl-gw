@@ -40,9 +40,9 @@ end entity xwb_fofb_sys_id_tb;
 architecture test of xwb_fofb_sys_id_tb is
   constant c_SYS_CLOCK_FREQ   : natural := 100_000_000;
 
-  -- Maximum number of BPM positions to flatenize
-  -- Each bpm_pos_flatenizer holds half of c_MAX_NUM_P2P_BPM_POS.
-  constant c_MAX_NUM_BPM_POS  :
+  -- Maximum number of BPM positions to flatenize per flatenizer
+  -- Each flatenizer holds at most half of c_MAX_NUM_P2P_BPM_POS.
+  constant c_MAX_NUM_BPM_POS_PER_FLAT :
     natural range 1 to 2**(natural(c_SP_COEFF_RAM_ADDR_WIDTH)) :=
       c_MAX_NUM_P2P_BPM_POS/2;
 
@@ -77,10 +77,10 @@ architecture test of xwb_fofb_sys_id_tb is
   signal sp_valid_arr                 : std_logic_vector(c_CHANNELS-1 downto 0) := (others => '0');
   signal prbs_iterate                 : std_logic := '0';
   signal trig                         : std_logic := '0';
-  signal bpm_pos_flat_x               : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal bpm_pos_flat_x_rcvd          : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal bpm_pos_flat_y               : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal bpm_pos_flat_y_rcvd          : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal bpm_pos_flat_x               : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_x_rcvd          : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_y               : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_y_rcvd          : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
   signal distort_bpm_pos              : signed(c_BPM_POS_WIDTH-1 downto 0);
   signal distort_bpm_pos_index        : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
   signal distort_bpm_pos_valid        : std_logic;
@@ -88,10 +88,10 @@ architecture test of xwb_fofb_sys_id_tb is
   signal distort_sp_valid_arr         : std_logic_vector(c_CHANNELS-1 downto 0);
   signal prbs                         : std_logic;
   signal prbs_valid                   : std_logic;
-  signal distort_bpm_pos_flat_x       : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal distort_bpm_pos_flat_x_rcvd  : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal distort_bpm_pos_flat_y       : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal distort_bpm_pos_flat_y_rcvd  : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal distort_bpm_pos_flat_x       : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_x_rcvd  : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_y       : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_y_rcvd  : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
   -- Wishbone signals
   signal wb_slave_i           : t_wishbone_slave_in;
@@ -118,11 +118,11 @@ begin
 
     read32_pl(clk, wb_slave_i, wb_slave_o,
       c_WB_FOFB_SYS_ID_REGS_BPM_POS_FLATENIZER_MAX_NUM_CTE_ADDR, data);
-    assert data = std_logic_vector(to_unsigned(c_MAX_NUM_BPM_POS, 32))
+    assert data = std_logic_vector(to_unsigned(c_MAX_NUM_BPM_POS_PER_FLAT, 32))
       report
         "Unexpected BPM_POS_FLATENIZER_MAX_NUM_CTE: " & to_hstring(data) &
         " (expected: " &
-        to_hstring(std_logic_vector(to_unsigned(c_MAX_NUM_BPM_POS, 32))) & ")"
+        to_hstring(std_logic_vector(to_unsigned(c_MAX_NUM_BPM_POS_PER_FLAT, 32))) & ")"
       severity error;
 
     data :=  std_logic_vector(to_unsigned(c_BPM_ID_BASE, data'length));
@@ -278,7 +278,7 @@ begin
       f_wait_cycles(clk, 10);
     end loop;
 
-    for bpm_pos_flat_idx in 0 to c_MAX_NUM_BPM_POS-1
+    for bpm_pos_flat_idx in 0 to c_MAX_NUM_BPM_POS_PER_FLAT-1
     loop
       assert bpm_pos_flat_x_rcvd(bpm_pos_flat_idx) = '1'
         report
@@ -318,7 +318,7 @@ begin
     bpm_pos_flat_clear <= '0';
     f_wait_cycles(clk, 1);
 
-    for bpm_pos_flat_idx in 0 to c_MAX_NUM_BPM_POS-1
+    for bpm_pos_flat_idx in 0 to c_MAX_NUM_BPM_POS_PER_FLAT-1
     loop
       assert bpm_pos_flat_x_rcvd(bpm_pos_flat_idx) = '0'
         report
@@ -637,7 +637,7 @@ begin
   uut : xwb_fofb_sys_id
     generic map (
       g_BPM_POS_INDEX_WIDTH         => c_SP_COEFF_RAM_ADDR_WIDTH,
-      g_MAX_NUM_BPM_POS             => c_MAX_NUM_BPM_POS,
+      g_MAX_NUM_BPM_POS_PER_FLAT    => c_MAX_NUM_BPM_POS_PER_FLAT,
       g_CHANNELS                    => c_CHANNELS,
       g_INTERFACE_MODE              => PIPELINED,
       g_ADDRESS_GRANULARITY         => BYTE,

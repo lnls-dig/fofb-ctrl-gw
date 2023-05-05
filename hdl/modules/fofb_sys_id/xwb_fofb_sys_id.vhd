@@ -34,8 +34,8 @@ entity xwb_fofb_sys_id is
     -- Width of BPM position indexes
     g_BPM_POS_INDEX_WIDTH         : natural := 9;
 
-    -- Maximum number of BPM positions to flatenize
-    g_MAX_NUM_BPM_POS             : natural := c_MAX_NUM_P2P_BPM_POS/2;
+    -- Maximum number of BPM positions to flatenize per flatenizer
+    g_MAX_NUM_BPM_POS_PER_FLAT    : natural := c_MAX_NUM_P2P_BPM_POS/2;
 
     -- Number of channels
     g_CHANNELS                    : natural := 12;
@@ -80,18 +80,18 @@ entity xwb_fofb_sys_id is
     trig_i                        : in std_logic;
 
     -- BPM positions flatenized (instance x)
-    bpm_pos_flat_x_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_x_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Each bit indicates if the corresponding BPM position was received since
     -- the last clearing (or resetting). This is useful for debugging. (instance x)
-    bpm_pos_flat_x_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_x_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- BPM positions flatenized (instance y)
-    bpm_pos_flat_y_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_y_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Each bit indicates if the corresponding BPM position was received since
     -- the last clearing (or resetting). This is useful for debugging. (instance y)
-    bpm_pos_flat_y_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_y_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Distorted BPM position
     distort_bpm_pos_o             : out signed(c_BPM_POS_WIDTH-1 downto 0);
@@ -115,18 +115,18 @@ entity xwb_fofb_sys_id is
     prbs_valid_o                  : out std_logic;
 
     -- Distorted BPM positions flatenized (instance x)
-    distort_bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+    distort_bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Each bit indicates if the corresponding BPM position was received since
     -- the last clearing (or resetting). This is useful for debugging. (instance x)
-    distort_bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+    distort_bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Distorted BPM positions flatenized (instance y)
-    distort_bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+    distort_bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Each bit indicates if the corresponding BPM position was received since
     -- the last clearing (or resetting). This is useful for debugging. (instance y)
-    distort_bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+    distort_bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
     -- Wishbone interface
     wb_slv_i                      : in t_wishbone_slave_in;
@@ -214,7 +214,7 @@ begin
   cmp_x_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
-      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
+      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS_PER_FLAT
     )
     port map (
       clk_i                 => clk_i,
@@ -234,7 +234,7 @@ begin
   cmp_y_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
-      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
+      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS_PER_FLAT
     )
     port map (
       clk_i                 => clk_i,
@@ -308,7 +308,7 @@ begin
   cmp_x_distort_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
-      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
+      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS_PER_FLAT
     )
     port map (
       clk_i                 => clk_i,
@@ -328,7 +328,7 @@ begin
   cmp_y_distort_bpm_pos_flatenizer : bpm_pos_flatenizer
     generic map (
       g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
-      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
+      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS_PER_FLAT
     )
     port map (
       clk_i                 => clk_i,
@@ -351,7 +351,7 @@ begin
       wb_i                                                  => wb_slv_adp_out,
       wb_o                                                  => wb_slv_adp_in,
       bpm_pos_flatenizer_ctl_base_bpm_id_o                  => bpm_pos_flatenizer_ctl_base_bpm_id,
-      bpm_pos_flatenizer_max_num_cte_i                      => std_logic_vector(to_unsigned(g_MAX_NUM_BPM_POS, 16)),
+      bpm_pos_flatenizer_max_num_cte_i                      => std_logic_vector(to_unsigned(g_MAX_NUM_BPM_POS_PER_FLAT, 16)),
       prbs_ctl_rst_o                                        => prbs_ctl_rst,
       prbs_ctl_step_duration_o                              => prbs_ctl_step_duration,
       prbs_ctl_lfsr_length_o                                => prbs_ctl_lfsr_length,
