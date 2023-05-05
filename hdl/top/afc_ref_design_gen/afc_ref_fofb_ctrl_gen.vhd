@@ -2238,7 +2238,7 @@ begin
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
 
   --------------------
-  -- ACQ Core 4
+  -- ACQ Core 3
   --------------------
 
   -- SYS ID
