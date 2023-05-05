@@ -32,91 +32,105 @@ use work.fofb_ctrl_pkg.all;
 entity xwb_fofb_sys_id is
   generic (
     -- Width of BPM position indexes
-    g_BPM_POS_INDEX_WIDTH   : natural := 9;
+    g_BPM_POS_INDEX_WIDTH         : natural := 9;
 
     -- Maximum number of BPM positions to flatenize
-    g_MAX_NUM_BPM_POS       : natural := c_MAX_NUM_P2P_BPM_POS/2;
+    g_MAX_NUM_BPM_POS             : natural := c_MAX_NUM_P2P_BPM_POS/2;
 
     -- Number of channels
-    g_CHANNELS              : natural := 12;
+    g_CHANNELS                    : natural := 12;
 
     -- Wishbone generics
-    g_INTERFACE_MODE        : t_wishbone_interface_mode := CLASSIC;
-    g_ADDRESS_GRANULARITY   : t_wishbone_address_granularity := WORD;
-    g_WITH_EXTRA_WB_REG     : boolean := false
+    g_INTERFACE_MODE              : t_wishbone_interface_mode := CLASSIC;
+    g_ADDRESS_GRANULARITY         : t_wishbone_address_granularity := WORD;
+    g_WITH_EXTRA_WB_REG           : boolean := false
   );
   port (
     -- Clock
-    clk_i                   : in std_logic;
+    clk_i                         : in std_logic;
 
     -- Reset
-    rst_n_i                 : in std_logic;
+    rst_n_i                       : in std_logic;
 
     -- BPM position
-    bpm_pos_i               : in  signed(c_BPM_POS_WIDTH-1 downto 0);
+    bpm_pos_i                     : in  signed(c_BPM_POS_WIDTH-1 downto 0);
 
     -- BPM position index
-    bpm_pos_index_i         : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+    bpm_pos_index_i               : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- BPM position valid
-    bpm_pos_valid_i         : in std_logic;
+    bpm_pos_valid_i               : in std_logic;
 
-    -- BPM flatenized positions clear
-    -- This clears the stored BPM positions.
-    bpm_pos_flat_clear_i    : in std_logic;
+    -- BPM positions flatenizers clear
+    -- This clears the stored BPM positions (both undistorted and distorted).
+    bpm_pos_flat_clear_i          : in std_logic;
 
     -- Setpoints array
-    sp_arr_i                : in t_sp_arr(g_CHANNELS-1 downto 0);
+    sp_arr_i                      : in t_sp_arr(g_CHANNELS-1 downto 0);
 
     -- Setpoints valid array
-    sp_valid_arr_i          : in std_logic_vector(g_CHANNELS-1 downto 0);
+    sp_valid_arr_i                : in std_logic_vector(g_CHANNELS-1 downto 0);
 
     -- PRBS iteration signal
-    prbs_valid_i            : in std_logic;
+    prbs_valid_i                  : in std_logic;
 
     -- External trigger
     -- A pulse on this effectivates what was set via Wishbone on PRBS_CTL_RST,
     -- PRBS_CTL_BPM_POS_DISTORT_EN and PRBS_CTL_SP_DISTORT_EN.
-    trig_i                  : in std_logic;
+    trig_i                        : in std_logic;
 
     -- BPM positions flatenized (instance x)
-    bpm_pos_flat_x_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_x_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
 
     -- Each bit indicates if the corresponding BPM position was received since
     -- the last clearing (or resetting). This is useful for debugging. (instance x)
-    bpm_pos_flat_x_rcvd_o   : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_x_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
 
     -- BPM positions flatenized (instance y)
-    bpm_pos_flat_y_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_y_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
 
     -- Each bit indicates if the corresponding BPM position was received since
     -- the last clearing (or resetting). This is useful for debugging. (instance y)
-    bpm_pos_flat_y_rcvd_o   : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+    bpm_pos_flat_y_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
 
     -- Distorted BPM position
-    distort_bpm_pos_o       : out signed(c_BPM_POS_WIDTH-1 downto 0);
+    distort_bpm_pos_o             : out signed(c_BPM_POS_WIDTH-1 downto 0);
 
     -- Distorted BPM position index (same as bpm_pos_index_i)
-    distort_bpm_pos_index_o : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+    distort_bpm_pos_index_o       : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
 
     -- Distorted BPM position valid
-    distort_bpm_pos_valid_o : out std_logic;
+    distort_bpm_pos_valid_o       : out std_logic;
 
     -- Distorted setpoints array
-    distort_sp_arr_o        : out t_sp_arr(g_CHANNELS-1 downto 0);
+    distort_sp_arr_o              : out t_sp_arr(g_CHANNELS-1 downto 0);
 
     -- Distorted setpoints valid array
-    distort_sp_valid_arr_o  : out std_logic_vector(g_CHANNELS-1 downto 0);
+    distort_sp_valid_arr_o        : out std_logic_vector(g_CHANNELS-1 downto 0);
 
     -- PRBS signal for debug
-    prbs_o                  : out std_logic;
+    prbs_o                        : out std_logic;
 
     -- PRBS valid signal for debug
-    prbs_valid_o            : out std_logic;
+    prbs_valid_o                  : out std_logic;
+
+    -- Distorted BPM positions flatenized (instance x)
+    distort_bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+
+    -- Each bit indicates if the corresponding BPM position was received since
+    -- the last clearing (or resetting). This is useful for debugging. (instance x)
+    distort_bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+
+    -- Distorted BPM positions flatenized (instance y)
+    distort_bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+
+    -- Each bit indicates if the corresponding BPM position was received since
+    -- the last clearing (or resetting). This is useful for debugging. (instance y)
+    distort_bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
 
     -- Wishbone interface
-    wb_slv_i                : in t_wishbone_slave_in;
-    wb_slv_o                : out t_wishbone_slave_out
+    wb_slv_i                      : in t_wishbone_slave_in;
+    wb_slv_o                      : out t_wishbone_slave_out
   );
 end xwb_fofb_sys_id;
 
@@ -151,7 +165,10 @@ architecture beh of xwb_fofb_sys_id is
   signal prbs_sp_distort_levels_arr   : t_prbs_distort_levels_arr(c_MAX_CHANNELS-1 downto 0) := (others => c_DISTORT_LEVELS_ZEROED);
   signal bpm_pos_d1                   : signed(c_BPM_POS_WIDTH-1 downto 0);
   signal bpm_pos_index_d1             : unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
-  signal bpm_pos_valid_d1             : std_logic;
+  signal bpm_pos_valid_d1             : std_logic := '0';
+  signal distort_bpm_pos              : signed(c_BPM_POS_WIDTH-1 downto 0);
+  signal distort_bpm_pos_index        : unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+  signal distort_bpm_pos_valid        : std_logic := '0';
 
   signal bpm_pos_flatenizer_ctl_base_bpm_id           : std_logic_vector(7 downto 0) := (others => '0');
   signal prbs_ctl_rst                                 : std_logic := '0';
@@ -253,9 +270,9 @@ begin
       bpm_pos_valid_i         => bpm_pos_valid_d1,
       distort_level_0_i       => prbs_bpm_pos_distort_levels.level_0,
       distort_level_1_i       => prbs_bpm_pos_distort_levels.level_1,
-      distort_bpm_pos_index_o => distort_bpm_pos_index_o,
-      distort_bpm_pos_o       => distort_bpm_pos_o,
-      distort_bpm_pos_valid_o => distort_bpm_pos_valid_o,
+      distort_bpm_pos_index_o => distort_bpm_pos_index,
+      distort_bpm_pos_o       => distort_bpm_pos,
+      distort_bpm_pos_valid_o => distort_bpm_pos_valid,
       prbs_o                  => prbs_o,
       prbs_valid_o            => prbs_valid_o
     );
@@ -286,6 +303,46 @@ begin
             prbs_valid_o          => open   -- same as cmp_prbs_bpm_pos_distort's prbs_valid_o
           );
       end generate;
+
+  -- Distorted BPM positions x flatenizer
+  cmp_x_distort_bpm_pos_flatenizer : bpm_pos_flatenizer
+    generic map (
+      g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
+      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
+    )
+    port map (
+      clk_i                 => clk_i,
+      rst_n_i               => rst_n_i,
+      clear_i               => bpm_pos_flat_clear_i,
+      -- The associated index is the same as the DCC packet BPM ID which
+      -- contains it (ranges from 0 to 255).
+      bpm_pos_base_index_i  => '0' & unsigned(bpm_pos_flatenizer_ctl_base_bpm_id),
+      bpm_pos_index_i       => distort_bpm_pos_index,
+      bpm_pos_i             => distort_bpm_pos,
+      bpm_pos_valid_i       => distort_bpm_pos_valid,
+      bpm_pos_flat_o        => distort_bpm_pos_flat_x_o,
+      bpm_pos_flat_rcvd_o   => distort_bpm_pos_flat_x_rcvd_o
+    );
+
+  -- Distorted BPM positions y flatenizer
+  cmp_y_distort_bpm_pos_flatenizer : bpm_pos_flatenizer
+    generic map (
+      g_BPM_POS_INDEX_WIDTH => g_BPM_POS_INDEX_WIDTH,
+      g_MAX_NUM_BPM_POS     => g_MAX_NUM_BPM_POS
+    )
+    port map (
+      clk_i                 => clk_i,
+      rst_n_i               => rst_n_i,
+      clear_i               => bpm_pos_flat_clear_i,
+      -- The associated index is the same as the DCC packet BPM ID which
+      -- contains it + 256 (ranges from 256 to 511).
+      bpm_pos_base_index_i  => '1' & unsigned(bpm_pos_flatenizer_ctl_base_bpm_id),
+      bpm_pos_index_i       => distort_bpm_pos_index,
+      bpm_pos_i             => distort_bpm_pos,
+      bpm_pos_valid_i       => distort_bpm_pos_valid,
+      bpm_pos_flat_o        => distort_bpm_pos_flat_y_o,
+      bpm_pos_flat_rcvd_o   => distort_bpm_pos_flat_y_rcvd_o
+    );
 
   cmp_wb_fofb_sys_id_regs : entity work.wb_fofb_sys_id_regs
     port map (
@@ -401,5 +458,9 @@ begin
   -- Decodes prbs_ctl_step_duration and prbs_ctl_lfsr_length
   prbs_step_duration <= to_integer(unsigned(prbs_ctl_step_duration)) + 1;
   prbs_lfsr_length <= to_integer(unsigned(prbs_ctl_lfsr_length)) + 2;
+
+  distort_bpm_pos_o <= distort_bpm_pos;
+  distort_bpm_pos_index_o <= distort_bpm_pos_index;
+  distort_bpm_pos_valid_o <= distort_bpm_pos_valid;
 
 end architecture beh;

@@ -602,37 +602,41 @@ package fofb_ctrl_pkg is
 
   component xwb_fofb_sys_id is
     generic (
-      g_BPM_POS_INDEX_WIDTH   : natural := 9;
-      g_MAX_NUM_BPM_POS       : natural := c_MAX_NUM_P2P_BPM_POS/2;
-      g_CHANNELS              : natural := 12;
-      g_INTERFACE_MODE        : t_wishbone_interface_mode := CLASSIC;
-      g_ADDRESS_GRANULARITY   : t_wishbone_address_granularity := WORD;
-      g_WITH_EXTRA_WB_REG     : boolean := false
+      g_BPM_POS_INDEX_WIDTH         : natural := 9;
+      g_MAX_NUM_BPM_POS             : natural := c_MAX_NUM_P2P_BPM_POS/2;
+      g_CHANNELS                    : natural := 12;
+      g_INTERFACE_MODE              : t_wishbone_interface_mode := CLASSIC;
+      g_ADDRESS_GRANULARITY         : t_wishbone_address_granularity := WORD;
+      g_WITH_EXTRA_WB_REG           : boolean := false
     );
     port (
-      clk_i                   : in std_logic;
-      rst_n_i                 : in std_logic;
-      bpm_pos_i               : in signed(c_BPM_POS_WIDTH-1 downto 0);
-      bpm_pos_index_i         : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
-      bpm_pos_valid_i         : in std_logic;
-      bpm_pos_flat_clear_i    : in std_logic;
-      sp_arr_i                : in t_sp_arr(g_CHANNELS-1 downto 0);
-      sp_valid_arr_i          : in std_logic_vector(g_CHANNELS-1 downto 0);
-      prbs_valid_i            : in std_logic;
-      trig_i                  : in std_logic;
-      bpm_pos_flat_x_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
-      bpm_pos_flat_x_rcvd_o   : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
-      bpm_pos_flat_y_o        : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
-      bpm_pos_flat_y_rcvd_o   : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
-      distort_bpm_pos_o       : out signed(c_BPM_POS_WIDTH-1 downto 0);
-      distort_bpm_pos_index_o : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
-      distort_bpm_pos_valid_o : out std_logic;
-      distort_sp_arr_o        : out t_sp_arr(g_CHANNELS-1 downto 0);
-      distort_sp_valid_arr_o  : out std_logic_vector(g_CHANNELS-1 downto 0);
-      prbs_o                  : out std_logic;
-      prbs_valid_o            : out std_logic;
-      wb_slv_i                : in t_wishbone_slave_in;
-      wb_slv_o                : out t_wishbone_slave_out
+      clk_i                         : in std_logic;
+      rst_n_i                       : in std_logic;
+      bpm_pos_i                     : in signed(c_BPM_POS_WIDTH-1 downto 0);
+      bpm_pos_index_i               : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+      bpm_pos_valid_i               : in std_logic;
+      bpm_pos_flat_clear_i          : in std_logic;
+      sp_arr_i                      : in t_sp_arr(g_CHANNELS-1 downto 0);
+      sp_valid_arr_i                : in std_logic_vector(g_CHANNELS-1 downto 0);
+      prbs_valid_i                  : in std_logic;
+      trig_i                        : in std_logic;
+      bpm_pos_flat_x_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+      bpm_pos_flat_x_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+      bpm_pos_flat_y_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+      bpm_pos_flat_y_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+      distort_bpm_pos_o             : out signed(c_BPM_POS_WIDTH-1 downto 0);
+      distort_bpm_pos_index_o       : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+      distort_bpm_pos_valid_o       : out std_logic;
+      distort_sp_arr_o              : out t_sp_arr(g_CHANNELS-1 downto 0);
+      distort_sp_valid_arr_o        : out std_logic_vector(g_CHANNELS-1 downto 0);
+      prbs_o                        : out std_logic;
+      prbs_valid_o                  : out std_logic;
+      distort_bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+      distort_bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+      distort_bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
+      distort_bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
+      wb_slv_i                      : in t_wishbone_slave_in;
+      wb_slv_o                      : out t_wishbone_slave_out
     );
   end component;
 

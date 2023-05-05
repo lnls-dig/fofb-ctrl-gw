@@ -67,27 +67,31 @@ architecture test of xwb_fofb_sys_id_tb is
           c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_BPM_POS_DISTORT_EN_OFFSET -
           c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_LFSR_LENGTH_OFFSET));
 
-  signal clk                    : std_logic := '0';
-  signal rst_n                  : std_logic := '0';
-  signal bpm_pos                : signed(c_BPM_POS_WIDTH-1 downto 0);
-  signal bpm_pos_index          : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
-  signal bpm_pos_valid          : std_logic := '0';
-  signal bpm_pos_flat_clear     : std_logic := '0';
-  signal sp_arr                 : t_sp_arr(c_CHANNELS-1 downto 0);
-  signal sp_valid_arr           : std_logic_vector(c_CHANNELS-1 downto 0) := (others => '0');
-  signal prbs_iterate           : std_logic := '0';
-  signal trig                   : std_logic := '0';
-  signal bpm_pos_flat_x         : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal bpm_pos_flat_x_rcvd    : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal bpm_pos_flat_y         : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal bpm_pos_flat_y_rcvd    : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
-  signal distort_bpm_pos        : signed(c_BPM_POS_WIDTH-1 downto 0);
-  signal distort_bpm_pos_index  : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
-  signal distort_bpm_pos_valid  : std_logic;
-  signal distort_sp_arr         : t_sp_arr(c_CHANNELS-1 downto 0);
-  signal distort_sp_valid_arr   : std_logic_vector(c_CHANNELS-1 downto 0);
-  signal prbs                   : std_logic;
-  signal prbs_valid             : std_logic;
+  signal clk                          : std_logic := '0';
+  signal rst_n                        : std_logic := '0';
+  signal bpm_pos                      : signed(c_BPM_POS_WIDTH-1 downto 0);
+  signal bpm_pos_index                : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal bpm_pos_valid                : std_logic := '0';
+  signal bpm_pos_flat_clear           : std_logic := '0';
+  signal sp_arr                       : t_sp_arr(c_CHANNELS-1 downto 0);
+  signal sp_valid_arr                 : std_logic_vector(c_CHANNELS-1 downto 0) := (others => '0');
+  signal prbs_iterate                 : std_logic := '0';
+  signal trig                         : std_logic := '0';
+  signal bpm_pos_flat_x               : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal bpm_pos_flat_x_rcvd          : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal bpm_pos_flat_y               : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal bpm_pos_flat_y_rcvd          : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal distort_bpm_pos              : signed(c_BPM_POS_WIDTH-1 downto 0);
+  signal distort_bpm_pos_index        : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal distort_bpm_pos_valid        : std_logic;
+  signal distort_sp_arr               : t_sp_arr(c_CHANNELS-1 downto 0);
+  signal distort_sp_valid_arr         : std_logic_vector(c_CHANNELS-1 downto 0);
+  signal prbs                         : std_logic;
+  signal prbs_valid                   : std_logic;
+  signal distort_bpm_pos_flat_x       : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal distort_bpm_pos_flat_x_rcvd  : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal distort_bpm_pos_flat_y       : t_bpm_pos_arr(c_MAX_NUM_BPM_POS-1 downto 0);
+  signal distort_bpm_pos_flat_y_rcvd  : std_logic_vector(c_MAX_NUM_BPM_POS-1 downto 0);
 
   -- Wishbone signals
   signal wb_slave_i           : t_wishbone_slave_in;
@@ -259,7 +263,7 @@ begin
         severity error;
     end loop;
 
-    -- ######################### FLATENIZERS CHECKING #########################
+    -- ################## BPM POSITIONS FLATENIZERS CHECKING ##################
 
     -- Checks if flatenizers are working
 
@@ -476,6 +480,12 @@ begin
     trig <= '0';
     f_wait_cycles(clk, 1);
 
+    -- ############# DISTORTED BPM POSITIONS FLATENIZERS CHECKING #############
+
+    -- Checks if flatenizers are working
+    -- TODO
+
+
     -- ######################### SETPOINTS PASSTHROUGH #########################
 
     -- Disables setpoints distortion and checks if passthrough is working
@@ -626,36 +636,40 @@ begin
 
   uut : xwb_fofb_sys_id
     generic map (
-      g_BPM_POS_INDEX_WIDTH     => c_SP_COEFF_RAM_ADDR_WIDTH,
-      g_MAX_NUM_BPM_POS         => c_MAX_NUM_BPM_POS,
-      g_CHANNELS                => c_CHANNELS,
-      g_INTERFACE_MODE          => PIPELINED,
-      g_ADDRESS_GRANULARITY     => BYTE,
-      g_WITH_EXTRA_WB_REG       => false
+      g_BPM_POS_INDEX_WIDTH         => c_SP_COEFF_RAM_ADDR_WIDTH,
+      g_MAX_NUM_BPM_POS             => c_MAX_NUM_BPM_POS,
+      g_CHANNELS                    => c_CHANNELS,
+      g_INTERFACE_MODE              => PIPELINED,
+      g_ADDRESS_GRANULARITY         => BYTE,
+      g_WITH_EXTRA_WB_REG           => false
     )
     port map (
-      clk_i                     => clk,
-      rst_n_i                   => rst_n,
-      bpm_pos_i                 => bpm_pos,
-      bpm_pos_index_i           => bpm_pos_index,
-      bpm_pos_valid_i           => bpm_pos_valid,
-      bpm_pos_flat_clear_i      => bpm_pos_flat_clear,
-      sp_arr_i                  => sp_arr,
-      sp_valid_arr_i            => sp_valid_arr,
-      prbs_valid_i              => prbs_iterate,
-      trig_i                    => trig,
-      bpm_pos_flat_x_o          => bpm_pos_flat_x,
-      bpm_pos_flat_x_rcvd_o     => bpm_pos_flat_x_rcvd,
-      bpm_pos_flat_y_o          => bpm_pos_flat_y,
-      bpm_pos_flat_y_rcvd_o     => bpm_pos_flat_y_rcvd,
-      distort_bpm_pos_o         => distort_bpm_pos,
-      distort_bpm_pos_index_o   => distort_bpm_pos_index,
-      distort_bpm_pos_valid_o   => distort_bpm_pos_valid,
-      distort_sp_arr_o          => distort_sp_arr,
-      distort_sp_valid_arr_o    => distort_sp_valid_arr,
-      prbs_o                    => prbs,
-      prbs_valid_o              => prbs_valid,
-      wb_slv_i                  => wb_slave_i,
-      wb_slv_o                  => wb_slave_o
+      clk_i                         => clk,
+      rst_n_i                       => rst_n,
+      bpm_pos_i                     => bpm_pos,
+      bpm_pos_index_i               => bpm_pos_index,
+      bpm_pos_valid_i               => bpm_pos_valid,
+      bpm_pos_flat_clear_i          => bpm_pos_flat_clear,
+      sp_arr_i                      => sp_arr,
+      sp_valid_arr_i                => sp_valid_arr,
+      prbs_valid_i                  => prbs_iterate,
+      trig_i                        => trig,
+      bpm_pos_flat_x_o              => bpm_pos_flat_x,
+      bpm_pos_flat_x_rcvd_o         => bpm_pos_flat_x_rcvd,
+      bpm_pos_flat_y_o              => bpm_pos_flat_y,
+      bpm_pos_flat_y_rcvd_o         => bpm_pos_flat_y_rcvd,
+      distort_bpm_pos_o             => distort_bpm_pos,
+      distort_bpm_pos_index_o       => distort_bpm_pos_index,
+      distort_bpm_pos_valid_o       => distort_bpm_pos_valid,
+      distort_sp_arr_o              => distort_sp_arr,
+      distort_sp_valid_arr_o        => distort_sp_valid_arr,
+      prbs_o                        => prbs,
+      prbs_valid_o                  => prbs_valid,
+      distort_bpm_pos_flat_x_o      => distort_bpm_pos_flat_x,
+      distort_bpm_pos_flat_x_rcvd_o => distort_bpm_pos_flat_x_rcvd,
+      distort_bpm_pos_flat_y_o      => distort_bpm_pos_flat_y,
+      distort_bpm_pos_flat_y_rcvd_o => distort_bpm_pos_flat_y_rcvd,
+      wb_slv_i                      => wb_slave_i,
+      wb_slv_o                      => wb_slave_o
     );
 end architecture test;

@@ -1809,37 +1809,41 @@ begin
 
   cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
     generic map (
-      g_BPM_POS_INDEX_WIDTH     => c_SP_COEFF_RAM_ADDR_WIDTH,
-      g_MAX_NUM_BPM_POS         => c_MAX_NUM_P2P_BPM_POS/2,
-      g_CHANNELS                => c_FOFB_CHANNELS,
-      g_INTERFACE_MODE          => PIPELINED,
-      g_ADDRESS_GRANULARITY     => BYTE,
-      g_WITH_EXTRA_WB_REG       => false
+      g_BPM_POS_INDEX_WIDTH         => c_SP_COEFF_RAM_ADDR_WIDTH,
+      g_MAX_NUM_BPM_POS             => c_MAX_NUM_P2P_BPM_POS/2,
+      g_CHANNELS                    => c_FOFB_CHANNELS,
+      g_INTERFACE_MODE              => PIPELINED,
+      g_ADDRESS_GRANULARITY         => BYTE,
+      g_WITH_EXTRA_WB_REG           => false
     )
     port map (
-      clk_i                     => clk_sys,
-      rst_n_i                   => clk_sys_rstn,
-      bpm_pos_i                 => fofb_proc_bpm_pos,
-      bpm_pos_index_i           => fofb_proc_bpm_pos_index,
-      bpm_pos_valid_i           => fofb_proc_bpm_pos_valid,
-      bpm_pos_flat_clear_i      => fofb_proc_sp_valid_arr(0),   -- all valids are synced
-      sp_arr_i                  => t_sp_arr(fofb_proc_sp_arr),
-      sp_valid_arr_i            => fofb_proc_sp_valid_arr,
-      prbs_valid_i              => fofb_proc_sp_valid_arr(0),   -- all valids are synced
-      trig_i                    => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_TRIG_SYS_ID_EFF_REGS_ID).pulse,
-      bpm_pos_flat_x_o          => bpm_pos_flat_x,
-      bpm_pos_flat_x_rcvd_o     => bpm_pos_flat_x_rcvd,
-      bpm_pos_flat_y_o          => bpm_pos_flat_y,
-      bpm_pos_flat_y_rcvd_o     => bpm_pos_flat_y_rcvd,
-      distort_bpm_pos_index_o   => distort_fofb_proc_bpm_pos_index,
-      distort_bpm_pos_o         => distort_fofb_proc_bpm_pos,
-      distort_bpm_pos_valid_o   => distort_fofb_proc_bpm_pos_valid,
-      distort_sp_arr_o          => distort_fofb_proc_sp_arr,
-      distort_sp_valid_arr_o    => distort_fofb_proc_sp_valid_arr,
-      prbs_o                    => prbs,
-      prbs_valid_o              => open,
-      wb_slv_i                  => user_wb_out(c_FOFB_SYS_ID_ID),
-      wb_slv_o                  => user_wb_in(c_FOFB_SYS_ID_ID)
+      clk_i                         => clk_sys,
+      rst_n_i                       => clk_sys_rstn,
+      bpm_pos_i                     => fofb_proc_bpm_pos,
+      bpm_pos_index_i               => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i               => fofb_proc_bpm_pos_valid,
+      bpm_pos_flat_clear_i          => distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
+      sp_arr_i                      => t_sp_arr(fofb_proc_sp_arr),
+      sp_valid_arr_i                => fofb_proc_sp_valid_arr,
+      prbs_valid_i                  => fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      trig_i                        => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_TRIG_SYS_ID_EFF_REGS_ID).pulse,
+      bpm_pos_flat_x_o              => bpm_pos_flat_x,
+      bpm_pos_flat_x_rcvd_o         => bpm_pos_flat_x_rcvd,
+      bpm_pos_flat_y_o              => bpm_pos_flat_y,
+      bpm_pos_flat_y_rcvd_o         => bpm_pos_flat_y_rcvd,
+      distort_bpm_pos_index_o       => distort_fofb_proc_bpm_pos_index,
+      distort_bpm_pos_o             => distort_fofb_proc_bpm_pos,
+      distort_bpm_pos_valid_o       => distort_fofb_proc_bpm_pos_valid,
+      distort_sp_arr_o              => distort_fofb_proc_sp_arr,
+      distort_sp_valid_arr_o        => distort_fofb_proc_sp_valid_arr,
+      prbs_o                        => prbs,
+      prbs_valid_o                  => open,
+      distort_bpm_pos_flat_x_o      => open,
+      distort_bpm_pos_flat_x_rcvd_o => open,
+      distort_bpm_pos_flat_y_o      => open,
+      distort_bpm_pos_flat_y_rcvd_o => open,
+      wb_slv_i                      => user_wb_out(c_FOFB_SYS_ID_ID),
+      wb_slv_o                      => user_wb_in(c_FOFB_SYS_ID_ID)
     );
 
   ----------------------------------------------------------------------
