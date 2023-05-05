@@ -480,6 +480,10 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- Each flatenizer holds at most half of c_MAX_NUM_P2P_BPM_POS.
   constant c_MAX_NUM_BPM_POS_PER_FLAT        : natural := c_MAX_NUM_P2P_BPM_POS/2;
 
+  signal syncd_acq_sys_id                    : std_logic := '0';
+  signal syncd_acq_sys_id_debug              : std_logic := '0';
+  signal syncd_trig_sys_id_eff_regs          : std_logic := '0';
+
   signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
   signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
   signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
@@ -1818,6 +1822,39 @@ begin
   --                    FOFB SYSTEM IDENTIFICATION                    --
   ----------------------------------------------------------------------
 
+  -- These pulse syncers guarantee that we won't acquire/change stuff in the
+  -- middle of a FOFB cycle.
+
+  cmp_acq_sys_id_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse,
+      sync_i        => fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_acq_sys_id
+    );
+
+  cmp_acq_sys_id_debug_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).pulse,
+      sync_i        => distort_fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_acq_sys_id_debug
+    );
+
+  cmp_trig_sys_id_eff_regs_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_TRIG_SYS_ID_EFF_REGS_ID).pulse,
+      sync_i        => distort_fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_trig_sys_id_eff_regs
+    );
+
   cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
     generic map (
       g_BPM_POS_INDEX_WIDTH         => c_SP_COEFF_RAM_ADDR_WIDTH,
@@ -1837,7 +1874,7 @@ begin
       sp_arr_i                      => t_sp_arr(fofb_proc_sp_arr),
       sp_valid_arr_i                => fofb_proc_sp_valid_arr,
       prbs_valid_i                  => distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
-      trig_i                        => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_TRIG_SYS_ID_EFF_REGS_ID).pulse,
+      trig_i                        => syncd_trig_sys_id_eff_regs,
       bpm_pos_flat_x_o              => bpm_pos_flat_x,
       bpm_pos_flat_x_rcvd_o         => bpm_pos_flat_x_rcvd,
       bpm_pos_flat_y_o              => bpm_pos_flat_y,
@@ -2266,7 +2303,7 @@ begin
     std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) &             -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
     std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= fofb_proc_sp_valid_arr(0);   -- all valids are synced
-  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= syncd_acq_sys_id;
 
   -- SYS ID debug channel
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_DEBUG_ID).width)-1 downto 0) <=
@@ -2283,7 +2320,7 @@ begin
     std_logic_vector(distort_bpm_pos_flat_x(7)) & std_logic_vector(distort_bpm_pos_flat_x(6)) & std_logic_vector(distort_bpm_pos_flat_x(5)) & std_logic_vector(distort_bpm_pos_flat_x(4)) &             -- [DEBUG] P2P BPM x distorted positions 7-0 (255 downto 0, 8x32)
     std_logic_vector(distort_bpm_pos_flat_x(3)) & std_logic_vector(distort_bpm_pos_flat_x(2)) & std_logic_vector(distort_bpm_pos_flat_x(1)) & std_logic_vector(distort_bpm_pos_flat_x(0));
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).dvalid  <= distort_fofb_proc_sp_valid_arr(0);   -- all valids are synced
-  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).trig    <= syncd_acq_sys_id_debug;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --
