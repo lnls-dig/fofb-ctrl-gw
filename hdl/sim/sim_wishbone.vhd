@@ -73,7 +73,8 @@ package body sim_wishbone is
         end loop;
         wb_o.cyc <= '0';
         wb_o.stb <= '0';
-        --wb_o.adr <= (others => 'X');
+        -- wb_o.adr <= (others => 'X');
+        -- this causes problems with cheby generated RAM interfaces
         wb_o.dat <= (others => 'X');
     end wait_ack;
 
