@@ -119,6 +119,11 @@ counts, one for each PRBS value.
     /* padding to: 512 words */
     uint32_t __padding_1[480];
 
+    /* NOTE: 'struct bpm_pos_distort' offset doesn't match
+     *       WB_FOFB_SYS_ID_REGS_PRBS_BPM_POS_DISTORT_DISTORT_RAM.
+     *       This is temporarily fixed by this padding. */
+    uint32_t __padding_cheby_bug_fix[4];
+
     /* [0x800]: BLOCK Interface to prbs_bpm_pos_distort regs */
     struct bpm_pos_distort {
       /* [0x0]: MEMORY Distortion levels RAM */
