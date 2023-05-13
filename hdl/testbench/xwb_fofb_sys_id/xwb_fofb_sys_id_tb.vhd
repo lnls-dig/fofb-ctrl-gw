@@ -17,6 +17,12 @@
 -- 2023-05-03   1.1      guilherme.ricioli   Test PRBS distortion machinery
 --------------------------------------------------------------------------------
 
+-- TODO: Test
+--       c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_SP_DISTORT_MOV_AVG_NUM_TAPS_SEL_OFFSET,
+--       c_WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT_MOV_AVG_MAX_NUM_TAPS_SEL_CTE_ADDR
+--      and the setpoints distortion averaging itself. Currently, no averaging
+--      is done.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -570,6 +576,9 @@ begin
       f_wait_cycles(clk, 1);
       prbs_iterate <= '0';
       f_wait_clocked_signal(clk, prbs_valid, '1');
+      -- NOTE: Accounting for the distortion averaging (2 cc) and registering
+      --       (1 cc) delay
+      f_wait_cycles(clk, 3);
 
       for ch in 0 to c_CHANNELS-1
       loop

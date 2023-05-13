@@ -1,4 +1,4 @@
--- Do not edit.  Generated on Mon May 08 18:02:08 2023 by guilherme.ricioli
+-- Do not edit.  Generated on Sat May 13 12:01:33 2023 by guilherme.ricioli
 -- With Cheby 1.4.0 and these options:
 --  -i wb_fofb_sys_id_regs.cheby --hdl vhdl --gen-hdl wb_fofb_sys_id_regs.vhd --doc html --gen-doc doc/wb_fofb_sys_id_regs.html --gen-c wb_fofb_sys_id_regs.h --consts-style vhdl-ohwr --gen-consts ../../../sim/regs/wb_fofb_sys_id_regs_consts_pkg.vhd
 
@@ -72,6 +72,25 @@ entity wb_fofb_sys_id_regs is
     -- write 1: distortion enabled
 
     prbs_ctl_sp_distort_en_o : out   std_logic;
+    -- Selects the number of taps for averaging the setpoints
+    -- distortion. The number of taps being selected is given by
+    -- '2**sp_distort_mov_avg_num_taps_sel'.
+    -- NOTE: The maximum value for this field is given by
+    --       sp_distort_mov_avg_max_num_taps_sel_cte.
+
+    -- write 0x00: set number of taps to 1 (no averaging)
+    -- write 0x01: set number of taps to 2
+    -- write 0x02: set number of taps to 8
+    -- ...
+    -- write sp_distort_mov_avg_max_num_taps_sel_cte : set number
+    --  of taps to 2**sp_distort_mov_avg_max_num_taps_sel_cte.
+
+    prbs_ctl_sp_distort_mov_avg_num_taps_sel_o : out   std_logic_vector(2 downto 0);
+
+    -- The maximum allowed value for prbs.ctl
+    -- sp_distort_mov_avg_num_taps_sel field.
+
+    prbs_sp_distort_mov_avg_max_num_taps_sel_cte_i : in    std_logic_vector(7 downto 0);
 
     -- Two signed 16-bit distortion levels in RTM-LAMP ADC
     -- counts, one for each PRBS value.
@@ -278,6 +297,7 @@ architecture syn of wb_fofb_sys_id_regs is
   signal prbs_ctl_lfsr_length_reg       : std_logic_vector(4 downto 0);
   signal prbs_ctl_bpm_pos_distort_en_reg : std_logic;
   signal prbs_ctl_sp_distort_en_reg     : std_logic;
+  signal prbs_ctl_sp_distort_mov_avg_num_taps_sel_reg : std_logic_vector(2 downto 0);
   signal prbs_ctl_wreq                  : std_logic;
   signal prbs_ctl_wack                  : std_logic;
   signal prbs_sp_distort_ch_0_levels_level_0_reg : std_logic_vector(15 downto 0);
@@ -418,6 +438,7 @@ begin
   prbs_ctl_lfsr_length_o <= prbs_ctl_lfsr_length_reg;
   prbs_ctl_bpm_pos_distort_en_o <= prbs_ctl_bpm_pos_distort_en_reg;
   prbs_ctl_sp_distort_en_o <= prbs_ctl_sp_distort_en_reg;
+  prbs_ctl_sp_distort_mov_avg_num_taps_sel_o <= prbs_ctl_sp_distort_mov_avg_num_taps_sel_reg;
   process (clk_i) begin
     if rising_edge(clk_i) then
       if rst_n_i = '0' then
@@ -426,6 +447,7 @@ begin
         prbs_ctl_lfsr_length_reg <= "00000";
         prbs_ctl_bpm_pos_distort_en_reg <= '0';
         prbs_ctl_sp_distort_en_reg <= '0';
+        prbs_ctl_sp_distort_mov_avg_num_taps_sel_reg <= "000";
         prbs_ctl_wack <= '0';
       else
         if prbs_ctl_wreq = '1' then
@@ -434,11 +456,14 @@ begin
           prbs_ctl_lfsr_length_reg <= wr_dat_d0(15 downto 11);
           prbs_ctl_bpm_pos_distort_en_reg <= wr_dat_d0(16);
           prbs_ctl_sp_distort_en_reg <= wr_dat_d0(17);
+          prbs_ctl_sp_distort_mov_avg_num_taps_sel_reg <= wr_dat_d0(20 downto 18);
         end if;
         prbs_ctl_wack <= prbs_ctl_wreq;
       end if;
     end if;
   end process;
+
+  -- Register prbs_sp_distort_mov_avg_max_num_taps_sel_cte
 
   -- Register prbs_sp_distort_ch_0_levels
   prbs_sp_distort_ch_0_levels_level_0_o <= prbs_sp_distort_ch_0_levels_level_0_reg;
@@ -750,6 +775,9 @@ begin
         -- Reg prbs_ctl
         prbs_ctl_wreq <= wr_req_d0;
         wr_ack_int <= prbs_ctl_wack;
+      when "000000001" =>
+        -- Reg prbs_sp_distort_mov_avg_max_num_taps_sel_cte
+        wr_ack_int <= wr_req_d0;
       when "000010000" =>
         -- Reg prbs_sp_distort_ch_0_levels
         prbs_sp_distort_ch_0_levels_wreq <= wr_req_d0;
@@ -811,7 +839,7 @@ begin
   end process;
 
   -- Process for read requests.
-  process (adr_int, rd_req_int, bpm_pos_flatenizer_ctl_base_bpm_id_reg, bpm_pos_flatenizer_max_num_cte_i, prbs_ctl_rst_reg, prbs_ctl_step_duration_reg, prbs_ctl_lfsr_length_reg, prbs_ctl_bpm_pos_distort_en_reg, prbs_ctl_sp_distort_en_reg, prbs_sp_distort_ch_0_levels_level_0_reg, prbs_sp_distort_ch_0_levels_level_1_reg, prbs_sp_distort_ch_1_levels_level_0_reg, prbs_sp_distort_ch_1_levels_level_1_reg, prbs_sp_distort_ch_2_levels_level_0_reg, prbs_sp_distort_ch_2_levels_level_1_reg, prbs_sp_distort_ch_3_levels_level_0_reg, prbs_sp_distort_ch_3_levels_level_1_reg, prbs_sp_distort_ch_4_levels_level_0_reg, prbs_sp_distort_ch_4_levels_level_1_reg, prbs_sp_distort_ch_5_levels_level_0_reg, prbs_sp_distort_ch_5_levels_level_1_reg, prbs_sp_distort_ch_6_levels_level_0_reg, prbs_sp_distort_ch_6_levels_level_1_reg, prbs_sp_distort_ch_7_levels_level_0_reg, prbs_sp_distort_ch_7_levels_level_1_reg, prbs_sp_distort_ch_8_levels_level_0_reg, prbs_sp_distort_ch_8_levels_level_1_reg, prbs_sp_distort_ch_9_levels_level_0_reg, prbs_sp_distort_ch_9_levels_level_1_reg, prbs_sp_distort_ch_10_levels_level_0_reg, prbs_sp_distort_ch_10_levels_level_1_reg, prbs_sp_distort_ch_11_levels_level_0_reg, prbs_sp_distort_ch_11_levels_level_1_reg, prbs_bpm_pos_distort_distort_ram_levels_int_dato, prbs_bpm_pos_distort_distort_ram_levels_rack) begin
+  process (adr_int, rd_req_int, bpm_pos_flatenizer_ctl_base_bpm_id_reg, bpm_pos_flatenizer_max_num_cte_i, prbs_ctl_rst_reg, prbs_ctl_step_duration_reg, prbs_ctl_lfsr_length_reg, prbs_ctl_bpm_pos_distort_en_reg, prbs_ctl_sp_distort_en_reg, prbs_ctl_sp_distort_mov_avg_num_taps_sel_reg, prbs_sp_distort_mov_avg_max_num_taps_sel_cte_i, prbs_sp_distort_ch_0_levels_level_0_reg, prbs_sp_distort_ch_0_levels_level_1_reg, prbs_sp_distort_ch_1_levels_level_0_reg, prbs_sp_distort_ch_1_levels_level_1_reg, prbs_sp_distort_ch_2_levels_level_0_reg, prbs_sp_distort_ch_2_levels_level_1_reg, prbs_sp_distort_ch_3_levels_level_0_reg, prbs_sp_distort_ch_3_levels_level_1_reg, prbs_sp_distort_ch_4_levels_level_0_reg, prbs_sp_distort_ch_4_levels_level_1_reg, prbs_sp_distort_ch_5_levels_level_0_reg, prbs_sp_distort_ch_5_levels_level_1_reg, prbs_sp_distort_ch_6_levels_level_0_reg, prbs_sp_distort_ch_6_levels_level_1_reg, prbs_sp_distort_ch_7_levels_level_0_reg, prbs_sp_distort_ch_7_levels_level_1_reg, prbs_sp_distort_ch_8_levels_level_0_reg, prbs_sp_distort_ch_8_levels_level_1_reg, prbs_sp_distort_ch_9_levels_level_0_reg, prbs_sp_distort_ch_9_levels_level_1_reg, prbs_sp_distort_ch_10_levels_level_0_reg, prbs_sp_distort_ch_10_levels_level_1_reg, prbs_sp_distort_ch_11_levels_level_0_reg, prbs_sp_distort_ch_11_levels_level_1_reg, prbs_bpm_pos_distort_distort_ram_levels_int_dato, prbs_bpm_pos_distort_distort_ram_levels_rack) begin
     -- By default ack read requests
     rd_dat_d0 <= (others => 'X');
     prbs_bpm_pos_distort_distort_ram_levels_rreq <= '0';
@@ -841,7 +869,13 @@ begin
         rd_dat_d0(15 downto 11) <= prbs_ctl_lfsr_length_reg;
         rd_dat_d0(16) <= prbs_ctl_bpm_pos_distort_en_reg;
         rd_dat_d0(17) <= prbs_ctl_sp_distort_en_reg;
-        rd_dat_d0(31 downto 18) <= (others => '0');
+        rd_dat_d0(20 downto 18) <= prbs_ctl_sp_distort_mov_avg_num_taps_sel_reg;
+        rd_dat_d0(31 downto 21) <= (others => '0');
+      when "000000001" =>
+        -- Reg prbs_sp_distort_mov_avg_max_num_taps_sel_cte
+        rd_ack_d0 <= rd_req_int;
+        rd_dat_d0(7 downto 0) <= prbs_sp_distort_mov_avg_max_num_taps_sel_cte_i;
+        rd_dat_d0(31 downto 8) <= (others => '0');
       when "000010000" =>
         -- Reg prbs_sp_distort_ch_0_levels
         rd_ack_d0 <= rd_req_int;

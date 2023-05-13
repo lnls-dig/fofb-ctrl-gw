@@ -139,8 +139,10 @@ architecture beh of xwb_fofb_sys_id is
   -- Number of bits in Wishbone register interface; plus 2 to account for BYTE addressing.
   constant c_PERIPH_ADDR_SIZE    : natural := 2+2;
 
-  constant c_MAX_CHANNELS        : natural := 12;
-  constant c_DISTORT_LEVEL_WIDTH : natural := 16;
+  constant c_MAX_CHANNELS             : natural := 12;
+  constant c_DISTORT_LEVEL_WIDTH      : natural := 16;
+  -- Averages at most 16 taps
+  constant c_SP_MOV_AVG_MAX_ORDER_SEL : natural := 4;
 
   type t_prbs_distort_levels is record
     level_0 : signed(c_DISTORT_LEVEL_WIDTH-1 downto 0);
@@ -161,6 +163,7 @@ architecture beh of xwb_fofb_sys_id is
   signal prbs_lfsr_length             : natural range 2 to 32 := 2;
   signal prbs_bpm_pos_distort_en      : std_logic := '0';
   signal prbs_sp_distort_en           : std_logic := '0';
+  signal prbs_sp_distort_order_sel    : natural range 0 to c_SP_MOV_AVG_MAX_ORDER_SEL := 0;
   signal prbs_bpm_pos_distort_levels  : t_prbs_distort_levels := c_DISTORT_LEVELS_ZEROED;
   signal prbs_sp_distort_levels_arr   : t_prbs_distort_levels_arr(c_MAX_CHANNELS-1 downto 0) := (others => c_DISTORT_LEVELS_ZEROED);
   signal bpm_pos_d1                   : signed(c_BPM_POS_WIDTH-1 downto 0);
@@ -176,6 +179,7 @@ architecture beh of xwb_fofb_sys_id is
   signal prbs_ctl_lfsr_length                         : std_logic_vector(4 downto 0) := (others => '0');
   signal prbs_ctl_bpm_pos_distort_en                  : std_logic := '0';
   signal prbs_ctl_sp_distort_en                       : std_logic := '0';
+  signal prbs_ctl_sp_distort_mov_avg_num_taps_sel     : std_logic_vector(2 downto 0) := (others => '0');
 
   -- Wishbone signals
   signal wb_slv_adp_out          : t_wishbone_master_out;
@@ -283,7 +287,8 @@ begin
         cmp_prbs_sp_distort : prbs_sp_distort
           generic map (
             g_SP_WIDTH            => c_SP_WIDTH,
-            g_DISTORT_LEVEL_WIDTH => c_DISTORT_LEVEL_WIDTH
+            g_DISTORT_LEVEL_WIDTH => c_DISTORT_LEVEL_WIDTH,
+            g_MAX_ORDER_SEL       => c_SP_MOV_AVG_MAX_ORDER_SEL
           )
           port map (
             clk_i                 => clk_i,
@@ -297,6 +302,7 @@ begin
             sp_valid_i            => sp_valid_arr_i(ch),
             distort_level_0_i     => prbs_sp_distort_levels_arr(ch).level_0,
             distort_level_1_i     => prbs_sp_distort_levels_arr(ch).level_1,
+            order_sel_i           => prbs_sp_distort_order_sel,
             distort_sp_o          => distort_sp_arr_o(ch),
             distort_sp_valid_o    => distort_sp_valid_arr_o(ch),
             prbs_o                => open,  -- same as cmp_prbs_bpm_pos_distort's prbs_o
@@ -357,6 +363,8 @@ begin
       prbs_ctl_lfsr_length_o                                => prbs_ctl_lfsr_length,
       prbs_ctl_bpm_pos_distort_en_o                         => prbs_ctl_bpm_pos_distort_en,
       prbs_ctl_sp_distort_en_o                              => prbs_ctl_sp_distort_en,
+      prbs_ctl_sp_distort_mov_avg_num_taps_sel_o            => prbs_ctl_sp_distort_mov_avg_num_taps_sel,
+      prbs_sp_distort_mov_avg_max_num_taps_sel_cte_i        => std_logic_vector(to_unsigned(c_SP_MOV_AVG_MAX_ORDER_SEL, 8)),
       signed(prbs_sp_distort_ch_0_levels_level_0_o)         => prbs_sp_distort_levels_arr(0).level_0,
       signed(prbs_sp_distort_ch_0_levels_level_1_o)         => prbs_sp_distort_levels_arr(0).level_1,
       signed(prbs_sp_distort_ch_1_levels_level_0_o)         => prbs_sp_distort_levels_arr(1).level_0,
@@ -455,9 +463,10 @@ begin
       resized_addr <= wb_slave_in(0).adr;
     end generate;
 
-  -- Decodes prbs_ctl_step_duration and prbs_ctl_lfsr_length
+  -- Decodes prbs_ctl_step_duration, prbs_ctl_lfsr_length and prbs_sp_distort_order_sel
   prbs_step_duration <= to_integer(unsigned(prbs_ctl_step_duration)) + 1;
   prbs_lfsr_length <= to_integer(unsigned(prbs_ctl_lfsr_length)) + 2;
+  prbs_sp_distort_order_sel <= to_integer(unsigned(prbs_ctl_sp_distort_mov_avg_num_taps_sel));
 
   distort_bpm_pos_o <= distort_bpm_pos;
   distort_bpm_pos_index_o <= distort_bpm_pos_index;
