@@ -16,6 +16,8 @@
 -- 2023-04-17   1.0      guilherme.ricioli   Created
 --------------------------------------------------------------------------------
 
+-- TODO: Test moving average orders higher than 0.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -75,6 +77,9 @@ begin
       f_wait_cycles(clk, 1);
       prbs_iterate <= '0';
       f_wait_clocked_signal(clk, prbs_valid, '1');
+      -- NOTE: Accounting for the distortion averaging (2 cc) and registering
+      --       (1 cc) delay
+      f_wait_cycles(clk, 3);
 
       -- Drive setpoint
       sp <= to_signed(sp_val, sp'length);
@@ -135,7 +140,8 @@ begin
   uut : prbs_sp_distort
     generic map (
       g_SP_WIDTH            => c_SP_WIDTH,
-      g_DISTORT_LEVEL_WIDTH => c_DISTORT_LEVEL_WIDTH
+      g_DISTORT_LEVEL_WIDTH => c_DISTORT_LEVEL_WIDTH,
+      g_MAX_ORDER_SEL       => 0
     )
     port map (
       clk_i                 => clk,
@@ -147,6 +153,7 @@ begin
       prbs_valid_i          => prbs_iterate,
       sp_i                  => sp,
       sp_valid_i            => sp_valid,
+      order_sel_i           => 0,
       distort_level_0_i     => c_DISTORT_LEVEL_0,
       distort_level_1_i     => c_DISTORT_LEVEL_1,
       distort_sp_o          => distort_sp,

@@ -82,7 +82,8 @@ package fofb_sys_id_pkg is
   component prbs_sp_distort is
     generic (
       g_SP_WIDTH            : natural := 15;
-      g_DISTORT_LEVEL_WIDTH : natural := 16
+      g_DISTORT_LEVEL_WIDTH : natural := 16;
+      g_MAX_ORDER_SEL       : natural := 4
     );
     port (
       clk_i                 : in std_logic;
@@ -96,6 +97,7 @@ package fofb_sys_id_pkg is
       sp_valid_i            : in std_logic;
       distort_level_0_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
       distort_level_1_i     : in signed(g_DISTORT_LEVEL_WIDTH-1 downto 0);
+      order_sel_i           : in natural range 0 to g_MAX_ORDER_SEL := 0;
       distort_sp_o          : out signed(g_SP_WIDTH-1 downto 0);
       distort_sp_valid_o    : out std_logic;
       prbs_o                : out std_logic;

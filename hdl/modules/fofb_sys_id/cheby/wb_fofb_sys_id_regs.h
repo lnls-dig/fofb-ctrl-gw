@@ -31,6 +31,13 @@
 #define WB_FOFB_SYS_ID_REGS_PRBS_CTL_LFSR_LENGTH_SHIFT 11
 #define WB_FOFB_SYS_ID_REGS_PRBS_CTL_BPM_POS_DISTORT_EN 0x10000UL
 #define WB_FOFB_SYS_ID_REGS_PRBS_CTL_SP_DISTORT_EN 0x20000UL
+#define WB_FOFB_SYS_ID_REGS_PRBS_CTL_SP_DISTORT_MOV_AVG_NUM_TAPS_SEL_MASK 0x1c0000UL
+#define WB_FOFB_SYS_ID_REGS_PRBS_CTL_SP_DISTORT_MOV_AVG_NUM_TAPS_SEL_SHIFT 18
+
+/* The maximum allowed value for prbs.ctl
+sp_distort_mov_avg_num_taps_sel field.
+ */
+#define WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT_MOV_AVG_MAX_NUM_TAPS_SEL_CTE 0x1004UL
 
 /* Interface to setpoints distortion levels regs */
 #define WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT 0x1040UL
@@ -98,8 +105,13 @@ struct wb_fofb_sys_id_regs {
  */
     uint32_t ctl;
 
-    /* padding to: 16 words */
-    uint32_t __padding_0[15];
+    /* [0x4]: REG (ro) The maximum allowed value for prbs.ctl
+sp_distort_mov_avg_num_taps_sel field.
+ */
+    uint8_t sp_distort_mov_avg_max_num_taps_sel_cte;
+
+    /* padding to: 64 words */
+    uint8_t __padding_0[59];
 
     /* [0x40]: BLOCK Interface to setpoints distortion levels regs */
     struct sp_distort {

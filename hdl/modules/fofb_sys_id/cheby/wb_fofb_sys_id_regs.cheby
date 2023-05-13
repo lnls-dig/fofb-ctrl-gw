@@ -97,6 +97,30 @@ memory-map:
 
                       write 0: distortion disabled
                       write 1: distortion enabled
+                - field:
+                    name: sp_distort_mov_avg_num_taps_sel
+                    range: 20-18
+                    description: |
+                      Selects the number of taps for averaging the setpoints
+                      distortion. The number of taps being selected is given by
+                      '2**sp_distort_mov_avg_num_taps_sel'.
+                      NOTE: The maximum value for this field is given by
+                            sp_distort_mov_avg_max_num_taps_sel_cte.
+
+                      write 0x00: set number of taps to 1 (no averaging)
+                      write 0x01: set number of taps to 2
+                      write 0x02: set number of taps to 8
+                      ...
+                      write sp_distort_mov_avg_max_num_taps_sel_cte : set number
+                       of taps to 2**sp_distort_mov_avg_max_num_taps_sel_cte.
+          - reg:
+              name: sp_distort_mov_avg_max_num_taps_sel_cte
+              width: 8
+              access: ro
+              address: next
+              description: |
+                The maximum allowed value for prbs.ctl
+                sp_distort_mov_avg_num_taps_sel field.
           - block:
               name: sp_distort
               description: Interface to setpoints distortion levels regs

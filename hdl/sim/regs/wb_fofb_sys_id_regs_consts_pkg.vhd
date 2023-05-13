@@ -13,6 +13,8 @@ package wb_fofb_sys_id_regs_consts_pkg is
   constant c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_LFSR_LENGTH_OFFSET : Natural := 11;
   constant c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_BPM_POS_DISTORT_EN_OFFSET : Natural := 16;
   constant c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_SP_DISTORT_EN_OFFSET : Natural := 17;
+  constant c_WB_FOFB_SYS_ID_REGS_PRBS_CTL_SP_DISTORT_MOV_AVG_NUM_TAPS_SEL_OFFSET : Natural := 18;
+  constant c_WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT_MOV_AVG_MAX_NUM_TAPS_SEL_CTE_ADDR : Natural := 16#1004#;
   constant c_WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT_ADDR : Natural := 16#1040#;
   constant c_WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT_SIZE : Natural := 64;
   constant c_WB_FOFB_SYS_ID_REGS_PRBS_SP_DISTORT_CH_ADDR : Natural := 16#1040#;
