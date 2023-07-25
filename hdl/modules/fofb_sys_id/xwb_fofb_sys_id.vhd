@@ -142,7 +142,7 @@ architecture beh of xwb_fofb_sys_id is
   constant c_MAX_CHANNELS             : natural := 12;
   constant c_DISTORT_LEVEL_WIDTH      : natural := 16;
   -- Averages at most 16 taps
-  constant c_SP_MOV_AVG_MAX_ORDER_SEL : natural := 4;
+  constant c_SP_MOV_AVG_MAX_ORDER_SEL : natural := 3;
 
   type t_prbs_distort_levels is record
     level_0 : signed(c_DISTORT_LEVEL_WIDTH-1 downto 0);
