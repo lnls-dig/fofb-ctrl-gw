@@ -7,9 +7,26 @@ memory-map:
   children:
     - block:
         name: bpm_pos_flatenizer
-        description: Interface to bpm_pos_flatenizer regs
+        description: Interface to BPM positions flatenizers regs
         address: 0x00000000
         children:
+          - reg:
+              name: ctl
+              width: 32
+              access: rw
+              address: next
+              description: |
+                BPM positions flatenizers control register
+              children:
+                - field:
+                    name: base_bpm_id
+                    range: 7-0
+                    description: |
+                      Together with max_num_cte, defines the ranges of BPM
+                      positions indexes being flatenized, which are given by
+
+                      [base_bpm_id, base_bpm_id + max_num_cte): BPM x positions
+                      [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte): BPM y positions
           - reg:
               name: max_num_cte
               width: 16
@@ -17,14 +34,158 @@ memory-map:
               address: next
               description: |
                 Maximum number of BPM positions that can be flatenized per axis
+                (x or y)
+    - block:
+        name: prbs
+        description: Interface to PRBS-related regs
+        address: next
+        children:
           - reg:
-              name: base_bpm_id
-              width: 8
+              name: ctl
+              width: 32
               access: rw
               address: next
               description: |
-                Together with max_num_cte, defines the range of BPM position
-                indexes being flatenized, which is given by
-                [base_bpm_id, base_bpm_id + max_num_cte) -> BPM x positions; and
-                [base_bpm_id + 256, base_bpm_id + 256 + max_num_cte) -> BPM y
-                positions. The valid range of this register is [0, 255].
+                PRBS distortion control register
+              children:
+                - field:
+                    name: rst
+                    range: 0
+                    description: |
+                      Resets PRBS
+                      NOTE: This is only effectived via external trigger.
+
+                      write 0: no effect
+                      write 1: resets PRBS
+                - field:
+                    name: step_duration
+                    range: 10-1
+                    description: |
+                      Duration of each PRBS step in FOFB cycles (max: 0x3FF)
+
+                      write 0x000: new PRBS iteration at each FOFB cycle
+                      write 0x001: new PRBS iteration at each 2 FOFB cycles
+                      ...
+                      write 0x3FF: new PRBS iteration at each 1024 FOFB cycles
+                - field:
+                    name: lfsr_length
+                    range: 15-11
+                    description: |
+                      Length of internal LFSR (max: 0x1E)
+                      Together with step_duration, defines the duration of PRBS,
+                      which is given by [2^(lfsr_length + 2) - 1]*(step_duration + 1)
+
+                      write 0x00: set LFSR length to 2
+                      write 0x01: set LFSR length to 3
+                      ...
+                      write 0x1E: set LFSR length to 32
+                - field:
+                    name: bpm_pos_distort_en
+                    range: 16
+                    description: |
+                      Enables/disables PRBS-based distortion on BPM positions
+                      NOTE: This is only effectived via external trigger.
+
+                      write 0: distortion disabled
+                      write 1: distortion enabled
+                - field:
+                    name: sp_distort_en
+                    range: 17
+                    description: |
+                      Enables/disables PRBS-based distortion on setpoints
+                      NOTE: This is only effectived via external trigger.
+
+                      write 0: distortion disabled
+                      write 1: distortion enabled
+                - field:
+                    name: sp_distort_mov_avg_num_taps_sel
+                    range: 20-18
+                    description: |
+                      Selects the number of taps for averaging the setpoints
+                      distortion. The number of taps being selected is given by
+                      '2**sp_distort_mov_avg_num_taps_sel'.
+                      NOTE: The maximum value for this field is given by
+                            sp_distort_mov_avg_max_num_taps_sel_cte.
+
+                      write 0x00: set number of taps to 1 (no averaging)
+                      write 0x01: set number of taps to 2
+                      write 0x02: set number of taps to 8
+                      ...
+                      write sp_distort_mov_avg_max_num_taps_sel_cte : set number
+                       of taps to 2**sp_distort_mov_avg_max_num_taps_sel_cte.
+          - reg:
+              name: sp_distort_mov_avg_max_num_taps_sel_cte
+              width: 8
+              access: ro
+              address: next
+              description: |
+                The maximum allowed value for prbs.ctl
+                sp_distort_mov_avg_num_taps_sel field.
+          - block:
+              name: sp_distort
+              description: Interface to setpoints distortion levels regs
+              address: next
+              children:
+                - repeat:
+                    name: ch
+                    count: 12
+                    description: |
+                      Setpoints distortion levels registers for each channel
+                    children:
+                      - reg:
+                          name: levels
+                          width: 32
+                          access: rw
+                          description: |
+                            Two signed 16-bit distortion levels in RTM-LAMP ADC
+                            counts, one for each PRBS value.
+
+                            15 - 0: distortion level for PRBS value 0
+                            31 - 16: distortion level for PRBS value 1
+                          children:
+                            - field:
+                                name: level_0
+                                range: 15-0
+                                description: |
+                                  Signed 16-bit distortion level in RTM-LAMP ADC
+                                  counts for PRBS value 0.
+                            - field:
+                                name: level_1
+                                range: 31-16
+                                description: |
+                                  Signed 16-bit distortion level in RTM-LAMP ADC
+                                  counts for PRBS value 1.
+          - block:
+              name: bpm_pos_distort
+              description: Interface to prbs_bpm_pos_distort regs
+              address: next
+              children:
+                - memory:
+                    name: distort_ram
+                    memsize: 2k
+                    address: next
+                    description: Distortion levels RAM
+                    children:
+                      - reg:
+                          name: levels
+                          width: 32
+                          access: rw
+                          description: |
+                            Two signed 16-bit distortion levels in nanometers,
+                            one for each PRBS value.
+
+                            15 - 0: distortion level for PRBS value 0
+                            31 - 16: distortion level for PRBS value 1
+                          children:
+                            - field:
+                                name: level_0
+                                range: 15-0
+                                description: |
+                                  Signed 16-bit distortion level in nanometers
+                                  for PRBS value 0.
+                            - field:
+                                name: level_1
+                                range: 31-16
+                                description: |
+                                  Signed 16-bit distortion level in nanometers
+                                  for PRBS value 1.

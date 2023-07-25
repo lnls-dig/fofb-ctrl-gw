@@ -450,7 +450,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
-  constant c_FOFB_CHANNELS                   : natural := 8;
+  constant c_FOFB_CHANNELS                   : natural := 12;
 
   constant c_DOT_PROD_ACC_EXTRA_WIDTH        : natural := 4;
 
@@ -458,8 +458,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_SERIALIZE_FIFO_SIZE             : natural := 32;
   constant c_TIMEFRAME_END_POS               : natural := c_SERIALIZE_FIFO_DATA_SIZE - 1;  -- dcc timeframe end is the msb of q
 
-  signal fofb_sp_arr                         : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
-  signal fofb_sp_valid_arr                   : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_proc_sp_arr                    : t_fofb_processing_sp_arr(c_FOFB_CHANNELS-1 downto 0);
+  signal fofb_proc_sp_valid_arr              : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
   signal fofb_proc_busy                      : std_logic;
   signal fofb_proc_bpm_pos                   : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
   signal fofb_proc_bpm_pos_index             : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
@@ -476,10 +476,28 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- FOFB system identification signals
   -----------------------------------------------------------------------------
 
-  signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
-  signal bpm_pos_flat_y_rcvd                 : std_logic_vector(c_MAX_NUM_P2P_BPM_POS/2-1 downto 0);
+  -- Maximum number of BPM positions to flatenize per flatenizer
+  -- Each flatenizer holds at most half of c_MAX_NUM_P2P_BPM_POS.
+  constant c_MAX_NUM_BPM_POS_PER_FLAT        : natural := c_MAX_NUM_P2P_BPM_POS/2;
+
+  signal syncd_acq_sys_id                    : std_logic := '0';
+  signal syncd_acq_sys_id_debug              : std_logic := '0';
+  signal syncd_trig_sys_id_eff_regs          : std_logic := '0';
+
+  signal bpm_pos_flat_x                      : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_x_rcvd                 : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_y                      : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal bpm_pos_flat_y_rcvd                 : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_fofb_proc_bpm_pos_index     : unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
+  signal distort_fofb_proc_bpm_pos           : signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
+  signal distort_fofb_proc_bpm_pos_valid     : std_logic;
+  signal distort_fofb_proc_sp_arr            : t_sp_arr(c_FOFB_CHANNELS-1 downto 0);
+  signal distort_fofb_proc_sp_valid_arr      : std_logic_vector(c_FOFB_CHANNELS-1 downto 0);
+  signal prbs                                : std_logic;
+  signal distort_bpm_pos_flat_x              : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_x_rcvd         : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_y              : t_bpm_pos_arr(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+  signal distort_bpm_pos_flat_y_rcvd         : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- RTM signals
@@ -707,17 +725,22 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Acquisition channels IDs
   constant c_ACQ_RTM_LAMP_ID                 : natural := 0;
-  -- The way the triggers were conceived, you have a single logical trigger for
-  -- each ACQ channel, and a single wb_trigger_mux for each ACQ core, but
-  -- sometimes we need triggers for things other than the ACQ. Here I'm just
-  -- borrowing an ACQ (core c_ACQ_CORE_RTM_LAMP_ID) trigger for channel 3 that
-  -- is unused and connecting it to the xwb_rtmlamp_ohwr external trigger input.
-  constant c_SP_TRIG_RTM_LAMP_ID             : natural := 3;
   constant c_ACQ_DCC_ID                      : natural := 1;
   constant c_ACQ_SYS_ID_ID                   : natural := 2;
+  constant c_ACQ_SYS_ID_DEBUG_ID             : natural := 3;
 
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 3;
+  constant c_ACQ_NUM_CHANNELS                : natural := 4;
+
+  -- The way the triggers were conceived, you have a single logical trigger for
+  -- each ACQ channel. Since we don't use all of those channels, we can use the
+  -- remaining logical triggers for things other than acquisitions.
+
+  -- Trigger MUX channels used for things other than acquisitions
+  -- [c_ACQ_NUM_CHANNELS, c_TRIG_MUX_INTERN_NUM-1]
+  constant c_TRIG_SP_RTM_LAMP_ID             : natural := c_ACQ_NUM_CHANNELS;
+  constant c_TRIG_SYS_ID_EFF_REGS_ID         : natural := c_ACQ_NUM_CHANNELS + 1;
+
 
   constant c_FACQ_PARAMS_RTM_LAMP            : t_facq_chan_param := (
     width                                    => to_unsigned(512, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
@@ -744,7 +767,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
   (
     c_ACQ_RTM_LAMP_ID       => c_FACQ_PARAMS_RTM_LAMP,
     c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC,
-    c_ACQ_SYS_ID_ID         => c_FACQ_PARAMS_SYS_ID
+    c_ACQ_SYS_ID_ID         => c_FACQ_PARAMS_SYS_ID,
+    c_ACQ_SYS_ID_DEBUG_ID   => c_FACQ_PARAMS_SYS_ID
   );
 
   signal acq_chan_array                      : t_facq_chan_array2d(c_ACQ_NUM_CORES-1 downto 0, c_ACQ_NUM_CHANNELS-1 downto 0);
@@ -1781,12 +1805,12 @@ begin
       clk_i                          => clk_sys,
       rst_n_i                        => clk_sys_rstn,
       busy_o                         => fofb_proc_busy,
-      bpm_pos_i                      => fofb_proc_bpm_pos,
-      bpm_pos_index_i                => fofb_proc_bpm_pos_index,
-      bpm_pos_valid_i                => fofb_proc_bpm_pos_valid,
+      bpm_pos_i                      => distort_fofb_proc_bpm_pos,
+      bpm_pos_index_i                => distort_fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i                => distort_fofb_proc_bpm_pos_valid,
       bpm_time_frame_end_i           => fofb_proc_time_frame_end,
-      sp_arr_o                       => fofb_sp_arr,
-      sp_valid_arr_o                 => fofb_sp_valid_arr,
+      sp_arr_o                       => fofb_proc_sp_arr,
+      sp_valid_arr_o                 => fofb_proc_sp_valid_arr,
       sp_decim_arr_o                 => open,
       sp_decim_valid_arr_o           => open,
       dcc_p2p_en_o                   => fofb_proc_dcc_p2p_en,
@@ -1798,28 +1822,76 @@ begin
   --                    FOFB SYSTEM IDENTIFICATION                    --
   ----------------------------------------------------------------------
 
+  -- These pulse syncers guarantee that we won't acquire/change stuff in the
+  -- middle of a FOFB cycle.
+
+  cmp_acq_sys_id_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse,
+      sync_i        => fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_acq_sys_id
+    );
+
+  cmp_acq_sys_id_debug_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).pulse,
+      sync_i        => distort_fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_acq_sys_id_debug
+    );
+
+  cmp_trig_sys_id_eff_regs_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_TRIG_SYS_ID_EFF_REGS_ID).pulse,
+      sync_i        => distort_fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_trig_sys_id_eff_regs
+    );
+
   cmp_xwb_fofb_sys_id: xwb_fofb_sys_id
     generic map (
-      g_BPM_POS_INDEX_WIDTH => c_SP_COEFF_RAM_ADDR_WIDTH,
-      g_BPM_POS_WIDTH       => c_SP_POS_RAM_DATA_WIDTH,
-      g_MAX_NUM_BPM_POS     => c_MAX_NUM_P2P_BPM_POS/2,
-      g_INTERFACE_MODE      => PIPELINED,
-      g_ADDRESS_GRANULARITY => BYTE,
-      g_WITH_EXTRA_WB_REG   => false
+      g_BPM_POS_INDEX_WIDTH         => c_SP_COEFF_RAM_ADDR_WIDTH,
+      g_MAX_NUM_BPM_POS_PER_FLAT    => c_MAX_NUM_BPM_POS_PER_FLAT,
+      g_CHANNELS                    => c_FOFB_CHANNELS,
+      g_INTERFACE_MODE              => PIPELINED,
+      g_ADDRESS_GRANULARITY         => BYTE,
+      g_WITH_EXTRA_WB_REG           => false
     )
     port map (
-      clk_i                 => clk_sys,
-      rst_n_i               => clk_sys_rstn,
-      bpm_pos_i             => fofb_proc_bpm_pos,
-      bpm_pos_index_i       => fofb_proc_bpm_pos_index,
-      bpm_pos_valid_i       => fofb_proc_bpm_pos_valid,
-      bpm_pos_flat_clear_i  => or fofb_sp_valid_arr,
-      bpm_pos_flat_x_o      => bpm_pos_flat_x,
-      bpm_pos_flat_x_rcvd_o => bpm_pos_flat_x_rcvd,
-      bpm_pos_flat_y_o      => bpm_pos_flat_y,
-      bpm_pos_flat_y_rcvd_o => bpm_pos_flat_y_rcvd,
-      wb_slv_i              => user_wb_out(c_FOFB_SYS_ID_ID),
-      wb_slv_o              => user_wb_in(c_FOFB_SYS_ID_ID)
+      clk_i                         => clk_sys,
+      rst_n_i                       => clk_sys_rstn,
+      bpm_pos_i                     => fofb_proc_bpm_pos,
+      bpm_pos_index_i               => fofb_proc_bpm_pos_index,
+      bpm_pos_valid_i               => fofb_proc_bpm_pos_valid,
+      bpm_pos_flat_clear_i          => distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
+      sp_arr_i                      => t_sp_arr(fofb_proc_sp_arr),
+      sp_valid_arr_i                => fofb_proc_sp_valid_arr,
+      prbs_valid_i                  => distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
+      trig_i                        => syncd_trig_sys_id_eff_regs,
+      bpm_pos_flat_x_o              => bpm_pos_flat_x,
+      bpm_pos_flat_x_rcvd_o         => bpm_pos_flat_x_rcvd,
+      bpm_pos_flat_y_o              => bpm_pos_flat_y,
+      bpm_pos_flat_y_rcvd_o         => bpm_pos_flat_y_rcvd,
+      distort_bpm_pos_index_o       => distort_fofb_proc_bpm_pos_index,
+      distort_bpm_pos_o             => distort_fofb_proc_bpm_pos,
+      distort_bpm_pos_valid_o       => distort_fofb_proc_bpm_pos_valid,
+      distort_sp_arr_o              => distort_fofb_proc_sp_arr,
+      distort_sp_valid_arr_o        => distort_fofb_proc_sp_valid_arr,
+      prbs_o                        => prbs,
+      prbs_valid_o                  => open,
+      distort_bpm_pos_flat_x_o      => distort_bpm_pos_flat_x,
+      distort_bpm_pos_flat_x_rcvd_o => distort_bpm_pos_flat_x_rcvd,
+      distort_bpm_pos_flat_y_o      => distort_bpm_pos_flat_y,
+      distort_bpm_pos_flat_y_rcvd_o => distort_bpm_pos_flat_y_rcvd,
+      wb_slv_i                      => user_wb_out(c_FOFB_SYS_ID_ID),
+      wb_slv_o                      => user_wb_in(c_FOFB_SYS_ID_ID)
     );
 
   ----------------------------------------------------------------------
@@ -2106,7 +2178,7 @@ begin
       ---------------------------------------------------------------------------
       -- External triggers for SP and DAC. Clock domain: clk_i
       ---------------------------------------------------------------------------
-      trig_i                                      => (others => trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_SP_TRIG_RTM_LAMP_ID).pulse),
+      trig_i                                      => (others => trig_pulse_rcv(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_SP_RTM_LAMP_ID).pulse),
 
       ---------------------------------------------------------------------------
       -- ADC parallel interface
@@ -2126,7 +2198,7 @@ begin
 
   -- Convert signed elements to std_logic_vector
   gen_conv_pi_sp: for i in 0 to c_FOFB_CHANNELS-1 generate
-    pi_sp_ext(i) <= std_logic_vector(fofb_sp_arr(i));
+    pi_sp_ext(i) <= std_logic_vector(distort_fofb_proc_sp_arr(i));
   end generate;
 
   ----------------------------------------------------------------------
@@ -2198,8 +2270,8 @@ begin
 
   -- DCC FMC
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
-          std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
+          std_logic_vector(fofb_proc_sp_arr(6)) & std_logic_vector(fofb_proc_sp_arr(7)) & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
+          std_logic_vector(fofb_proc_sp_arr(2)) & std_logic_vector(fofb_proc_sp_arr(3)) & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
   acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
 
@@ -2213,25 +2285,42 @@ begin
   acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
 
   --------------------
-  -- ACQ Core 4
+  -- ACQ Core 3
   --------------------
 
-  -- SYS ID
+  -- SYS ID channel
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_ID).width)-1 downto 0) <=
-    std_logic_vector(to_unsigned(0, 288)) &                                                                                                                 -- [DEBUG] Padding with 0s (1023 downto 736)
-    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                             -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
-    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                         -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
-    -- TODO: These bits should be filled with channels 11-8, but they aren't instantiated yet
-    std_logic_vector(to_unsigned(0, 64)) &                                                                                                                  -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(to_unsigned(0, 287)) &                                                                                                                             -- [DEBUG] Padding with 0s (1023 downto 737)
+    prbs &                                                                                                                                                              -- [DEBUG] PRBS (736)
+    bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                                         -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                     -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
     -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
-    std_logic_vector(fofb_sp_arr(6)) & std_logic_vector(fofb_sp_arr(7)) & std_logic_vector(fofb_sp_arr(4)) & std_logic_vector(fofb_sp_arr(5)) &
-    std_logic_vector(fofb_sp_arr(2)) & std_logic_vector(fofb_sp_arr(3)) & std_logic_vector(fofb_sp_arr(0)) & std_logic_vector(fofb_sp_arr(1)) &
-    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) & -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
+    std_logic_vector(fofb_proc_sp_arr(10)) & std_logic_vector(fofb_proc_sp_arr(11)) & std_logic_vector(fofb_proc_sp_arr(8)) & std_logic_vector(fofb_proc_sp_arr(9)) &   -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(fofb_proc_sp_arr(6))  & std_logic_vector(fofb_proc_sp_arr(7))  & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
+    std_logic_vector(fofb_proc_sp_arr(2))  & std_logic_vector(fofb_proc_sp_arr(3))  & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) &
+    std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) &             -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
     std_logic_vector(bpm_pos_flat_y(3)) & std_logic_vector(bpm_pos_flat_y(2)) & std_logic_vector(bpm_pos_flat_y(1)) & std_logic_vector(bpm_pos_flat_y(0)) &
-    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) & -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
+    std_logic_vector(bpm_pos_flat_x(7)) & std_logic_vector(bpm_pos_flat_x(6)) & std_logic_vector(bpm_pos_flat_x(5)) & std_logic_vector(bpm_pos_flat_x(4)) &             -- P2P BPM x positions 7-0 (255 downto 0, 8x32)
     std_logic_vector(bpm_pos_flat_x(3)) & std_logic_vector(bpm_pos_flat_x(2)) & std_logic_vector(bpm_pos_flat_x(1)) & std_logic_vector(bpm_pos_flat_x(0));
-  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= or fofb_sp_valid_arr;
-  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_ID).pulse;
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).dvalid  <= fofb_proc_sp_valid_arr(0);   -- all valids are synced
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).trig    <= syncd_acq_sys_id;
+
+  -- SYS ID debug channel
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_DEBUG_ID).width)-1 downto 0) <=
+    std_logic_vector(to_unsigned(0, 287)) &                                                                                                                                                             -- [DEBUG] Padding with 0s (1023 downto 737)
+    prbs &                                                                                                                                                                                              -- [DEBUG] PRBS (736)
+    distort_bpm_pos_flat_x_rcvd & distort_bpm_pos_flat_y_rcvd &                                                                                                                                         -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                                                     -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
+    -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
+    std_logic_vector(distort_fofb_proc_sp_arr(10)) & std_logic_vector(distort_fofb_proc_sp_arr(11)) & std_logic_vector(distort_fofb_proc_sp_arr(8)) & std_logic_vector(distort_fofb_proc_sp_arr(9)) &   -- [DEBUG] FOFB channels distorted setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(distort_fofb_proc_sp_arr(6))  & std_logic_vector(distort_fofb_proc_sp_arr(7))  & std_logic_vector(distort_fofb_proc_sp_arr(4)) & std_logic_vector(distort_fofb_proc_sp_arr(5)) &
+    std_logic_vector(distort_fofb_proc_sp_arr(2))  & std_logic_vector(distort_fofb_proc_sp_arr(3))  & std_logic_vector(distort_fofb_proc_sp_arr(0)) & std_logic_vector(distort_fofb_proc_sp_arr(1)) &
+    std_logic_vector(distort_bpm_pos_flat_y(7)) & std_logic_vector(distort_bpm_pos_flat_y(6)) & std_logic_vector(distort_bpm_pos_flat_y(5)) & std_logic_vector(distort_bpm_pos_flat_y(4)) &             -- [DEBUG] P2P BPM y distorted positions 7-0 (511 downto 256, 8x32)
+    std_logic_vector(distort_bpm_pos_flat_y(3)) & std_logic_vector(distort_bpm_pos_flat_y(2)) & std_logic_vector(distort_bpm_pos_flat_y(1)) & std_logic_vector(distort_bpm_pos_flat_y(0)) &
+    std_logic_vector(distort_bpm_pos_flat_x(7)) & std_logic_vector(distort_bpm_pos_flat_x(6)) & std_logic_vector(distort_bpm_pos_flat_x(5)) & std_logic_vector(distort_bpm_pos_flat_x(4)) &             -- [DEBUG] P2P BPM x distorted positions 7-0 (255 downto 0, 8x32)
+    std_logic_vector(distort_bpm_pos_flat_x(3)) & std_logic_vector(distort_bpm_pos_flat_x(2)) & std_logic_vector(distort_bpm_pos_flat_x(1)) & std_logic_vector(distort_bpm_pos_flat_x(0));
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).dvalid  <= distort_fofb_proc_sp_valid_arr(0);   -- all valids are synced
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).trig    <= syncd_acq_sys_id_debug;
 
   ----------------------------------------------------------------------
   --                          Trigger                                 --

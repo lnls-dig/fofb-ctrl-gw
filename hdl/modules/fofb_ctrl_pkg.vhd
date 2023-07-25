@@ -10,6 +10,9 @@ use work.fofb_sys_id_pkg.all;
 
 package fofb_ctrl_pkg is
 
+  constant c_SP_WIDTH : natural := c_FOFB_SP_WIDTH;
+  type t_sp_arr is array (natural range <>) of signed(c_SP_WIDTH-1 downto 0);
+
   type t_fofb_cc_packet is record
     bpm_id     : unsigned(NodeW-1 downto 0);
     bpm_data_x : signed((def_PacketDataXMSB - def_PacketDataXLSB) downto 0);
@@ -599,26 +602,41 @@ package fofb_ctrl_pkg is
 
   component xwb_fofb_sys_id is
     generic (
-      g_BPM_POS_INDEX_WIDTH : natural := 9;
-      g_BPM_POS_WIDTH       : natural := c_BPM_POS_WIDTH;
-      g_MAX_NUM_BPM_POS     : natural := c_MAX_NUM_P2P_BPM_POS/2;
-      g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;
-      g_ADDRESS_GRANULARITY : t_wishbone_address_granularity := WORD;
-      g_WITH_EXTRA_WB_REG   : boolean := false
+      g_BPM_POS_INDEX_WIDTH         : natural := 9;
+      g_MAX_NUM_BPM_POS_PER_FLAT    : natural := c_MAX_NUM_P2P_BPM_POS/2;
+      g_CHANNELS                    : natural := 12;
+      g_INTERFACE_MODE              : t_wishbone_interface_mode := CLASSIC;
+      g_ADDRESS_GRANULARITY         : t_wishbone_address_granularity := WORD;
+      g_WITH_EXTRA_WB_REG           : boolean := false
     );
     port (
-      clk_i                 : in  std_logic;
-      rst_n_i               : in  std_logic;
-      bpm_pos_i             : in  signed(c_SP_POS_RAM_DATA_WIDTH-1 downto 0);
-      bpm_pos_index_i       : in  unsigned(c_SP_COEFF_RAM_ADDR_WIDTH-1 downto 0);
-      bpm_pos_valid_i       : in  std_logic;
-      bpm_pos_flat_clear_i  : in  std_logic;
-      bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
-      bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
-      bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS-1 downto 0);
-      bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS-1 downto 0);
-      wb_slv_i              : in t_wishbone_slave_in;
-      wb_slv_o              : out t_wishbone_slave_out
+      clk_i                         : in std_logic;
+      rst_n_i                       : in std_logic;
+      bpm_pos_i                     : in signed(c_BPM_POS_WIDTH-1 downto 0);
+      bpm_pos_index_i               : in unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+      bpm_pos_valid_i               : in std_logic;
+      bpm_pos_flat_clear_i          : in std_logic;
+      sp_arr_i                      : in t_sp_arr(g_CHANNELS-1 downto 0);
+      sp_valid_arr_i                : in std_logic_vector(g_CHANNELS-1 downto 0);
+      prbs_valid_i                  : in std_logic;
+      trig_i                        : in std_logic;
+      bpm_pos_flat_x_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      bpm_pos_flat_x_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      bpm_pos_flat_y_o              : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      bpm_pos_flat_y_rcvd_o         : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      distort_bpm_pos_o             : out signed(c_BPM_POS_WIDTH-1 downto 0);
+      distort_bpm_pos_index_o       : out unsigned(g_BPM_POS_INDEX_WIDTH-1 downto 0);
+      distort_bpm_pos_valid_o       : out std_logic;
+      distort_sp_arr_o              : out t_sp_arr(g_CHANNELS-1 downto 0);
+      distort_sp_valid_arr_o        : out std_logic_vector(g_CHANNELS-1 downto 0);
+      prbs_o                        : out std_logic;
+      prbs_valid_o                  : out std_logic;
+      distort_bpm_pos_flat_x_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      distort_bpm_pos_flat_x_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      distort_bpm_pos_flat_y_o      : out t_bpm_pos_arr(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      distort_bpm_pos_flat_y_rcvd_o : out std_logic_vector(g_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
+      wb_slv_i                      : in t_wishbone_slave_in;
+      wb_slv_o                      : out t_wishbone_slave_out
     );
   end component;
 
@@ -699,7 +717,7 @@ package fofb_ctrl_pkg is
   -- FOFB Processing
   constant c_xwb_fofb_processing_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
-    abi_ver_major => x"03",
+    abi_ver_major => x"04",
     abi_ver_minor => x"00",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
@@ -716,8 +734,8 @@ package fofb_ctrl_pkg is
   -- FOFB system identification
   constant c_xwb_fofb_sys_id_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
-    abi_ver_major => x"00",
-    abi_ver_minor => x"00",
+    abi_ver_major => x"01",
+    abi_ver_minor => x"01",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
@@ -727,7 +745,7 @@ package fofb_ctrl_pkg is
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"4b2f4872",               -- Last 8 chars of "FOFB_SYS_ID_REGS" md5sum
     version       => x"00000001",
-    date          => x"20230404",
+    date          => x"20230504",
     name          => "FOFB_SYS_ID_REGS   ")));
 
 end fofb_ctrl_pkg;

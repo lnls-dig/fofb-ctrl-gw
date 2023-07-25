@@ -214,11 +214,11 @@ begin
         -- Compute the BPM position error
         if g_USE_MOVING_AVG then
           -- Take the average with the BPM position from the last time frame
-          bpm_err_x := ((bpm_x + bpm_prev_x(i)) / 2) - sp_ram.get_sp_integer(i);
-          bpm_err_y := ((bpm_y + bpm_prev_y(i)) / 2) - sp_ram.get_sp_integer(i + 256);
+          bpm_err_x := sp_ram.get_sp_integer(i) - ((bpm_x + bpm_prev_x(i)) / 2);
+          bpm_err_y := sp_ram.get_sp_integer(i + 256) - ((bpm_y + bpm_prev_y(i)) / 2);
         else
-          bpm_err_x := bpm_x - sp_ram.get_sp_integer(i);
-          bpm_err_y := bpm_y - sp_ram.get_sp_integer(i + 256);
+          bpm_err_x := sp_ram.get_sp_integer(i) - bpm_x;
+          bpm_err_y := sp_ram.get_sp_integer(i + 256) - bpm_y;
         end if;
 
         -- Store the current BPM position for computing the average in the next
@@ -326,9 +326,9 @@ begin
       -- Compute the BPM position error
       if g_USE_MOVING_AVG then
         -- Take the average with the BPM position from the last time frame
-        bpm_err_x := ((bpm_x + bpm_prev_x(0)) / 2) - sp_ram.get_sp_integer(0);
+        bpm_err_x := sp_ram.get_sp_integer(0) - ((bpm_x + bpm_prev_x(0)) / 2);
       else
-        bpm_err_x := bpm_x - sp_ram.get_sp_integer(0);
+        bpm_err_x := sp_ram.get_sp_integer(0) - bpm_x;
       end if;
 
       -- Detect loop interlock due to orbit distortion
@@ -446,9 +446,9 @@ begin
         -- Compute the BPM position error
         if g_USE_MOVING_AVG then
           -- Take the average with the BPM position from the last time frame
-          bpm_err_x := ((bpm_x + bpm_prev_x(0)) / 2) - sp_ram.get_sp_integer(0);
+          bpm_err_x := sp_ram.get_sp_integer(0) - ((bpm_x + bpm_prev_x(0)) / 2);
         else
-          bpm_err_x := bpm_x - sp_ram.get_sp_integer(0);
+          bpm_err_x := sp_ram.get_sp_integer(0) - bpm_x;
         end if;
 
         -- Store the current BPM position for computing the average in the next
