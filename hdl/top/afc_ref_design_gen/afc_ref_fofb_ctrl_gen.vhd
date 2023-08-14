@@ -2246,12 +2246,15 @@ begin
     end generate;
   end generate;
 
+  -- PI setpoint for the first 8 channels, which are the ones being used atm.
   gen_rtm_ac_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    acq_rtmlamp_data(i)(
-        (c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
+    gen_rtmlamp_dbg_pi_ctrl_sp : for j in 2*c_RTMLAMP_CHANNELS to 2*c_RTMLAMP_CHANNELS+7 generate
+      acq_rtmlamp_data(i)(
+        (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
         downto
-        (c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
-      <= rtmlamp_dbg_pi_ctrl_sp(0);
+        j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
+      <= rtmlamp_dbg_pi_ctrl_sp(j-2*c_RTMLAMP_CHANNELS);
+    end generate;
   end generate;
 
   --------------------
