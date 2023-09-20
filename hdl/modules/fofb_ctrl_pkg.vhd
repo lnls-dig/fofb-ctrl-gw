@@ -640,6 +640,27 @@ package fofb_ctrl_pkg is
     );
   end component;
 
+  component xwb_fofb_shaper_filt is
+    generic (
+      g_CHANNELS            : natural;
+      g_ARITH_EXTRA_BITS    : natural;
+      g_IFCS_EXTRA_BITS     : natural;
+      g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;
+      g_ADDRESS_GRANULARITY : t_wishbone_address_granularity := WORD;
+      g_WITH_EXTRA_WB_REG   : boolean := false
+    );
+    port (
+      clk_i                 : in  std_logic;
+      rst_n_i               : in  std_logic;
+      sp_arr_i              : in  t_sp_arr(g_CHANNELS-1 DOWNTO 0);
+      sp_valid_arr_i        : in  std_logic_vector(g_CHANNELS-1 DOWNTO 0);
+      filt_sp_arr_o         : out t_sp_arr(g_CHANNELS-1 DOWNTO 0);
+      filt_sp_valid_arr_o   : out std_logic_vector(g_CHANNELS-1 DOWNTO 0);
+      wb_slv_i              : in  t_wishbone_slave_in;
+      wb_slv_o              : out t_wishbone_slave_out
+    );
+  end component xwb_fofb_shaper_filt;
+
   component fofb_processing_dcc_adapter is
     generic (
       -- DCC packet FIFO depth
@@ -747,6 +768,23 @@ package fofb_ctrl_pkg is
     version       => x"00000001",
     date          => x"20230504",
     name          => "FOFB_SYS_ID_REGS   ")));
+
+  -- FOFB shaper filters
+  constant c_xwb_fofb_shaper_filter_regs_sdb : t_sdb_device := (
+    abi_class     => x"0000",                   -- undocumented device
+    abi_ver_major => x"00",
+    abi_ver_minor => x"01",
+    wbd_endian    => c_sdb_endian_big,
+    wbd_width     => x"4",                      -- 32-bit port granularity (0100)
+    sdb_component => (
+    addr_first    => x"0000000000000000",
+    addr_last     => x"000000000000FFFF",
+    product => (
+    vendor_id     => x"1000000000001215",       -- LNLS
+    device_id     => x"f65559b2",               -- Last 8 chars of "FOFB_SHAPER_REGS" md5sum
+    version       => x"00000001",
+    date          => x"20230922",
+    name          => "FOFB_SHAPER_REGS   ")));
 
 end fofb_ctrl_pkg;
 
