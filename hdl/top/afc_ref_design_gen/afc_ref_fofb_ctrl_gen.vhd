@@ -500,6 +500,15 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal distort_bpm_pos_flat_y_rcvd         : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
   -----------------------------------------------------------------------------
+  -- FOFB shaper filters signals
+  -----------------------------------------------------------------------------
+  constant c_FOFB_SHAPER_FILT_ARITH_EXTRA_BITS  : natural := 0;
+  constant c_FOFB_SHAPER_FILT_IFCS_EXTRA_BITS   : natural := 4;
+
+  signal filt_distort_fofb_proc_sp_arr          : t_sp_arr(c_FOFB_CHANNELS-1 DOWNTO 0);
+  signal filt_distort_fofb_proc_sp_valid_arr    : std_logic_vector(c_FOFB_CHANNELS-1 DOWNTO 0);
+
+  -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
 
@@ -839,8 +848,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_RTM_LAMP_ID                     : natural := 2;
   constant c_FOFB_PROCESSING_ID              : natural := 3;
   constant c_FOFB_SYS_ID_ID                  : natural := 4;
-  -- +2 for accounting for FOFB processing and FOFB system identification cores
-  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 2;
+  constant c_FOFB_SHAPER_FILT_ID             : natural := 5;
+  -- +3 is accounting for FOFB {processing, system identification, shaper filter} cores
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 3;
   constant c_RTM_LAMP_SDB                    : boolean := (g_RTM = "RTMLAMP");
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
@@ -849,7 +859,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
     c_FOFB_CC_P2P_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,            true),
     c_RTM_LAMP_ID              => f_sdb_auto_device(c_xwb_rtm_lamp_regs_sdb, c_RTM_LAMP_SDB),
     c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,    true),
-    c_FOFB_SYS_ID_ID           => f_sdb_auto_device(c_xwb_fofb_sys_id_regs_sdb,        true)
+    c_FOFB_SYS_ID_ID           => f_sdb_auto_device(c_xwb_fofb_sys_id_regs_sdb,        true),
+    c_FOFB_SHAPER_FILT_ID      => f_sdb_auto_device(c_xwb_fofb_shaper_filter_regs_sdb, true)
   );
 
   -----------------------------------------------------------------------------
@@ -1895,6 +1906,30 @@ begin
     );
 
   ----------------------------------------------------------------------
+  --                       FOFB SHAPER FILTERS                        --
+  ----------------------------------------------------------------------
+
+  cmp_xwb_fofb_shaper_filt : xwb_fofb_shaper_filt
+    generic map (
+      g_CHANNELS            => c_FOFB_CHANNELS,
+      g_ARITH_EXTRA_BITS    => c_FOFB_SHAPER_FILT_ARITH_EXTRA_BITS,
+      g_IFCS_EXTRA_BITS     => c_FOFB_SHAPER_FILT_IFCS_EXTRA_BITS,
+      g_INTERFACE_MODE      => PIPELINED,
+      g_ADDRESS_GRANULARITY => BYTE,
+      g_WITH_EXTRA_WB_REG   => false
+    )
+    port map (
+      clk_i                 => clk_sys,
+      rst_n_i               => clk_sys_rstn,
+      sp_arr_i              => distort_fofb_proc_sp_arr,
+      sp_valid_arr_i        => distort_fofb_proc_sp_valid_arr,
+      filt_sp_arr_o         => filt_distort_fofb_proc_sp_arr,
+      filt_sp_valid_arr_o   => filt_distort_fofb_proc_sp_valid_arr,
+      wb_slv_i              => user_wb_out(c_FOFB_SHAPER_FILT_ID),
+      wb_slv_o              => user_wb_in(c_FOFB_SHAPER_FILT_ID)
+    );
+
+  ----------------------------------------------------------------------
   --                          RTM 8SFP OHWR                           --
   ----------------------------------------------------------------------
 
@@ -2198,7 +2233,7 @@ begin
 
   -- Convert signed elements to std_logic_vector
   gen_conv_pi_sp: for i in 0 to c_FOFB_CHANNELS-1 generate
-    pi_sp_ext(i) <= std_logic_vector(distort_fofb_proc_sp_arr(i));
+    pi_sp_ext(i) <= std_logic_vector(filt_distort_fofb_proc_sp_arr(i));
   end generate;
 
   ----------------------------------------------------------------------
