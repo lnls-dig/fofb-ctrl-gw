@@ -450,7 +450,7 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
 
   constant c_DATA_WIDTH                      : natural := def_PacketDataXMSB-def_PacketDataXLSB+1;
-  constant c_FOFB_CHANNELS                   : natural := 12;
+  constant c_FOFB_CHANNELS                   : natural := 8;
 
   constant c_DOT_PROD_ACC_EXTRA_WIDTH        : natural := 4;
 
@@ -2307,7 +2307,8 @@ begin
     bpm_pos_flat_x_rcvd & bpm_pos_flat_y_rcvd &                                                                                                                         -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
     f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                     -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
     -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
-    std_logic_vector(fofb_proc_sp_arr(10)) & std_logic_vector(fofb_proc_sp_arr(11)) & std_logic_vector(fofb_proc_sp_arr(8)) & std_logic_vector(fofb_proc_sp_arr(9)) &   -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    --std_logic_vector(fofb_proc_sp_arr(10)) & std_logic_vector(fofb_proc_sp_arr(11)) & std_logic_vector(fofb_proc_sp_arr(8)) & std_logic_vector(fofb_proc_sp_arr(9)) &   -- FOFB channels setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(to_unsigned(0, 64)) &
     std_logic_vector(fofb_proc_sp_arr(6))  & std_logic_vector(fofb_proc_sp_arr(7))  & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
     std_logic_vector(fofb_proc_sp_arr(2))  & std_logic_vector(fofb_proc_sp_arr(3))  & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) &
     std_logic_vector(bpm_pos_flat_y(7)) & std_logic_vector(bpm_pos_flat_y(6)) & std_logic_vector(bpm_pos_flat_y(5)) & std_logic_vector(bpm_pos_flat_y(4)) &             -- P2P BPM y positions 7-0 (511 downto 256, 8x32)
@@ -2324,7 +2325,8 @@ begin
     distort_bpm_pos_flat_x_rcvd & distort_bpm_pos_flat_y_rcvd &                                                                                                                                         -- [DEBUG] Flatenizers' 'received' flag (735 downto 720, 2x8)
     f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                                                     -- [DEBUG] Timeframe counter (719 downto 704, 1x16)
     -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
-    std_logic_vector(distort_fofb_proc_sp_arr(10)) & std_logic_vector(distort_fofb_proc_sp_arr(11)) & std_logic_vector(distort_fofb_proc_sp_arr(8)) & std_logic_vector(distort_fofb_proc_sp_arr(9)) &   -- [DEBUG] FOFB channels distorted setpoints 11-0 (703 downto 512, 12x16)
+    -- std_logic_vector(distort_fofb_proc_sp_arr(10)) & std_logic_vector(distort_fofb_proc_sp_arr(11)) & std_logic_vector(distort_fofb_proc_sp_arr(8)) & std_logic_vector(distort_fofb_proc_sp_arr(9)) &   -- [DEBUG] FOFB channels distorted setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(to_unsigned(0, 64)) &
     std_logic_vector(distort_fofb_proc_sp_arr(6))  & std_logic_vector(distort_fofb_proc_sp_arr(7))  & std_logic_vector(distort_fofb_proc_sp_arr(4)) & std_logic_vector(distort_fofb_proc_sp_arr(5)) &
     std_logic_vector(distort_fofb_proc_sp_arr(2))  & std_logic_vector(distort_fofb_proc_sp_arr(3))  & std_logic_vector(distort_fofb_proc_sp_arr(0)) & std_logic_vector(distort_fofb_proc_sp_arr(1)) &
     std_logic_vector(distort_bpm_pos_flat_y(7)) & std_logic_vector(distort_bpm_pos_flat_y(6)) & std_logic_vector(distort_bpm_pos_flat_y(5)) & std_logic_vector(distort_bpm_pos_flat_y(4)) &             -- [DEBUG] P2P BPM y distorted positions 7-0 (511 downto 256, 8x32)
@@ -2341,7 +2343,8 @@ begin
     distort_bpm_pos_flat_x_rcvd & distort_bpm_pos_flat_y_rcvd &                                                                                                                                                           -- Flatenizers' 'received' flag (735 downto 720, 2x8)
     f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                                                                       -- Timeframe counter (719 downto 704, 1x16)
     -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
-    std_logic_vector(filt_distort_fofb_proc_sp_arr(10)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(11)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(8)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(9)) & -- FOFB channels distorted and filtered setpoints 11-0 (703 downto 512, 12x16)
+    -- std_logic_vector(filt_distort_fofb_proc_sp_arr(10)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(11)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(8)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(9)) & -- FOFB channels distorted and filtered setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(to_unsigned(0, 64)) &
     std_logic_vector(filt_distort_fofb_proc_sp_arr(6))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(7))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(4)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(5)) &
     std_logic_vector(filt_distort_fofb_proc_sp_arr(2))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(3))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(0)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(1)) &
     std_logic_vector(distort_bpm_pos_flat_y(7)) & std_logic_vector(distort_bpm_pos_flat_y(6)) & std_logic_vector(distort_bpm_pos_flat_y(5)) & std_logic_vector(distort_bpm_pos_flat_y(4)) &                               -- P2P BPM y distorted positions 7-0 (511 downto 256, 8x32)
