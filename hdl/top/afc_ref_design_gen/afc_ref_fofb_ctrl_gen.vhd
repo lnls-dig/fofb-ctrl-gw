@@ -716,13 +716,11 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ACQ_FIFO_SIZE                   : natural := 256;
 
   -- Number of acquisition cores
-  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + c_NUM_SYS_ID_CORES;
+  constant c_ACQ_NUM_CORES                   : natural := c_RTM_LAMP_NUM_CORES + c_NUM_SYS_ID_CORES;
 
   -- Acquisition core IDs
   constant c_ACQ_CORE_RTM_LAMP_ID            : natural := 0;
-  constant c_ACQ_CORE_CC_FMC_OR_RTM_ID       : natural := 1;
-  constant c_ACQ_CORE_CC_P2P_ID              : natural := 2;
-  constant c_ACQ_CORE_SYS_ID_ID              : natural := 3;
+  constant c_ACQ_CORE_SYS_ID_ID              : natural := 1;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
@@ -735,13 +733,12 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Acquisition channels IDs
   constant c_ACQ_RTM_LAMP_ID                 : natural := 0;
-  constant c_ACQ_DCC_ID                      : natural := 1;
-  constant c_ACQ_SYS_ID_ID                   : natural := 2;
-  constant c_ACQ_SYS_ID_DEBUG_ID             : natural := 3;
-  constant c_ACQ_SYS_ID_FILT_ID              : natural := 4;
+  constant c_ACQ_SYS_ID_ID                   : natural := 1;
+  constant c_ACQ_SYS_ID_DEBUG_ID             : natural := 2;
+  constant c_ACQ_SYS_ID_FILT_ID              : natural := 3;
 
   -- Number of channels per acquisition core
-  constant c_ACQ_NUM_CHANNELS                : natural := 5;
+  constant c_ACQ_NUM_CHANNELS                : natural := 4;
 
   -- The way the triggers were conceived, you have a single logical trigger for
   -- each ACQ channel. Since we don't use all of those channels, we can use the
@@ -777,7 +774,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_FACQ_CHANNELS                   : t_facq_chan_param_array(c_ACQ_NUM_CHANNELS-1 downto 0) :=
   (
     c_ACQ_RTM_LAMP_ID       => c_FACQ_PARAMS_RTM_LAMP,
-    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC,
     c_ACQ_SYS_ID_ID         => c_FACQ_PARAMS_SYS_ID,
     c_ACQ_SYS_ID_DEBUG_ID   => c_FACQ_PARAMS_SYS_ID,
     c_ACQ_SYS_ID_FILT_ID    => c_FACQ_PARAMS_SYS_ID
@@ -808,8 +804,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- Trigger core IDs
   -- These IDs should be kept in sync with the ACQ core IDs
   constant c_TRIG_MUX_RTM_LAMP_ID            : natural  := c_ACQ_CORE_RTM_LAMP_ID;
-  constant c_TRIG_MUX_CC_FMC_ID              : natural  := c_ACQ_CORE_CC_FMC_OR_RTM_ID;
-  constant c_TRIG_MUX_CC_P2P_ID              : natural  := c_ACQ_CORE_CC_P2P_ID;
   constant c_TRIG_MUX_SYS_ID_ID              : natural  := c_ACQ_CORE_SYS_ID_ID;
 
   constant c_TRIG_MUX_NUM_CORES              : natural  := c_ACQ_NUM_CORES;
@@ -1537,10 +1531,6 @@ begin
 
   end generate;
 
-  -- Trigger signal for DCC timeframe_start.
-  -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_FMC_OR_RTM_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
-
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
   (
@@ -1698,10 +1688,6 @@ begin
   -- Only used if FP P2P is not used.
   fofb_ref_clk_p(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_p;
   fofb_ref_clk_n(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_n;
-
-  -- Trigger signal for DCC timeframe_start.
-  -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
 
   cmp_fofb_ctrl_wrapper_1 : xwb_fofb_ctrl_wrapper
   generic map
@@ -2254,12 +2240,6 @@ begin
   --                          Acquisition                             --
   ----------------------------------------------------------------------
 
-  fs_clk_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID)   <= clk_sys;
-  fs_rst_n_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID) <= clk_sys_rstn;
-
-  fs_clk_array(c_ACQ_CORE_CC_P2P_ID)          <= fofb_userclk(c_FOFB_CC_P2P_ID);
-  fs_rst_n_array(c_ACQ_CORE_CC_P2P_ID)        <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
-
   fs_clk_array(c_ACQ_CORE_RTM_LAMP_ID)        <= clk_sys;
   fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_ID)      <= clk_sys_rstn;
 
@@ -2320,26 +2300,6 @@ begin
   -- ACQ Core 1
   --------------------
 
-  -- DCC FMC
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(fofb_proc_sp_arr(6)) & std_logic_vector(fofb_proc_sp_arr(7)) & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
-          std_logic_vector(fofb_proc_sp_arr(2)) & std_logic_vector(fofb_proc_sp_arr(3)) & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
-
-  --------------------
-  -- ACQ Core 2
-  --------------------
-  -- DCC P2P
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid               <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
-
-  --------------------
-  -- ACQ Core 3
-  --------------------
-
   -- SYS ID channel
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_ID).width)-1 downto 0) <=
     std_logic_vector(to_unsigned(0, 287)) &                                                                                                                             -- [DEBUG] Padding with 0s (1023 downto 737)
@@ -2398,33 +2358,11 @@ begin
   trig_ref_clk <= clk_trig_ref;
   trig_ref_rst_n <= clk_trig_ref_rstn;
 
-  -- Assign trigger pulses to trigger channel interfaces
-  trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
-    timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID);
-  trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
-    timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID);
-
-  trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
-    timeframe_start(c_FOFB_CC_P2P_ID);
-  trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
-    timeframe_end(c_FOFB_CC_P2P_ID);
-
   -- FIXME: remove it
   -- trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
   --   rtmlamp_adc_start;
   -- trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
   --   rtmlamp_dac_start;
-
-  -- Assign intern triggers to trigger module
-  trig_rcv_intern(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
-  trig_rcv_intern(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_1_ID);
-
-  trig_rcv_intern(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
-  trig_rcv_intern(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID);
 
   trig_rcv_intern(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
     trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
