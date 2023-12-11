@@ -1936,6 +1936,7 @@ begin
       rst_n_i               => clk_sys_rstn,
       sp_arr_i              => distort_fofb_proc_sp_arr,
       sp_valid_arr_i        => distort_fofb_proc_sp_valid_arr,
+      busy_arr_o            => open,
       filt_sp_arr_o         => filt_distort_fofb_proc_sp_arr,
       filt_sp_valid_arr_o   => filt_distort_fofb_proc_sp_valid_arr,
       wb_slv_i              => user_wb_out(c_FOFB_SHAPER_FILT_ID),

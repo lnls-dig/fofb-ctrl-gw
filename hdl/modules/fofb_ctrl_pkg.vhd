@@ -654,6 +654,7 @@ package fofb_ctrl_pkg is
       rst_n_i               : in  std_logic;
       sp_arr_i              : in  t_sp_arr(g_CHANNELS-1 DOWNTO 0);
       sp_valid_arr_i        : in  std_logic_vector(g_CHANNELS-1 DOWNTO 0);
+      busy_arr_o            : out std_logic_vector(g_CHANNELS-1 DOWNTO 0);
       filt_sp_arr_o         : out t_sp_arr(g_CHANNELS-1 DOWNTO 0);
       filt_sp_valid_arr_o   : out std_logic_vector(g_CHANNELS-1 DOWNTO 0);
       wb_slv_i              : in  t_wishbone_slave_in;

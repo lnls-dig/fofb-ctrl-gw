@@ -57,6 +57,7 @@ ARCHITECTURE test OF xwb_fofb_shaper_filt_tb IS
 
   SIGNAL clk : STD_LOGIC := '0';
   SIGNAL rst_n : STD_LOGIC := '1';
+  SIGNAL busy_arr : STD_LOGIC_VECTOR(g_CHANNELS-1 DOWNTO 0);
   SIGNAL sp_arr, filt_sp_arr : t_sp_arr(g_CHANNELS-1 DOWNTO 0);
   SIGNAL sp_valid_arr, filt_sp_valid_arr :
     STD_LOGIC_VECTOR(g_CHANNELS-1 DOWNTO 0) := (OTHERS => '0');
@@ -171,6 +172,7 @@ BEGIN
       LOOP
         read(lin, v_x_or_y);
         sp_arr(ch_idx) <= to_signed(v_x_or_y, sp_arr(ch_idx)'LENGTH);
+        f_wait_clocked_signal(clk, busy_arr(0), '0');
         sp_valid_arr(ch_idx) <= '1';
       END LOOP;
       f_wait_cycles(clk, 1);
@@ -217,6 +219,7 @@ BEGIN
       rst_n_i               => rst_n,
       sp_arr_i              => sp_arr,
       sp_valid_arr_i        => sp_valid_arr,
+      busy_arr_o            => busy_arr,
       filt_sp_arr_o         => filt_sp_arr,
       filt_sp_valid_arr_o   => filt_sp_valid_arr,
       wb_slv_i              => wb_slave_i,

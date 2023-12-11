@@ -57,6 +57,9 @@ ENTITY xwb_fofb_shaper_filt IS
     -- Setpoints valid array
     sp_valid_arr_i        : IN  STD_LOGIC_VECTOR(g_CHANNELS-1 DOWNTO 0);
 
+    -- Busy flag array
+    busy_arr_o            : OUT STD_LOGIC_VECTOR(g_CHANNELS-1 DOWNTO 0);
+
     -- Filtered setpoints array
     filt_sp_arr_o         : OUT t_sp_arr(g_CHANNELS-1 DOWNTO 0);
     -- Filtered setpoints valid array
@@ -237,6 +240,7 @@ BEGIN
           x_i                 => iir_filts_x(idx),
           x_valid_i           => sp_valid_arr_i(idx),
           coeffs_i            => coeffs(idx),
+          busy_o              => busy_arr_o(idx),
           y_o                 => iir_filts_y(idx),
           y_valid_o           => filt_sp_valid_arr_o(idx)
         );
