@@ -1,0 +1,87 @@
+memory-map:
+  bus: wb-32-be
+  name: wb_fofb_shaper_filt_regs
+  description: Interface to FOFB IIR shaper filters regs
+  x-hdl:
+    busgroup: True
+    iogroup: wb_fofb_shaper_filt_regs_ifc
+  children:
+    - repeat:
+        name: ch
+        count: 12
+        children:
+          - memory:
+              name: coeffs
+              memsize: 200
+              description: |
+                Coefficients for the ceil('max_filt_order'/2) IIR internal
+                biquads.
+
+                Each biquad takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1).
+                The 'coeffs' array should be populated in the following manner:
+
+                  coeffs[0 + 5*{biquad_idx}] = b0 of biquad {biquad_idx}
+                  coeffs[1 + 5*{biquad_idx}] = b1 of biquad {biquad_idx}
+                  coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
+                  coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
+                  coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
+
+                This array acts like a 'shadow' for the real coefficients and is
+                only effectivated when '1' is written to 'eff_coeffs' bit of
+                'ctl' register.
+                
+                NOTE: This ABI supports up to 20th order filters, but only the
+                coefficients corresponding to the first 'max_filt_order' filters
+                are meaningful for the gateware.
+              children:
+                - reg:
+                    name: val
+                    width: 32
+                    access: rw
+                    description: |
+                      Coefficient value using 'coeffs_fp_repr' fixed-point
+                      representation. It should be aligned to the left.
+    - reg:
+        name: max_filt_order
+        width: 32
+        access: ro
+        description: |
+          Maximum filter order supported by the gateware.
+    - reg:
+        name: coeffs_fp_repr
+        width: 32
+        access: ro
+        description: |
+          Fixed-point signed representation of coefficients.
+          The coefficients should be aligned to the left. The fixed-point
+          position is then given by 32 - 'int_width' (i.e. one should divide
+          this register's content by 2**{32 - 'int_width'} to get the
+          represented decimal number.
+        children:
+          - field:
+              name: int_width
+              range: 4-0
+              description: |
+                Integer width (accounting for the signal bit).
+          - field:
+              name: frac_width
+              range: 9-5
+              description: |
+                Fractionary width.
+    - reg:
+        name: ctl 
+        width: 32
+        access: rw
+        description: |
+          Control register.
+        children:
+          - field:
+              name: eff_coeffs
+              x-hdl:
+                type: autoclear
+              range: 0
+              description: |
+                Strobe for effectivating (i.e. updating) coefficients.
+              comment: |
+                write 0: no effect
+                write 1: effectivates coefficients (this bit autoclears)
