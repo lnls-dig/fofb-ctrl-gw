@@ -71,7 +71,7 @@ BEGIN
     FILE fin : TEXT;
     VARIABLE lin : LINE;
     VARIABLE v_wb_addr : NATURAL := 0;
-    VARIABLE v_wb_dat : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
+    VARIABLE v_wb_coeff, v_wb_dat : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
     VARIABLE v_coeff : REAL;
     VARIABLE v_x_or_y : INTEGER;
   BEGIN
@@ -126,7 +126,6 @@ BEGIN
         & NATURAL'image(c_COEFF_FRAC_WIDTH) & ")"
       SEVERITY ERROR;
 
-    -- Load filter coefficients
     file_open(fin, g_TEST_COEFFS_FILENAME, read_mode);
     FOR ch_idx IN 0 TO g_CHANNELS-1
     LOOP
@@ -139,29 +138,32 @@ BEGIN
         read(lin, v_coeff);
         -- The signed fixed-point representation of coefficients is aligned to
         -- the left in Wishbone registers
-        v_wb_dat := (
+        v_wb_coeff := (
           31 DOWNTO 32-(c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH) =>
             to_slv(to_sfixed(v_coeff, c_COEFF_INT_WIDTH-1,
             -c_COEFF_FRAC_WIDTH)),
           OTHERS => '0');
+        v_wb_dat := v_wb_coeff;
+
+        -- Load filter coefficients
         write32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
+
+        -- Read back filter coefficients
+        read32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
+
+        ASSERT v_wb_dat = v_wb_coeff
+          REPORT
+            "UNEXPECTED FILTER COEFFICIENT "
+            & NATURAL'image(v_wb_addr) & ": "
+            & to_hstring(v_wb_dat)
+            & " (EXPECTED: "
+            & to_hstring(v_wb_coeff) & ")"
+          SEVERITY ERROR;
 
         v_wb_addr := v_wb_addr + c_WB_FOFB_SHAPER_FILT_REGS_CH_0_COEFFS_SIZE;
       END LOOP;
     END LOOP;
     file_close(fin);
-
-    -- Effectivate (update) filter coefficients
-    v_wb_dat := (c_WB_FOFB_SHAPER_FILT_REGS_CTL_EFF_COEFFS_OFFSET => '1',
-      OTHERS => '0');
-    write32_pl(clk, wb_slave_i, wb_slave_o, c_WB_FOFB_SHAPER_FILT_REGS_CTL_ADDR,
-      v_wb_dat);
-
-    -- Wait for coefficients to be effectivated
-    -- Coefficients RAMs are accessed in parallel and each of the
-    -- c_NUM_OF_COEFFS_PER_FILT coefficients takes 2 cycles for being
-    -- effectivated. The +1 is accounting for the command detection cycle.
-    f_wait_cycles(clk, 2*c_NUM_OF_COEFFS_PER_FILT+1);
 
     file_open(fin, g_TEST_X_Y_FILENAME, read_mode);
     WHILE NOT endfile(fin)

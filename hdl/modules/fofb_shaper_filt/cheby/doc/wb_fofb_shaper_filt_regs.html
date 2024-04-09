@@ -325,13 +325,6 @@
 <td class="td_code">coeffs_fp_repr</td>
 <td class="td_code">coeffs_fp_repr</td>
 </tr>
-<tr class="tr_even">
-<td class="td_code">0x1008</td>
-<td>REG</td>
-<td><A href="#ctl">ctl</a></td>
-<td class="td_code">ctl</td>
-<td class="td_code">ctl</td>
-</tr>
 </table>
 
 <h3><a name="sect_3_0">2. Register description</a></h3>
@@ -1365,106 +1358,6 @@ int_width
 frac_width
 </b>[<i>ro</i>]: Fractionary width.
 
-</ul>
-<a name="ctl"></a>
-<h3>2.15. ctl</h3>
-<table cellpadding=0 cellspacing=0 border=0>
-<tr><td><b>HW prefix:</b></td><td class="td_code">ctl</td></tr>
-<tr><td><b>HW address:</b></td><td class="td_code">0x1008</td></tr>
-<tr><td><b>C prefix:</b></td><td class="td_code">ctl</td></tr>
-<tr><td><b>C block offset:</b></td><td class="td_code">0x1008</td></tr>
-</table>
-<p>
-Control register.<br>
-</p>
-<table cellpadding=0 cellspacing=0 border=0>
-<tr>
- <td class="td_bit" colspan="1">31</td>
- <td class="td_bit" colspan="1">30</td>
- <td class="td_bit" colspan="1">29</td>
- <td class="td_bit" colspan="1">28</td>
- <td class="td_bit" colspan="1">27</td>
- <td class="td_bit" colspan="1">26</td>
- <td class="td_bit" colspan="1">25</td>
- <td class="td_bit" colspan="1">24</td>
-</tr>
-<tr>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
-</tr>
-<tr>
- <td class="td_bit" colspan="1">23</td>
- <td class="td_bit" colspan="1">22</td>
- <td class="td_bit" colspan="1">21</td>
- <td class="td_bit" colspan="1">20</td>
- <td class="td_bit" colspan="1">19</td>
- <td class="td_bit" colspan="1">18</td>
- <td class="td_bit" colspan="1">17</td>
- <td class="td_bit" colspan="1">16</td>
-</tr>
-<tr>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
-</tr>
-<tr>
- <td class="td_bit" colspan="1">15</td>
- <td class="td_bit" colspan="1">14</td>
- <td class="td_bit" colspan="1">13</td>
- <td class="td_bit" colspan="1">12</td>
- <td class="td_bit" colspan="1">11</td>
- <td class="td_bit" colspan="1">10</td>
- <td class="td_bit" colspan="1">9</td>
- <td class="td_bit" colspan="1">8</td>
-</tr>
-<tr>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
-</tr>
-<tr>
- <td class="td_bit" colspan="1">7</td>
- <td class="td_bit" colspan="1">6</td>
- <td class="td_bit" colspan="1">5</td>
- <td class="td_bit" colspan="1">4</td>
- <td class="td_bit" colspan="1">3</td>
- <td class="td_bit" colspan="1">2</td>
- <td class="td_bit" colspan="1">1</td>
- <td class="td_bit" colspan="1">0</td>
-</tr>
-<tr>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_unused" colspan="1">-</td>
- <td class="td_field" colspan="1">eff_coeffs</td>
-</tr>
-</table>
-<ul>
-<li><b>
-eff_coeffs
-</b>[<i>rw</i>]: Strobe for effectivating (i.e. updating) coefficients.
-
-<br>write 0: no effect<br>write 1: effectivates coefficients (this bit autoclears)
 </ul>
 
 

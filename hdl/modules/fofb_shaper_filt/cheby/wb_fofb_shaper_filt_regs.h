@@ -1,6 +1,6 @@
 #ifndef __CHEBY__WB_FOFB_SHAPER_FILT_REGS__H__
 #define __CHEBY__WB_FOFB_SHAPER_FILT_REGS__H__
-#define WB_FOFB_SHAPER_FILT_REGS_SIZE 4108 /* 0x100c */
+#define WB_FOFB_SHAPER_FILT_REGS_SIZE 4104 /* 0x1008 */
 
 /* None */
 #define WB_FOFB_SHAPER_FILT_REGS_CH 0x0UL
@@ -17,10 +17,6 @@ The 'coeffs' array should be populated in the following manner:
   coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
   coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
   coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
-
-This array acts like a 'shadow' for the real coefficients and is
-only effectivated when '1' is written to 'eff_coeffs' bit of
-'ctl' register.
 
 NOTE: This ABI supports up to 20th order filters, but only the
 coefficients corresponding to the first 'max_filt_order' filters
@@ -50,11 +46,6 @@ represented decimal number.
 #define WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_MASK 0x3e0UL
 #define WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_SHIFT 5
 
-/* Control register.
- */
-#define WB_FOFB_SHAPER_FILT_REGS_CTL 0x1008UL
-#define WB_FOFB_SHAPER_FILT_REGS_CTL_EFF_COEFFS 0x1UL
-
 #ifndef __ASSEMBLER__
 struct wb_fofb_shaper_filt_regs {
   /* [0x0]: REPEAT (no description) */
@@ -70,10 +61,6 @@ The 'coeffs' array should be populated in the following manner:
   coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
   coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
   coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
-
-This array acts like a 'shadow' for the real coefficients and is
-only effectivated when '1' is written to 'eff_coeffs' bit of
-'ctl' register.
 
 NOTE: This ABI supports up to 20th order filters, but only the
 coefficients corresponding to the first 'max_filt_order' filters
@@ -104,10 +91,6 @@ this register's content by 2**{32 - 'int_width'} to get the
 represented decimal number.
  */
   uint32_t coeffs_fp_repr;
-
-  /* [0x1008]: REG (rw) Control register.
- */
-  uint32_t ctl;
 };
 #endif /* !__ASSEMBLER__*/
 

@@ -3,8 +3,7 @@ memory-map:
   name: wb_fofb_shaper_filt_regs
   description: Interface to FOFB IIR shaper filters regs
   x-hdl:
-    busgroup: True
-    iogroup: wb_fofb_shaper_filt_regs_ifc
+    busgroup: true
   children:
     - repeat:
         name: ch
@@ -13,6 +12,7 @@ memory-map:
           - memory:
               name: coeffs
               memsize: 200
+              interface: sram
               description: |
                 Coefficients for the ceil('max_filt_order'/2) IIR internal
                 biquads.
@@ -26,10 +26,6 @@ memory-map:
                   coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
                   coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
 
-                This array acts like a 'shadow' for the real coefficients and is
-                only effectivated when '1' is written to 'eff_coeffs' bit of
-                'ctl' register.
-                
                 NOTE: This ABI supports up to 20th order filters, but only the
                 coefficients corresponding to the first 'max_filt_order' filters
                 are meaningful for the gateware.
@@ -68,20 +64,3 @@ memory-map:
               range: 9-5
               description: |
                 Fractionary width.
-    - reg:
-        name: ctl 
-        width: 32
-        access: rw
-        description: |
-          Control register.
-        children:
-          - field:
-              name: eff_coeffs
-              x-hdl:
-                type: autoclear
-              range: 0
-              description: |
-                Strobe for effectivating (i.e. updating) coefficients.
-              comment: |
-                write 0: no effect
-                write 1: effectivates coefficients (this bit autoclears)

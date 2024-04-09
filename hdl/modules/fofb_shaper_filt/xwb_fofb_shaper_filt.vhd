@@ -28,7 +28,6 @@ LIBRARY work;
 USE work.ifc_common_pkg.ALL;
 USE work.fofb_ctrl_pkg.ALL;
 USE work.fofb_shaper_filt_pkg.ALL;
-USE work.wb_fofb_shaper_filt_regs_pkg.ALL;
 USE work.wishbone_pkg.ALL;
 
 ENTITY xwb_fofb_shaper_filt IS
@@ -76,8 +75,19 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
   TYPE t_fofb_shaper_filt_coeffs IS
     ARRAY (NATURAL RANGE <>) OF t_iir_filt_coeffs;
 
-  TYPE t_wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat IS
-    ARRAY (NATURAL RANGE <>) OF STD_LOGIC_VECTOR(31 downto 0);
+  TYPE t_wb_fofb_shaper_filt_regs_coeffs_i_ifc IS RECORD
+    data  : STD_LOGIC_VECTOR(31 DOWNTO 0);
+  END RECORD;
+  TYPE t_wb_fofb_shaper_filt_regs_coeffs_o_ifc IS RECORD
+    addr  : STD_LOGIC_VECTOR(7 DOWNTO 2);
+    data  : STD_LOGIC_VECTOR(31 DOWNTO 0);
+    wr    : STD_LOGIC;
+  END RECORD;
+
+  TYPE t_wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr IS
+    ARRAY (NATURAL RANGE <>) OF t_wb_fofb_shaper_filt_regs_coeffs_i_ifc;
+  TYPE t_wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr IS
+    ARRAY (NATURAL RANGE <>) OF t_wb_fofb_shaper_filt_regs_coeffs_o_ifc;
 
   -- Number of bits in Wishbone register interface
   -- +2 to account for BYTE addressing
@@ -87,6 +97,13 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
 
   CONSTANT c_NUM_OF_BIQUADS_PER_FILT : NATURAL := (c_MAX_FILT_ORDER + 1)/2;
   CONSTANT c_NUM_OF_COEFFS_PER_FILT : NATURAL := 5*c_NUM_OF_BIQUADS_PER_FILT;
+
+  CONSTANT c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_I_IFC_0s :
+    t_wb_fofb_shaper_filt_regs_coeffs_i_ifc := (data => (OTHERS => '0'));
+  CONSTANT c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s :
+    t_wb_fofb_shaper_filt_regs_coeffs_o_ifc := (addr => (OTHERS => '0'),
+                                                data => (OTHERS => '0'),
+                                                wr => '0');
 
   -- The signed fixed-point representation of coefficients is aligned to the
   -- left in Wishbone registers
@@ -111,15 +128,13 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
   SIGNAL wb_slave_in_d1 : t_wishbone_slave_in_array(0 DOWNTO 0);
   SIGNAL wb_slave_out_d1 : t_wishbone_slave_out_array(0 DOWNTO 0);
 
-  SIGNAL wb_fofb_shaper_filt_regs_ifc_master_in :
-    t_wb_fofb_shaper_filt_regs_ifc_master_in;
-  SIGNAL wb_fofb_shaper_filt_regs_ifc_master_out :
-    t_wb_fofb_shaper_filt_regs_ifc_master_out;
-  SIGNAL wb_fofb_shaper_filt_regs_ifc_coeffs_adr : STD_LOGIC_VECTOR(5 DOWNTO 0);
-  SIGNAL wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat :
-    t_wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(c_MAX_CHANNELS-1 DOWNTO 0);
+  SIGNAL wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr :
+    t_wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(c_MAX_CHANNELS-1 DOWNTO 0) :=
+      (OTHERS => c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_I_IFC_0s);
+  SIGNAL wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr :
+    t_wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(c_MAX_CHANNELS-1 DOWNTO 0) :=
+      (OTHERS => c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s);
 
-  SIGNAL state : NATURAL RANGE 0 TO 2 := 0;
   SIGNAL coeffs : t_fofb_shaper_filt_coeffs(g_CHANNELS-1 DOWNTO 0)(
                     c_NUM_OF_BIQUADS_PER_FILT-1 DOWNTO 0)(
                     b0(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
@@ -127,6 +142,9 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
                     b2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
                     a1(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
                     a2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH));
+
+  SIGNAL biquad_idx : NATURAL RANGE 0 to c_NUM_OF_BIQUADS_PER_FILT-1 := 0;
+  SIGNAL coeff_idx : NATURAL RANGE 0 to c_NUM_OF_COEFFS_PER_FILT-1 := 0;
 BEGIN
   ASSERT c_MAX_FILT_ORDER <= 20
     REPORT "ABI supports up to 20th order filters"
@@ -139,85 +157,70 @@ BEGIN
            "to be at least 1."
     SEVERITY ERROR;
 
+  coeff_idx <= to_integer(UNSIGNED(
+    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).addr));
+  biquad_idx <= coeff_idx/5;
+
   PROCESS(clk_i) IS
-    VARIABLE v_biquad_idx : NATURAL RANGE 0 to c_NUM_OF_BIQUADS_PER_FILT-1 := 0;
-    VARIABLE v_coeff_idx : NATURAL RANGE 0 to c_NUM_OF_COEFFS_PER_FILT-1 := 0;
   BEGIN
-    IF rising_edge(clk_i) THEN
-      IF rst_n_i = '0' THEN
-        state <= 0;
-        v_coeff_idx := 0;
-      ELSE
-        CASE state IS
-          -- Waits for strobe signal
-          WHEN 0 =>
-            IF wb_fofb_shaper_filt_regs_ifc_master_out.ctl_eff_coeffs THEN
-              state <= 1;
-            END IF;
-            v_coeff_idx := 0;
+    -- Each iir_filt has c_NUM_OF_BIQUADS_PER_FILT biquads and each of these
+    -- has 5 associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
+    -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing
+    -- the c_NUM_OF_COEFFS_PER_FILT = 5*c_NUM_OF_BIQUADS_PER_FILT
+    -- coefficients of each iir_filt. The address map is:
+    -- For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
+    --   coeffs[0 + 5*{biquad_idx}] = b0 of biquad {biquad_idx}
+    --   coeffs[1 + 5*{biquad_idx}] = b1 of biquad {biquad_idx}
+    --   coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
+    --   coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
+    --   coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
+    FOR ch IN 0 TO g_CHANNELS-1
+    LOOP
+      CASE coeff_idx REM 5 IS
+        WHEN 0 =>
+          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+            (to_slv(coeffs(ch)(biquad_idx).b0), OTHERS => '0');
+        WHEN 1 =>
+          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+            (to_slv(coeffs(ch)(biquad_idx).b1), OTHERS => '0');
+        WHEN 2 =>
+          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+            (to_slv(coeffs(ch)(biquad_idx).b2), OTHERS => '0');
+        WHEN 3 =>
+          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+            (to_slv(coeffs(ch)(biquad_idx).a1), OTHERS => '0');
+        WHEN 4 =>
+          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+            (to_slv(coeffs(ch)(biquad_idx).a2), OTHERS => '0');
+        WHEN OTHERS =>
+      END CASE;
 
-          -- Waits for coefficients RAMs' output update
-          WHEN 1 =>
-            state <= 2;
-
-          -- Effectivates (i.e. updates) coefficients
-          -- Each iir_filt has c_NUM_OF_BIQUADS_PER_FILT biquads. Each of these
-          -- takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1). Each iir_filt
-          -- has a dedicated RAM holding its coefficients. These RAMs are
-          -- populated in the following manner:
-          --  For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
-          --    coeffs[0 + 5*{biquad_idx}] = b0 of biquad {biquad_idx}
-          --    coeffs[1 + 5*{biquad_idx}] = b1 of biquad {biquad_idx}
-          --    coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
-          --    coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
-          --    coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
-          -- RAMs are accessed in parallel.
-          WHEN 2 =>
-            v_biquad_idx := v_coeff_idx/5;
-            FOR ch IN 0 TO g_CHANNELS-1
-            LOOP
-              CASE v_coeff_idx REM 5 IS
-                WHEN 0 =>
-                  coeffs(ch)(v_biquad_idx).b0 <= f_parse_wb_coeff(
-                    wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(ch));
-
-                WHEN 1 =>
-                  coeffs(ch)(v_biquad_idx).b1 <= f_parse_wb_coeff(
-                    wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(ch));
-
-
-                WHEN 2 =>
-                  coeffs(ch)(v_biquad_idx).b2 <= f_parse_wb_coeff(
-                    wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(ch));
-
-                WHEN 3 =>
-                  coeffs(ch)(v_biquad_idx).a1 <= f_parse_wb_coeff(
-                    wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(ch));
-
-                WHEN 4 =>
-                  coeffs(ch)(v_biquad_idx).a2 <= f_parse_wb_coeff(
-                    wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(ch));
-
-                WHEN OTHERS =>
-              END CASE;
-            END LOOP;
-
-            IF v_coeff_idx = c_NUM_OF_COEFFS_PER_FILT-1 THEN
-              state <= 0;
-            ELSE
-              v_coeff_idx := v_coeff_idx + 1;
-              state <= 1;
-            END IF;
-        END CASE;
-
-        -- Addresses coefficients RAMs
-        -- The state machine above computes the address and waits a cycle for
-        -- output to update
-        wb_fofb_shaper_filt_regs_ifc_coeffs_adr <=
-          STD_LOGIC_VECTOR(to_unsigned(v_coeff_idx,
-            wb_fofb_shaper_filt_regs_ifc_coeffs_adr'LENGTH));
+      IF rising_edge(clk_i) THEN
+        IF rst_n_i = '0' THEN
+        ELSE
+          IF wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).wr = '1' THEN
+            CASE coeff_idx REM 5 IS
+              WHEN 0 =>
+                coeffs(ch)(biquad_idx).b0 <= f_parse_wb_coeff(
+                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+              WHEN 1 =>
+                coeffs(ch)(biquad_idx).b1 <= f_parse_wb_coeff(
+                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+              WHEN 2 =>
+                coeffs(ch)(biquad_idx).b2 <= f_parse_wb_coeff(
+                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+              WHEN 3 =>
+                coeffs(ch)(biquad_idx).a1 <= f_parse_wb_coeff(
+                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+              WHEN 4 =>
+                coeffs(ch)(biquad_idx).a2 <= f_parse_wb_coeff(
+                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+              WHEN OTHERS =>
+            END CASE;
+          END IF;
+        END IF;
       END IF;
-    END IF;
+    END LOOP;
   END PROCESS;
 
   gen_iir_filts : FOR idx IN 0 TO g_CHANNELS-1
@@ -254,12 +257,61 @@ BEGIN
 
   cmp_wb_fofb_shaper_filt_regs : ENTITY work.wb_fofb_shaper_filt_regs
     PORT MAP (
-      clk_i                           => clk_i,
-      rst_n_i                         => rst_n_i,
-      wb_i                            => wb_slv_adp_out,
-      wb_o                            => wb_slv_adp_in,
-      wb_fofb_shaper_filt_regs_ifc_i  => wb_fofb_shaper_filt_regs_ifc_master_in,
-      wb_fofb_shaper_filt_regs_ifc_o  => wb_fofb_shaper_filt_regs_ifc_master_out
+      rst_n_i                     => rst_n_i,
+      clk_i                       => clk_i,
+      wb_i                        => wb_slv_adp_out,
+      wb_o                        => wb_slv_adp_in,
+      ch_0_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).addr,
+      ch_0_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(0).data,
+      ch_0_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).data,
+      ch_0_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).wr,
+      ch_1_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(1).addr,
+      ch_1_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(1).data,
+      ch_1_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(1).data,
+      ch_1_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(1).wr,
+      ch_2_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(2).addr,
+      ch_2_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(2).data,
+      ch_2_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(2).data,
+      ch_2_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(2).wr,
+      ch_3_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(3).addr,
+      ch_3_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(3).data,
+      ch_3_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(3).data,
+      ch_3_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(3).wr,
+      ch_4_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(4).addr,
+      ch_4_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(4).data,
+      ch_4_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(4).data,
+      ch_4_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(4).wr,
+      ch_5_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(5).addr,
+      ch_5_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(5).data,
+      ch_5_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(5).data,
+      ch_5_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(5).wr,
+      ch_6_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(6).addr,
+      ch_6_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(6).data,
+      ch_6_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(6).data,
+      ch_6_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(6).wr,
+      ch_7_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(7).addr,
+      ch_7_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(7).data,
+      ch_7_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(7).data,
+      ch_7_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(7).wr,
+      ch_8_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(8).addr,
+      ch_8_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(8).data,
+      ch_8_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(8).data,
+      ch_8_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(8).wr,
+      ch_9_coeffs_addr_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(9).addr,
+      ch_9_coeffs_data_i          => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(9).data,
+      ch_9_coeffs_data_o          => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(9).data,
+      ch_9_coeffs_wr_o            => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(9).wr,
+      ch_10_coeffs_addr_o         => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(10).addr,
+      ch_10_coeffs_data_i         => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(10).data,
+      ch_10_coeffs_data_o         => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(10).data,
+      ch_10_coeffs_wr_o           => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(10).wr,
+      ch_11_coeffs_addr_o         => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).addr,
+      ch_11_coeffs_data_i         => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(11).data,
+      ch_11_coeffs_data_o         => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).data,
+      ch_11_coeffs_wr_o           => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).wr,
+      max_filt_order_i            => STD_LOGIC_VECTOR(to_unsigned(c_MAX_FILT_ORDER, 32)),
+      coeffs_fp_repr_int_width_i  => STD_LOGIC_VECTOR(to_unsigned(c_COEFF_INT_WIDTH, 5)),
+      coeffs_fp_repr_frac_width_i => STD_LOGIC_VECTOR(to_unsigned(c_COEFF_FRAC_WIDTH, 5))
     );
 
   -- Extra Wishbone registering stage for ease timing
@@ -327,75 +379,4 @@ BEGIN
   ELSE GENERATE
     resized_addr <= wb_slave_in(0).adr;
   END GENERATE;
-
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_0_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_0_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_1_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_1_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_2_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_2_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_3_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_3_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_4_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_4_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_5_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_5_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_6_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_6_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_7_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_7_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_8_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_8_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_9_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_9_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_10_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_10_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_11_coeffs_adr_i <=
-    wb_fofb_shaper_filt_regs_ifc_coeffs_adr;
-  wb_fofb_shaper_filt_regs_ifc_master_in.ch_11_coeffs_val_rd_i <= '0';
-  wb_fofb_shaper_filt_regs_ifc_master_in.max_filt_order <=
-    STD_LOGIC_VECTOR(to_unsigned(c_MAX_FILT_ORDER,
-      wb_fofb_shaper_filt_regs_ifc_master_in.max_filt_order'LENGTH));
-  wb_fofb_shaper_filt_regs_ifc_master_in.coeffs_fp_repr_int_width <=
-    STD_LOGIC_VECTOR(to_unsigned(c_COEFF_INT_WIDTH,
-      wb_fofb_shaper_filt_regs_ifc_master_in.coeffs_fp_repr_int_width'LENGTH));
-  wb_fofb_shaper_filt_regs_ifc_master_in.coeffs_fp_repr_frac_width <=
-    STD_LOGIC_VECTOR(to_unsigned(c_COEFF_FRAC_WIDTH,
-      wb_fofb_shaper_filt_regs_ifc_master_in.coeffs_fp_repr_frac_width'LENGTH));
-
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(0) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_0_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(1) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_1_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(2) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_2_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(3) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_3_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(4) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_4_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(5) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_5_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(6) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_6_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(7) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_7_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(8) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_8_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(9) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_9_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(10) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_10_coeffs_val_dat_o;
-   wb_fofb_shaper_filt_regs_ifc_coeffs_val_dat(11) <=
-    wb_fofb_shaper_filt_regs_ifc_master_out.ch_11_coeffs_val_dat_o;
 END ARCHITECTURE behave;
