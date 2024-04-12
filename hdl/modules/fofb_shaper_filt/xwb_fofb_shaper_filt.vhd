@@ -79,7 +79,7 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
     data  : STD_LOGIC_VECTOR(31 DOWNTO 0);
   END RECORD;
   TYPE t_wb_fofb_shaper_filt_regs_coeffs_o_ifc IS RECORD
-    addr  : STD_LOGIC_VECTOR(7 DOWNTO 2);
+    addr  : STD_LOGIC_VECTOR(8 DOWNTO 2);
     data  : STD_LOGIC_VECTOR(31 DOWNTO 0);
     wr    : STD_LOGIC;
   END RECORD;
@@ -96,7 +96,6 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
   CONSTANT c_MAX_CHANNELS : NATURAL := 12;
 
   CONSTANT c_NUM_OF_BIQUADS_PER_FILT : NATURAL := (c_MAX_FILT_ORDER + 1)/2;
-  CONSTANT c_NUM_OF_COEFFS_PER_FILT : NATURAL := 5*c_NUM_OF_BIQUADS_PER_FILT;
 
   CONSTANT c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_I_IFC_0s :
     t_wb_fofb_shaper_filt_regs_coeffs_i_ifc := (data => (OTHERS => '0'));
@@ -144,7 +143,7 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
                     a2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH));
 
   SIGNAL biquad_idx : NATURAL RANGE 0 to c_NUM_OF_BIQUADS_PER_FILT-1 := 0;
-  SIGNAL coeff_idx : NATURAL RANGE 0 to c_NUM_OF_COEFFS_PER_FILT-1 := 0;
+  SIGNAL coeff_idx : NATURAL RANGE 0 to 4 := 0;
 BEGIN
   ASSERT c_MAX_FILT_ORDER <= 20
     REPORT "ABI supports up to 20th order filters"
@@ -157,26 +156,34 @@ BEGIN
            "to be at least 1."
     SEVERITY ERROR;
 
+  -- NOTE: All wb_fofb_shaper_filt_regs RAM interfaces addresses are
+  --       internally connected to same signals. So, pick just one of
+  --       them to index the coefficients.
+  biquad_idx <= to_integer(UNSIGNED(
+    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).addr(8 DOWNTO 5)));
   coeff_idx <= to_integer(UNSIGNED(
-    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).addr));
-  biquad_idx <= coeff_idx/5;
+    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(0).addr(4 DOWNTO 2)));
 
   PROCESS(clk_i) IS
   BEGIN
     -- Each iir_filt has c_NUM_OF_BIQUADS_PER_FILT biquads and each of these
     -- has 5 associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
     -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing
-    -- the c_NUM_OF_COEFFS_PER_FILT = 5*c_NUM_OF_BIQUADS_PER_FILT
-    -- coefficients of each iir_filt. The address map is:
-    -- For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
-    --   coeffs[0 + 5*{biquad_idx}] = b0 of biquad {biquad_idx}
-    --   coeffs[1 + 5*{biquad_idx}] = b1 of biquad {biquad_idx}
-    --   coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
-    --   coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
-    --   coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
+    -- the 5*c_NUM_OF_BIQUADS_PER_FILT coefficients of each iir_filt.
+    --
+    -- The address map is:
+    --   For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
+    --     RAM address 0 + 8*{biquad_idx} = b0 of biquad {biquad_idx}
+    --     RAM address 1 + 8*{biquad_idx} = b1 of biquad {biquad_idx}
+    --     RAM address 2 + 8*{biquad_idx} = b2 of biquad {biquad_idx}
+    --     RAM address 3 + 8*{biquad_idx} = a1 of biquad {biquad_idx}
+    --     RAM address 4 + 8*{biquad_idx} = a2 of biquad {biquad_idx}
+    --     RAM address 5 + 8*{biquad_idx} = unused
+    --     RAM address 6 + 8*{biquad_idx} = unused
+    --     RAM address 7 + 8*{biquad_idx} = unused
     FOR ch IN 0 TO g_CHANNELS-1
     LOOP
-      CASE coeff_idx REM 5 IS
+      CASE coeff_idx IS
         WHEN 0 =>
           wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
             (to_slv(coeffs(ch)(biquad_idx).b0), OTHERS => '0');
@@ -199,7 +206,7 @@ BEGIN
         IF rst_n_i = '0' THEN
         ELSE
           IF wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).wr = '1' THEN
-            CASE coeff_idx REM 5 IS
+            CASE coeff_idx IS
               WHEN 0 =>
                 coeffs(ch)(biquad_idx).b0 <= f_parse_wb_coeff(
                   wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);

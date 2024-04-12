@@ -774,7 +774,7 @@ package fofb_ctrl_pkg is
   constant c_xwb_fofb_shaper_filter_regs_sdb : t_sdb_device := (
     abi_class     => x"0000",                   -- undocumented device
     abi_ver_major => x"00",
-    abi_ver_minor => x"02",
+    abi_ver_minor => x"03",
     wbd_endian    => c_sdb_endian_big,
     wbd_width     => x"4",                      -- 32-bit port granularity (0100)
     sdb_component => (
@@ -784,7 +784,7 @@ package fofb_ctrl_pkg is
     vendor_id     => x"1000000000001215",       -- LNLS
     device_id     => x"f65559b2",               -- Last 8 chars of "FOFB_SHAPER_REGS" md5sum
     version       => x"00000001",
-    date          => x"20240411",
+    date          => x"20240412",
     name          => "FOFB_SHAPER_REGS   ")));
 
 end fofb_ctrl_pkg;

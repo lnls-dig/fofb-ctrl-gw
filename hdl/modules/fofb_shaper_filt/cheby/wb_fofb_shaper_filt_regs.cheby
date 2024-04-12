@@ -11,7 +11,7 @@ memory-map:
         children:
           - memory:
               name: coeffs
-              memsize: 200
+              memsize: 320
               interface: sram
               description: |
                 Coefficients for the ceil('max_filt_order'/2) IIR internal
@@ -20,11 +20,14 @@ memory-map:
                 Each biquad takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1).
                 The 'coeffs' array should be populated in the following manner:
 
-                  coeffs[0 + 5*{biquad_idx}] = b0 of biquad {biquad_idx}
-                  coeffs[1 + 5*{biquad_idx}] = b1 of biquad {biquad_idx}
-                  coeffs[2 + 5*{biquad_idx}] = b2 of biquad {biquad_idx}
-                  coeffs[3 + 5*{biquad_idx}] = a1 of biquad {biquad_idx}
-                  coeffs[4 + 5*{biquad_idx}] = a2 of biquad {biquad_idx}
+                  coeffs[0 + 8*{biquad_idx}] = b0 of biquad {biquad_idx}
+                  coeffs[1 + 8*{biquad_idx}] = b1 of biquad {biquad_idx}
+                  coeffs[2 + 8*{biquad_idx}] = b2 of biquad {biquad_idx}
+                  coeffs[3 + 8*{biquad_idx}] = a1 of biquad {biquad_idx}
+                  coeffs[4 + 8*{biquad_idx}] = a2 of biquad {biquad_idx}
+                  coeffs[5 + 8*{biquad_idx}] = unused
+                  coeffs[6 + 8*{biquad_idx}] = unused
+                  coeffs[7 + 8*{biquad_idx}] = unused
 
                 NOTE: This ABI supports up to 20th order filters, but only the
                 coefficients corresponding to the first 'max_filt_order' filters

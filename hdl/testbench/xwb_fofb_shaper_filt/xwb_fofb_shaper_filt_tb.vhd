@@ -52,7 +52,6 @@ END ENTITY xwb_fofb_shaper_filt_tb;
 
 ARCHITECTURE test OF xwb_fofb_shaper_filt_tb IS
   CONSTANT c_NUM_OF_BIQUADS_PER_FILT : NATURAL := (c_MAX_FILT_ORDER + 1)/2;
-  CONSTANT c_NUM_OF_COEFFS_PER_FILT : NATURAL := 5*c_NUM_OF_BIQUADS_PER_FILT;
   CONSTANT c_SYS_CLOCK_FREQ : NATURAL := 100_000_000;
 
   SIGNAL clk : STD_LOGIC := '0';
@@ -126,6 +125,21 @@ BEGIN
         & NATURAL'image(c_COEFF_FRAC_WIDTH) & ")"
       SEVERITY ERROR;
 
+    -- Each iir_filt has c_NUM_OF_BIQUADS_PER_FILT biquads and each of these
+    -- has 5 associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
+    -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing
+    -- the 5*c_NUM_OF_BIQUADS_PER_FILT coefficients of each iir_filt.
+    --
+    -- The address map is:
+    --   For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
+    --     RAM address 0 + 8*{biquad_idx} = b0 of biquad {biquad_idx}
+    --     RAM address 1 + 8*{biquad_idx} = b1 of biquad {biquad_idx}
+    --     RAM address 2 + 8*{biquad_idx} = b2 of biquad {biquad_idx}
+    --     RAM address 3 + 8*{biquad_idx} = a1 of biquad {biquad_idx}
+    --     RAM address 4 + 8*{biquad_idx} = a2 of biquad {biquad_idx}
+    --     RAM address 5 + 8*{biquad_idx} = unused
+    --     RAM address 6 + 8*{biquad_idx} = unused
+    --     RAM address 7 + 8*{biquad_idx} = unused
     file_open(fin, g_TEST_COEFFS_FILENAME, read_mode);
     FOR ch_idx IN 0 TO g_CHANNELS-1
     LOOP
@@ -133,34 +147,39 @@ BEGIN
         ch_idx*c_WB_FOFB_SHAPER_FILT_REGS_CH_0_SIZE;
 
       readline(fin, lin);
-      FOR coeff_idx IN 0 TO c_NUM_OF_COEFFS_PER_FILT-1
+      FOR biquad_idx IN 0 TO c_NUM_OF_BIQUADS_PER_FILT-1
       LOOP
-        read(lin, v_coeff);
-        -- The signed fixed-point representation of coefficients is aligned to
-        -- the left in Wishbone registers
-        v_wb_coeff := (
-          31 DOWNTO 32-(c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH) =>
-            to_slv(to_sfixed(v_coeff, c_COEFF_INT_WIDTH-1,
-            -c_COEFF_FRAC_WIDTH)),
-          OTHERS => '0');
-        v_wb_dat := v_wb_coeff;
+        FOR coeff_idx IN 0 TO 4
+        LOOP
+          read(lin, v_coeff);
+          -- The signed fixed-point representation of coefficients is aligned to
+          -- the left in Wishbone registers
+          v_wb_coeff := (
+            31 DOWNTO 32-(c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH) =>
+              to_slv(to_sfixed(v_coeff, c_COEFF_INT_WIDTH-1,
+              -c_COEFF_FRAC_WIDTH)),
+            OTHERS => '0');
+          v_wb_dat := v_wb_coeff;
 
-        -- Load filter coefficients
-        write32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
+          -- Load filter coefficients
+          write32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
 
-        -- Read back filter coefficients
-        read32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
+          -- Read back filter coefficients
+          read32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
 
-        ASSERT v_wb_dat = v_wb_coeff
-          REPORT
-            "UNEXPECTED FILTER COEFFICIENT "
-            & NATURAL'image(v_wb_addr) & ": "
-            & to_hstring(v_wb_dat)
-            & " (EXPECTED: "
-            & to_hstring(v_wb_coeff) & ")"
-          SEVERITY ERROR;
+          ASSERT v_wb_dat = v_wb_coeff
+            REPORT
+              "UNEXPECTED FILTER COEFFICIENT "
+              & NATURAL'image(v_wb_addr) & ": "
+              & to_hstring(v_wb_dat)
+              & " (EXPECTED: "
+              & to_hstring(v_wb_coeff) & ")"
+            SEVERITY ERROR;
 
-        v_wb_addr := v_wb_addr + c_WB_FOFB_SHAPER_FILT_REGS_CH_0_COEFFS_SIZE;
+          v_wb_addr := v_wb_addr + c_WB_FOFB_SHAPER_FILT_REGS_CH_0_COEFFS_SIZE;
+        END LOOP;
+        -- Unused addresses
+        v_wb_addr := v_wb_addr + 3*c_WB_FOFB_SHAPER_FILT_REGS_CH_0_COEFFS_SIZE;
       END LOOP;
     END LOOP;
     file_close(fin);
