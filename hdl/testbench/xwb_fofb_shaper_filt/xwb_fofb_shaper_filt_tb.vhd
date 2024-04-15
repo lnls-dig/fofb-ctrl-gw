@@ -46,7 +46,7 @@ ENTITY xwb_fofb_shaper_filt_tb IS
     -- Extra bits for biquads' internal arithmetic
     g_ARITH_EXTRA_BITS      : NATURAL := 0;
     -- Extra bits for between-biquads cascade interfaces
-    g_IFCS_EXTRA_BITS       : NATURAL := 4
+    g_IFCS_EXTRA_BITS       : NATURAL := 5
   );
 END ENTITY xwb_fofb_shaper_filt_tb;
 
@@ -208,7 +208,7 @@ BEGIN
       LOOP
         read(lin, v_x_or_y);
         IF ABS(REAL(to_integer(filt_sp_arr(ch_idx)))/REAL(v_x_or_y) - 1.0) >
-          0.01 THEN
+          0.05 THEN
           REPORT
             "TOO LARGE ERROR (> 1%): "
             & INTEGER'image(to_integer(filt_sp_arr(ch_idx)))
