@@ -91,7 +91,7 @@ BEGIN
         & NATURAL'image(to_integer(UNSIGNED(v_wb_dat)))
         & " (EXPECTED: "
         & NATURAL'image(c_NUM_BIQUADS) & ")"
-      SEVERITY ERROR;
+      SEVERITY FAILURE;
 
     -- Read coefficients' fixed-point representation
     read32_pl(clk, wb_slave_i, wb_slave_o,
@@ -108,7 +108,7 @@ BEGIN
           c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_INT_WIDTH_OFFSET))))
         & " (EXPECTED: "
         & NATURAL'image(c_COEFF_INT_WIDTH) & ")"
-      SEVERITY ERROR;
+      SEVERITY FAILURE;
 
     -- TODO: +4 hardcoded
     ASSERT to_integer(UNSIGNED(v_wb_dat(
@@ -122,7 +122,7 @@ BEGIN
           c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET))))
         & " (EXPECTED: "
         & NATURAL'image(c_COEFF_FRAC_WIDTH) & ")"
-      SEVERITY ERROR;
+      SEVERITY FAILURE;
 
     -- Each iir_filt has c_NUM_BIQUADS biquads and each of these has 5
     -- associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
@@ -173,7 +173,7 @@ BEGIN
               & to_hstring(v_wb_dat)
               & " (EXPECTED: "
               & to_hstring(v_wb_coeff) & ")"
-            SEVERITY ERROR;
+            SEVERITY FAILURE;
 
           v_wb_addr := v_wb_addr + c_WB_FOFB_SHAPER_FILT_REGS_CH_0_COEFFS_SIZE;
         END LOOP;
@@ -213,7 +213,7 @@ BEGIN
             & INTEGER'image(to_integer(filt_sp_arr(ch_idx)))
             & " (EXPECTED: "
             & INTEGER'image(v_x_or_y) & ")"
-          SEVERITY ERROR;
+          SEVERITY FAILURE;
         END IF;
       END LOOP;
     END LOOP;

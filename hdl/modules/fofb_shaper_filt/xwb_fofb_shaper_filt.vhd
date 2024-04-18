@@ -145,14 +145,14 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
 BEGIN
   ASSERT c_NUM_BIQUADS <= 10
     REPORT "ABI supports up to 20th order filters (i.e. 10 biquads)"
-    SEVERITY ERROR;
+    SEVERITY FAILURE;
 
   ASSERT c_COEFF_INT_WIDTH > 1 and c_COEFF_FRAC_WIDTH > 1 and
          c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH <= 32
     REPORT "ABI supports at most 32-bits coefficients (c_COEFF_INT_WIDTH + " &
            "c_COEFF_FRAC_WIDTH). Also, the SFIXED type requires each of these" &
            "to be at least 1."
-    SEVERITY ERROR;
+    SEVERITY FAILURE;
 
   -- NOTE: All wb_fofb_shaper_filt_regs RAM interfaces addresses are
   --       internally connected to same signals. So, pick just one of
