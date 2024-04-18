@@ -51,7 +51,6 @@ ENTITY xwb_fofb_shaper_filt_tb IS
 END ENTITY xwb_fofb_shaper_filt_tb;
 
 ARCHITECTURE test OF xwb_fofb_shaper_filt_tb IS
-  CONSTANT c_NUM_OF_BIQUADS_PER_FILT : NATURAL := (c_MAX_FILT_ORDER + 1)/2;
   CONSTANT c_SYS_CLOCK_FREQ : NATURAL := 100_000_000;
 
   SIGNAL clk : STD_LOGIC := '0';
@@ -84,14 +83,14 @@ BEGIN
 
     -- Reads maximum filter order
     read32_pl(clk, wb_slave_i, wb_slave_o,
-      c_WB_FOFB_SHAPER_FILT_REGS_MAX_FILT_ORDER_ADDR, v_wb_dat);
+      c_WB_FOFB_SHAPER_FILT_REGS_NUM_BIQUADS_ADDR, v_wb_dat);
 
-    ASSERT to_integer(UNSIGNED(v_wb_dat)) = c_MAX_FILT_ORDER
+    ASSERT to_integer(UNSIGNED(v_wb_dat)) = c_NUM_BIQUADS
       REPORT
-        "UNEXPECTED MAXIMUM FILTER ORDER: "
+        "UNEXPECTED NUMBER OF BIQUADS: "
         & NATURAL'image(to_integer(UNSIGNED(v_wb_dat)))
         & " (EXPECTED: "
-        & NATURAL'image(c_MAX_FILT_ORDER) & ")"
+        & NATURAL'image(c_NUM_BIQUADS) & ")"
       SEVERITY ERROR;
 
     -- Read coefficients' fixed-point representation
@@ -125,13 +124,13 @@ BEGIN
         & NATURAL'image(c_COEFF_FRAC_WIDTH) & ")"
       SEVERITY ERROR;
 
-    -- Each iir_filt has c_NUM_OF_BIQUADS_PER_FILT biquads and each of these
-    -- has 5 associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
-    -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing
-    -- the 5*c_NUM_OF_BIQUADS_PER_FILT coefficients of each iir_filt.
+    -- Each iir_filt has c_NUM_BIQUADS biquads and each of these has 5
+    -- associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
+    -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing the
+    -- 5*c_NUM_BIQUADS coefficients of each iir_filt.
     --
     -- The address map is:
-    --   For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
+    --   For biquad_idx in 0 to c_NUM_BIQUADS-1:
     --     RAM address 0 + 8*{biquad_idx} = b0 of biquad {biquad_idx}
     --     RAM address 1 + 8*{biquad_idx} = b1 of biquad {biquad_idx}
     --     RAM address 2 + 8*{biquad_idx} = b2 of biquad {biquad_idx}
@@ -147,7 +146,7 @@ BEGIN
         ch_idx*c_WB_FOFB_SHAPER_FILT_REGS_CH_0_SIZE;
 
       readline(fin, lin);
-      FOR biquad_idx IN 0 TO c_NUM_OF_BIQUADS_PER_FILT-1
+      FOR biquad_idx IN 0 TO c_NUM_BIQUADS-1
       LOOP
         FOR coeff_idx IN 0 TO 4
         LOOP

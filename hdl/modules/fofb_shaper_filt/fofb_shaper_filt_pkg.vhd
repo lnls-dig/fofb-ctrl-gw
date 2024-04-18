@@ -26,8 +26,8 @@ LIBRARY work;
 USE work.wishbone_pkg.ALL;
 
 PACKAGE fofb_shaper_filt_pkg IS
-  -- The maximum filter order supported
-  CONSTANT c_MAX_FILT_ORDER : NATURAL := 8;
+  -- The number of internal biquads each IIR filter has
+  CONSTANT c_NUM_BIQUADS : NATURAL := 4;
 
   -- The signed fixed-point representation of filters' coefficients
   CONSTANT c_COEFF_INT_WIDTH : NATURAL := 2;

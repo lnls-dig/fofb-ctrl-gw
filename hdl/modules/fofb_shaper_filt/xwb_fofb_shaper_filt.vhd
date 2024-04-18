@@ -95,8 +95,6 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
 
   CONSTANT c_MAX_CHANNELS : NATURAL := 12;
 
-  CONSTANT c_NUM_OF_BIQUADS_PER_FILT : NATURAL := (c_MAX_FILT_ORDER + 1)/2;
-
   CONSTANT c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_I_IFC_0s :
     t_wb_fofb_shaper_filt_regs_coeffs_i_ifc := (data => (OTHERS => '0'));
   CONSTANT c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s :
@@ -135,18 +133,18 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
       (OTHERS => c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s);
 
   SIGNAL coeffs : t_fofb_shaper_filt_coeffs(g_CHANNELS-1 DOWNTO 0)(
-                    c_NUM_OF_BIQUADS_PER_FILT-1 DOWNTO 0)(
+                    c_NUM_BIQUADS-1 DOWNTO 0)(
                     b0(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
                     b1(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
                     b2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
                     a1(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
                     a2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH));
 
-  SIGNAL biquad_idx : NATURAL RANGE 0 to c_NUM_OF_BIQUADS_PER_FILT-1 := 0;
+  SIGNAL biquad_idx : NATURAL RANGE 0 to c_NUM_BIQUADS-1 := 0;
   SIGNAL coeff_idx : NATURAL RANGE 0 to 4 := 0;
 BEGIN
-  ASSERT c_MAX_FILT_ORDER <= 20
-    REPORT "ABI supports up to 20th order filters"
+  ASSERT c_NUM_BIQUADS <= 10
+    REPORT "ABI supports up to 20th order filters (i.e. 10 biquads)"
     SEVERITY ERROR;
 
   ASSERT c_COEFF_INT_WIDTH > 1 and c_COEFF_FRAC_WIDTH > 1 and
@@ -166,13 +164,13 @@ BEGIN
 
   PROCESS(clk_i) IS
   BEGIN
-    -- Each iir_filt has c_NUM_OF_BIQUADS_PER_FILT biquads and each of these
-    -- has 5 associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
-    -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing
-    -- the 5*c_NUM_OF_BIQUADS_PER_FILT coefficients of each iir_filt.
+    -- Each iir_filt has c_NUM_BIQUADS biquads and each of these has 5
+    -- associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
+    -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing the
+    -- 5*c_NUM_BIQUADS coefficients of each iir_filt.
     --
     -- The address map is:
-    --   For biquad_idx in 0 to c_NUM_OF_BIQUADS_PER_FILT-1:
+    --   For biquad_idx in 0 to c_NUM_BIQUADS-1:
     --     RAM address 0 + 8*{biquad_idx} = b0 of biquad {biquad_idx}
     --     RAM address 1 + 8*{biquad_idx} = b1 of biquad {biquad_idx}
     --     RAM address 2 + 8*{biquad_idx} = b2 of biquad {biquad_idx}
@@ -234,7 +232,7 @@ BEGIN
     GENERATE
       cmp_iir_filt : iir_filt
         GENERIC MAP (
-          g_MAX_FILT_ORDER    => c_MAX_FILT_ORDER,
+          g_NUM_BIQUADS       => c_NUM_BIQUADS,
           g_X_INT_WIDTH       => c_SP_WIDTH,
           g_X_FRAC_WIDTH      => 1, -- see note below
           g_COEFF_INT_WIDTH   => c_COEFF_INT_WIDTH,
@@ -316,7 +314,7 @@ BEGIN
       ch_11_coeffs_data_i         => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(11).data,
       ch_11_coeffs_data_o         => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).data,
       ch_11_coeffs_wr_o           => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).wr,
-      max_filt_order_i            => STD_LOGIC_VECTOR(to_unsigned(c_MAX_FILT_ORDER, 32)),
+      num_biquads_i               => STD_LOGIC_VECTOR(to_unsigned(c_NUM_BIQUADS, 32)),
       coeffs_fp_repr_int_width_i  => STD_LOGIC_VECTOR(to_unsigned(c_COEFF_INT_WIDTH, 5)),
       coeffs_fp_repr_frac_width_i => STD_LOGIC_VECTOR(to_unsigned(c_COEFF_FRAC_WIDTH, 5))
     );

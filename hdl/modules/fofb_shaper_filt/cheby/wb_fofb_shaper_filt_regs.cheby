@@ -14,8 +14,7 @@ memory-map:
               memsize: 320
               interface: sram
               description: |
-                Coefficients for the ceil('max_filt_order'/2) IIR internal
-                biquads.
+                Coefficients for the 'num_biquads' IIR internal biquads.
 
                 Each biquad takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1).
                 The 'coeffs' array should be populated in the following manner:
@@ -30,8 +29,8 @@ memory-map:
                   coeffs[7 + 8*{biquad_idx}] = unused
 
                 NOTE: This ABI supports up to 20th order filters, but only the
-                coefficients corresponding to the first 'max_filt_order' filters
-                are meaningful for the gateware.
+                coefficients corresponding to the first 'num_biquads' biquads are
+                meaningful for the gateware.
               children:
                 - reg:
                     name: val
@@ -41,11 +40,11 @@ memory-map:
                       Coefficient value using 'coeffs_fp_repr' fixed-point
                       representation. It should be aligned to the left.
     - reg:
-        name: max_filt_order
+        name: num_biquads
         width: 32
         access: ro
         description: |
-          Maximum filter order supported by the gateware.
+          The number of internal biquads each IIR filter has.
     - reg:
         name: coeffs_fp_repr
         width: 32

@@ -6,8 +6,7 @@
 #define WB_FOFB_SHAPER_FILT_REGS_CH 0x0UL
 #define WB_FOFB_SHAPER_FILT_REGS_CH_SIZE 512 /* 0x200 */
 
-/* Coefficients for the ceil('max_filt_order'/2) IIR internal
-biquads.
+/* Coefficients for the 'num_biquads' IIR internal biquads.
 
 Each biquad takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1).
 The 'coeffs' array should be populated in the following manner:
@@ -22,8 +21,8 @@ The 'coeffs' array should be populated in the following manner:
   coeffs[7 + 8*{biquad_idx}] = unused
 
 NOTE: This ABI supports up to 20th order filters, but only the
-coefficients corresponding to the first 'max_filt_order' filters
-are meaningful for the gateware.
+coefficients corresponding to the first 'num_biquads' biquads are
+meaningful for the gateware.
  */
 #define WB_FOFB_SHAPER_FILT_REGS_CH_COEFFS 0x0UL
 #define WB_FOFB_SHAPER_FILT_REGS_CH_COEFFS_SIZE 4 /* 0x4 */
@@ -33,9 +32,9 @@ representation. It should be aligned to the left.
  */
 #define WB_FOFB_SHAPER_FILT_REGS_CH_COEFFS_VAL 0x0UL
 
-/* Maximum filter order supported by the gateware.
+/* The number of internal biquads each IIR filter has.
  */
-#define WB_FOFB_SHAPER_FILT_REGS_MAX_FILT_ORDER 0x2000UL
+#define WB_FOFB_SHAPER_FILT_REGS_NUM_BIQUADS 0x2000UL
 
 /* Fixed-point signed (2's complement) representation of coefficients.
 The coefficients should be aligned to the left. The fixed-point
@@ -53,8 +52,7 @@ represented decimal number.
 struct wb_fofb_shaper_filt_regs {
   /* [0x0]: REPEAT (no description) */
   struct ch {
-    /* [0x0]: MEMORY Coefficients for the ceil('max_filt_order'/2) IIR internal
-biquads.
+    /* [0x0]: MEMORY Coefficients for the 'num_biquads' IIR internal biquads.
 
 Each biquad takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1).
 The 'coeffs' array should be populated in the following manner:
@@ -69,8 +67,8 @@ The 'coeffs' array should be populated in the following manner:
   coeffs[7 + 8*{biquad_idx}] = unused
 
 NOTE: This ABI supports up to 20th order filters, but only the
-coefficients corresponding to the first 'max_filt_order' filters
-are meaningful for the gateware.
+coefficients corresponding to the first 'num_biquads' biquads are
+meaningful for the gateware.
  */
     struct coeffs {
       /* [0x0]: REG (rw) Coefficient value using 'coeffs_fp_repr' fixed-point
@@ -86,9 +84,9 @@ representation. It should be aligned to the left.
   /* padding to: 0 words */
   uint32_t __padding_0[512];
 
-  /* [0x2000]: REG (ro) Maximum filter order supported by the gateware.
+  /* [0x2000]: REG (ro) The number of internal biquads each IIR filter has.
  */
-  uint32_t max_filt_order;
+  uint32_t num_biquads;
 
   /* [0x2004]: REG (ro) Fixed-point signed (2's complement) representation of coefficients.
 The coefficients should be aligned to the left. The fixed-point
