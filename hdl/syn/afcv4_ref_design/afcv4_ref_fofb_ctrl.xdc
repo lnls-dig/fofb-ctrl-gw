@@ -71,8 +71,9 @@ set rtmlamp_adc_quad_sdoc_delay -0.144
 
 set rtmlamp_adc_uncertainty_delay 0.020
 
-set_clock_groups -asynchronous -group rtmlamp_adc_octo_sck_ret -group clk_fast_spi
-set_clock_groups -asynchronous -group rtmlamp_adc_quad_sck_ret -group clk_fast_spi
+set_clock_groups -asynchronous -group rtmlamp_adc_octo_sck_ret
+set_clock_groups -asynchronous -group rtmlamp_adc_quad_sck_ret
+set_clock_groups -asynchronous -group $clk_fast_spi
 
 set_input_delay -clock rtmlamp_adc_octo_sck_ret -max [expr {$rtmlamp_adc_octo_sdoa_delay + $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdoa_p_i];
 set_input_delay -clock rtmlamp_adc_octo_sck_ret -min [expr {$rtmlamp_adc_octo_sdoa_delay - $rtmlamp_adc_uncertainty_delay}] [get_ports rtmlamp_adc_octo_sdoa_p_i];
@@ -108,21 +109,15 @@ set_max_delay -datapath_only -from               [get_clocks $clk_fast_spi] -to 
 # Give it 1x destination clock.
 set_max_delay -datapath_only -from               [get_clocks clk_aux] -to [get_clocks $clk_dac_master]          $clk_dac_master_period
 set_max_delay -datapath_only -from               [get_clocks $clk_adcdac_ref] -to [get_clocks $clk_dac_master]  $clk_dac_master_period
-# CDC for done/ready flags
-set_max_delay -datapath_only -from               [get_clocks $clk_adcdac_ref] -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 
 # CDC between FS clocks and Clk Aux (trigger clock)
 # These are using pulse_synchronizer2 which is a full feedback sync.
 # Give it 1x destination clock.
 set_max_delay -datapath_only -from               [get_clocks $clk_dac_master]    -to [get_clocks clk_aux]           $clk_aux_period
 set_max_delay -datapath_only -from               [get_clocks $clk_dac_master]    -to [get_clocks $clk_adcdac_ref]   $clk_adcdac_ref_period
-# CDC for done/ready flags
-set_max_delay -datapath_only -from               [get_clocks $clk_fast_spi]      -to [get_clocks $clk_adcdac_ref]   $clk_adcdac_ref_period
 
 # Cosntraint all ADC inputs as a max delay of clk_fast_spi_period, so theier difference
 # are not too large
-set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sck_ret_p_i] \
-    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdoa_p_i] \
     -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdob_p_i] \
@@ -132,8 +127,6 @@ set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdo
 set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_octo_sdod_p_i] \
     -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 
-set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_quad_sck_ret_p_i] \
-    -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_quad_sdoa_p_i] \
     -to [get_clocks $clk_fast_spi]  $clk_fast_spi_period
 set_max_delay -datapath_only -from               [get_ports rtmlamp_adc_quad_sdoc_p_i] \
