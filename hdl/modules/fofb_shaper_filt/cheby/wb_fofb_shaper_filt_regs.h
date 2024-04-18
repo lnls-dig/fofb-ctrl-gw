@@ -37,7 +37,7 @@ representation. It should be aligned to the left.
  */
 #define WB_FOFB_SHAPER_FILT_REGS_MAX_FILT_ORDER 0x2000UL
 
-/* Fixed-point signed representation of coefficients.
+/* Fixed-point signed (2's complement) representation of coefficients.
 The coefficients should be aligned to the left. The fixed-point
 position is then given by 32 - 'int_width' (i.e. one should divide
 this register's content by 2**{32 - 'int_width'} to get the
@@ -90,7 +90,7 @@ representation. It should be aligned to the left.
  */
   uint32_t max_filt_order;
 
-  /* [0x2004]: REG (ro) Fixed-point signed representation of coefficients.
+  /* [0x2004]: REG (ro) Fixed-point signed (2's complement) representation of coefficients.
 The coefficients should be aligned to the left. The fixed-point
 position is then given by 32 - 'int_width' (i.e. one should divide
 this register's content by 2**{32 - 'int_width'} to get the

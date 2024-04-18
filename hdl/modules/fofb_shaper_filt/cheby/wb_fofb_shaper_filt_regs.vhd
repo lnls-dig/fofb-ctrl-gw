@@ -91,13 +91,13 @@ entity wb_fofb_shaper_filt_regs is
 
     max_filt_order_i     : in    std_logic_vector(31 downto 0);
 
-    -- Fixed-point signed representation of coefficients.
+    -- Fixed-point signed (2's complement) representation of coefficients.
     -- The coefficients should be aligned to the left. The fixed-point
     -- position is then given by 32 - 'int_width' (i.e. one should divide
     -- this register's content by 2**{32 - 'int_width'} to get the
     -- represented decimal number.
 
-    -- Integer width (accounting for the signal bit).
+    -- Integer width.
 
     coeffs_fp_repr_int_width_i : in    std_logic_vector(4 downto 0);
     -- Fractionary width.

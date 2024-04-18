@@ -1272,7 +1272,7 @@ max_filt_order
 <tr><td><b>C block offset:</b></td><td class="td_code">0x2004</td></tr>
 </table>
 <p>
-Fixed-point signed representation of coefficients.<br>The coefficients should be aligned to the left. The fixed-point<br>position is then given by 32 - 'int_width' (i.e. one should divide<br>this register's content by 2**{32 - 'int_width'} to get the<br>represented decimal number.<br>
+Fixed-point signed (2's complement) representation of coefficients.<br>The coefficients should be aligned to the left. The fixed-point<br>position is then given by 32 - 'int_width' (i.e. one should divide<br>this register's content by 2**{32 - 'int_width'} to get the<br>represented decimal number.<br>
 </p>
 <table cellpadding=0 cellspacing=0 border=0>
 <tr>
@@ -1352,7 +1352,7 @@ Fixed-point signed representation of coefficients.<br>The coefficients should be
 <ul>
 <li><b>
 int_width
-</b>[<i>ro</i>]: Integer width (accounting for the signal bit).
+</b>[<i>ro</i>]: Integer width.
 
 <li><b>
 frac_width

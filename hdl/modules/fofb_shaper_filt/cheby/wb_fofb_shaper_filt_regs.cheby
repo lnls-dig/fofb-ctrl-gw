@@ -51,7 +51,7 @@ memory-map:
         width: 32
         access: ro
         description: |
-          Fixed-point signed representation of coefficients.
+          Fixed-point signed (2's complement) representation of coefficients.
           The coefficients should be aligned to the left. The fixed-point
           position is then given by 32 - 'int_width' (i.e. one should divide
           this register's content by 2**{32 - 'int_width'} to get the
@@ -61,7 +61,7 @@ memory-map:
               name: int_width
               range: 4-0
               description: |
-                Integer width (accounting for the signal bit).
+                Integer width.
           - field:
               name: frac_width
               range: 9-5
