@@ -27,7 +27,6 @@ USE ieee.numeric_std.ALL;
 LIBRARY work;
 USE work.ifc_common_pkg.ALL;
 USE work.fofb_ctrl_pkg.ALL;
-USE work.fofb_shaper_filt_pkg.ALL;
 USE work.wishbone_pkg.ALL;
 
 ENTITY xwb_fofb_shaper_filt IS
@@ -35,6 +34,12 @@ ENTITY xwb_fofb_shaper_filt IS
     -- Number of channels
     g_CHANNELS            : NATURAL;
 
+    -- Number of internal biquads
+    -- The order is given by 2*g_NUM_BIQUADS
+    g_NUM_BIQUADS         : NATURAL;
+    -- Signed fixed-point representation of biquads' coefficients
+    g_COEFF_INT_WIDTH     : NATURAL;
+    g_COEFF_FRAC_WIDTH    : NATURAL;
     -- Extra bits for biquads' internal arithmetic
     g_ARITH_EXTRA_BITS    : NATURAL;
     -- Extra bits for between-biquads cascade interfaces
@@ -108,8 +113,8 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
   RETURN SFIXED IS
   BEGIN
     RETURN to_sfixed(wb_coeff(31 DOWNTO
-             32-(c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH)), c_COEFF_INT_WIDTH-1,
-             -c_COEFF_FRAC_WIDTH);
+             32-(g_COEFF_INT_WIDTH + g_COEFF_FRAC_WIDTH)), g_COEFF_INT_WIDTH-1,
+             -g_COEFF_FRAC_WIDTH);
   END f_parse_wb_coeff;
 
   SIGNAL iir_filts_x, iir_filts_y : t_iir_filts_x_or_y(g_CHANNELS-1 DOWNTO 0)(
@@ -133,24 +138,24 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
       (OTHERS => c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s);
 
   SIGNAL coeffs : t_fofb_shaper_filt_coeffs(g_CHANNELS-1 DOWNTO 0)(
-                    c_NUM_BIQUADS-1 DOWNTO 0)(
-                    b0(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
-                    b1(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
-                    b2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
-                    a1(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH),
-                    a2(c_COEFF_INT_WIDTH-1 DOWNTO -c_COEFF_FRAC_WIDTH));
+                    g_NUM_BIQUADS-1 DOWNTO 0)(
+                    b0(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
+                    b1(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
+                    b2(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
+                    a1(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
+                    a2(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH));
 
-  SIGNAL biquad_idx : NATURAL RANGE 0 to c_NUM_BIQUADS-1 := 0;
+  SIGNAL biquad_idx : NATURAL RANGE 0 to g_NUM_BIQUADS-1 := 0;
   SIGNAL coeff_idx : NATURAL RANGE 0 to 4 := 0;
 BEGIN
-  ASSERT c_NUM_BIQUADS <= 10
+  ASSERT g_NUM_BIQUADS <= 10
     REPORT "ABI supports up to 20th order filters (i.e. 10 biquads)"
     SEVERITY FAILURE;
 
-  ASSERT c_COEFF_INT_WIDTH > 1 and c_COEFF_FRAC_WIDTH > 1 and
-         c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH <= 32
-    REPORT "ABI supports at most 32-bits coefficients (c_COEFF_INT_WIDTH + " &
-           "c_COEFF_FRAC_WIDTH). Also, the SFIXED type requires each of these" &
+  ASSERT g_COEFF_INT_WIDTH > 1 and g_COEFF_FRAC_WIDTH > 1 and
+         g_COEFF_INT_WIDTH + g_COEFF_FRAC_WIDTH <= 32
+    REPORT "ABI supports at most 32-bits coefficients (g_COEFF_INT_WIDTH + " &
+           "g_COEFF_FRAC_WIDTH). Also, the SFIXED type requires each of these" &
            "to be at least 1."
     SEVERITY FAILURE;
 
@@ -164,13 +169,13 @@ BEGIN
 
   PROCESS(clk_i) IS
   BEGIN
-    -- Each iir_filt has c_NUM_BIQUADS biquads and each of these has 5
+    -- Each iir_filt has g_NUM_BIQUADS biquads and each of these has 5
     -- associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
     -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing the
-    -- 5*c_NUM_BIQUADS coefficients of each iir_filt.
+    -- 5*g_NUM_BIQUADS coefficients of each iir_filt.
     --
     -- The address map is:
-    --   For biquad_idx in 0 to c_NUM_BIQUADS-1:
+    --   For biquad_idx in 0 to g_NUM_BIQUADS-1:
     --     RAM address 0 + 8*{biquad_idx} = b0 of biquad {biquad_idx}
     --     RAM address 1 + 8*{biquad_idx} = b1 of biquad {biquad_idx}
     --     RAM address 2 + 8*{biquad_idx} = b2 of biquad {biquad_idx}
@@ -232,11 +237,11 @@ BEGIN
     GENERATE
       cmp_iir_filt : iir_filt
         GENERIC MAP (
-          g_NUM_BIQUADS       => c_NUM_BIQUADS,
+          g_NUM_BIQUADS       => g_NUM_BIQUADS,
           g_X_INT_WIDTH       => c_SP_WIDTH,
           g_X_FRAC_WIDTH      => 1, -- see note below
-          g_COEFF_INT_WIDTH   => c_COEFF_INT_WIDTH,
-          g_COEFF_FRAC_WIDTH  => c_COEFF_FRAC_WIDTH,
+          g_COEFF_INT_WIDTH   => g_COEFF_INT_WIDTH,
+          g_COEFF_FRAC_WIDTH  => g_COEFF_FRAC_WIDTH,
           g_Y_INT_WIDTH       => c_SP_WIDTH,
           g_Y_FRAC_WIDTH      => 1, -- see note below
           g_ARITH_EXTRA_BITS  => g_ARITH_EXTRA_BITS,
@@ -314,9 +319,9 @@ BEGIN
       ch_11_coeffs_data_i         => wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(11).data,
       ch_11_coeffs_data_o         => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).data,
       ch_11_coeffs_wr_o           => wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(11).wr,
-      num_biquads_i               => STD_LOGIC_VECTOR(to_unsigned(c_NUM_BIQUADS, 32)),
-      coeffs_fp_repr_int_width_i  => STD_LOGIC_VECTOR(to_unsigned(c_COEFF_INT_WIDTH, 5)),
-      coeffs_fp_repr_frac_width_i => STD_LOGIC_VECTOR(to_unsigned(c_COEFF_FRAC_WIDTH, 5))
+      num_biquads_i               => STD_LOGIC_VECTOR(to_unsigned(g_NUM_BIQUADS, 32)),
+      coeffs_fp_repr_int_width_i  => STD_LOGIC_VECTOR(to_unsigned(g_COEFF_INT_WIDTH, 5)),
+      coeffs_fp_repr_frac_width_i => STD_LOGIC_VECTOR(to_unsigned(g_COEFF_FRAC_WIDTH, 5))
     );
 
   -- Extra Wishbone registering stage for ease timing

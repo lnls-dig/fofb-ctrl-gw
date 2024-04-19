@@ -27,7 +27,6 @@ USE std.textio.ALL;
 
 LIBRARY work;
 USE work.fofb_ctrl_pkg.ALL;
-USE work.fofb_shaper_filt_pkg.ALL;
 USE work.fofb_tb_pkg.ALL;
 USE work.sim_wishbone.ALL;
 USE work.wishbone_pkg.ALL;
@@ -43,6 +42,12 @@ ENTITY xwb_fofb_shaper_filt_tb IS
     -- File containing the values for x and the expected values for y
     g_TEST_X_Y_FILENAME     : STRING := "../fofb_shaper_filt_x_y.dat";
 
+    -- Number of internal biquads
+    -- The order is given by 2*g_NUM_BIQUADS
+    g_NUM_BIQUADS           : NATURAL := 4;
+    -- Signed fixed-point representation of biquads' coefficients
+    g_COEFF_INT_WIDTH       : NATURAL := 2;
+    g_COEFF_FRAC_WIDTH      : NATURAL := 16;
     -- Extra bits for biquads' internal arithmetic
     g_ARITH_EXTRA_BITS      : NATURAL := 0;
     -- Extra bits for between-biquads cascade interfaces
@@ -85,12 +90,12 @@ BEGIN
     read32_pl(clk, wb_slave_i, wb_slave_o,
       c_WB_FOFB_SHAPER_FILT_REGS_NUM_BIQUADS_ADDR, v_wb_dat);
 
-    ASSERT to_integer(UNSIGNED(v_wb_dat)) = c_NUM_BIQUADS
+    ASSERT to_integer(UNSIGNED(v_wb_dat)) = g_NUM_BIQUADS
       REPORT
         "UNEXPECTED NUMBER OF BIQUADS: "
         & NATURAL'image(to_integer(UNSIGNED(v_wb_dat)))
         & " (EXPECTED: "
-        & NATURAL'image(c_NUM_BIQUADS) & ")"
+        & NATURAL'image(g_NUM_BIQUADS) & ")"
       SEVERITY FAILURE;
 
     -- Read coefficients' fixed-point representation
@@ -100,37 +105,37 @@ BEGIN
     ASSERT to_integer(UNSIGNED(v_wb_dat(
       c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET-1 DOWNTO
       c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_INT_WIDTH_OFFSET))) =
-      c_COEFF_INT_WIDTH
+      g_COEFF_INT_WIDTH
       REPORT
         "UNEXPECTED COEFFICIENTS' INTEGER WIDTH: "
         & NATURAL'image(to_integer(UNSIGNED(v_wb_dat(
           c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET-1 DOWNTO
           c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_INT_WIDTH_OFFSET))))
         & " (EXPECTED: "
-        & NATURAL'image(c_COEFF_INT_WIDTH) & ")"
+        & NATURAL'image(g_COEFF_INT_WIDTH) & ")"
       SEVERITY FAILURE;
 
     -- TODO: +4 hardcoded
     ASSERT to_integer(UNSIGNED(v_wb_dat(
       c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET+4 DOWNTO
       c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET))) =
-      c_COEFF_FRAC_WIDTH
+      g_COEFF_FRAC_WIDTH
       REPORT
         "UNEXPECTED COEFFICIENTS' FRACTIONARY WIDTH: "
         & NATURAL'image(to_integer(UNSIGNED(v_wb_dat(
           c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET+4 DOWNTO
           c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_FP_REPR_FRAC_WIDTH_OFFSET))))
         & " (EXPECTED: "
-        & NATURAL'image(c_COEFF_FRAC_WIDTH) & ")"
+        & NATURAL'image(g_COEFF_FRAC_WIDTH) & ")"
       SEVERITY FAILURE;
 
-    -- Each iir_filt has c_NUM_BIQUADS biquads and each of these has 5
+    -- Each iir_filt has g_NUM_BIQUADS biquads and each of these has 5
     -- associated coefficients (b0, b1, b2, a1 and a2 (a0 = 1)).
     -- wb_fofb_shaper_filt_regs uses dedicated RAM interfaces for accessing the
-    -- 5*c_NUM_BIQUADS coefficients of each iir_filt.
+    -- 5*g_NUM_BIQUADS coefficients of each iir_filt.
     --
     -- The address map is:
-    --   For biquad_idx in 0 to c_NUM_BIQUADS-1:
+    --   For biquad_idx in 0 to g_NUM_BIQUADS-1:
     --     RAM address 0 + 8*{biquad_idx} = b0 of biquad {biquad_idx}
     --     RAM address 1 + 8*{biquad_idx} = b1 of biquad {biquad_idx}
     --     RAM address 2 + 8*{biquad_idx} = b2 of biquad {biquad_idx}
@@ -146,18 +151,22 @@ BEGIN
         ch_idx*c_WB_FOFB_SHAPER_FILT_REGS_CH_0_SIZE;
 
       readline(fin, lin);
-      FOR biquad_idx IN 0 TO c_NUM_BIQUADS-1
+      FOR biquad_idx IN 0 TO g_NUM_BIQUADS-1
       LOOP
         FOR coeff_idx IN 0 TO 4
         LOOP
           read(lin, v_coeff);
           -- The signed fixed-point representation of coefficients is aligned to
           -- the left in Wishbone registers
-          v_wb_coeff := (
-            31 DOWNTO 32-(c_COEFF_INT_WIDTH + c_COEFF_FRAC_WIDTH) =>
-              to_slv(to_sfixed(v_coeff, c_COEFF_INT_WIDTH-1,
-              -c_COEFF_FRAC_WIDTH)),
-            OTHERS => '0');
+          v_wb_coeff := x"00000000";
+          v_wb_coeff(31 DOWNTO 32-(g_COEFF_INT_WIDTH + g_COEFF_FRAC_WIDTH)) :=
+              to_slv(to_sfixed(v_coeff, g_COEFF_INT_WIDTH-1,
+              -g_COEFF_FRAC_WIDTH));
+          -- v_wb_coeff := (
+          --   31 DOWNTO 32-(g_COEFF_INT_WIDTH + g_COEFF_FRAC_WIDTH) =>
+          --     to_slv(to_sfixed(v_coeff, g_COEFF_INT_WIDTH-1,
+          --     -g_COEFF_FRAC_WIDTH)),
+          --   OTHERS => '0');
           v_wb_dat := v_wb_coeff;
 
           -- Load filter coefficients
@@ -228,6 +237,9 @@ BEGIN
   UUT : xwb_fofb_shaper_filt
     GENERIC MAP (
       g_CHANNELS            => g_CHANNELS,
+      g_NUM_BIQUADS         => g_NUM_BIQUADS,
+      g_COEFF_INT_WIDTH     => g_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH    => g_COEFF_FRAC_WIDTH,
       g_ARITH_EXTRA_BITS    => g_ARITH_EXTRA_BITS,
       g_IFCS_EXTRA_BITS     => g_IFCS_EXTRA_BITS,
       g_INTERFACE_MODE      => PIPELINED,

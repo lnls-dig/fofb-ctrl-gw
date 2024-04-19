@@ -643,6 +643,9 @@ package fofb_ctrl_pkg is
   component xwb_fofb_shaper_filt is
     generic (
       g_CHANNELS            : natural;
+      g_NUM_BIQUADS         : natural;
+      g_COEFF_INT_WIDTH     : natural;
+      g_COEFF_FRAC_WIDTH    : natural;
       g_ARITH_EXTRA_BITS    : natural;
       g_IFCS_EXTRA_BITS     : natural;
       g_INTERFACE_MODE      : t_wishbone_interface_mode := CLASSIC;

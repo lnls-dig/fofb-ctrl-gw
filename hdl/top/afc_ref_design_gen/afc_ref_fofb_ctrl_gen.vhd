@@ -502,6 +502,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -----------------------------------------------------------------------------
   -- FOFB shaper filters signals
   -----------------------------------------------------------------------------
+  constant c_FOFB_SHAPER_FILT_NUM_BIQUADS       : natural := 4;
+  constant c_FOFB_SHAPER_FILT_COEFF_INT_WIDTH   : natural := 2;
+  constant c_FOFB_SHAPER_FILT_COEFF_FRAC_WIDTH  : natural := 16;
   constant c_FOFB_SHAPER_FILT_ARITH_EXTRA_BITS  : natural := 0;
   constant c_FOFB_SHAPER_FILT_IFCS_EXTRA_BITS   : natural := 4;
 
@@ -1911,6 +1914,9 @@ begin
   cmp_xwb_fofb_shaper_filt : xwb_fofb_shaper_filt
     generic map (
       g_CHANNELS            => c_FOFB_CHANNELS,
+      g_NUM_BIQUADS         => c_FOFB_SHAPER_FILT_NUM_BIQUADS,
+      g_COEFF_INT_WIDTH     => c_FOFB_SHAPER_FILT_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH    => c_FOFB_SHAPER_FILT_COEFF_FRAC_WIDTH,
       g_ARITH_EXTRA_BITS    => c_FOFB_SHAPER_FILT_ARITH_EXTRA_BITS,
       g_IFCS_EXTRA_BITS     => c_FOFB_SHAPER_FILT_IFCS_EXTRA_BITS,
       g_INTERFACE_MODE      => PIPELINED,
