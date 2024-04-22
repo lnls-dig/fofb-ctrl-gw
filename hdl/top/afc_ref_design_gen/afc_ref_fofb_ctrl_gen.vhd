@@ -92,7 +92,7 @@ generic (
   -- Dot product accumulator pipeline stages
   g_FOFB_DOT_PROD_ACC_PIPELINE_STAGES : natural := 2;
   -- Gain multiplication pipeline stages
-  g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2
+  g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 3
 );
 port (
   ---------------------------------------------------------------------------
