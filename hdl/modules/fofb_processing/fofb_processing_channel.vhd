@@ -197,10 +197,6 @@ begin
                                       - g_COEFF_FRAC_WIDTH
                                       - 1));
 
-  -- Cast gain_i to fixed point, assume the integer and fractionary parts to be
-  -- g_GAIN_INT_WIDTH and g_GAIN_FRAC_WIDTH respectively
-  gain <= sfixed(gain_i);
-
   -- Set-point output is the accumulator value casted to signed
   sp_o <= signed(to_slv(acc));
 
@@ -217,7 +213,7 @@ begin
       g_B_INT_WIDTH          => g_BPM_POS_INT_WIDTH,
       g_B_FRAC_WIDTH         => g_BPM_POS_FRAC_WIDTH,
       g_ACC_EXTRA_WIDTH      => g_DOT_PROD_ACC_EXTRA_WIDTH,
-      g_REG_INPUTS           => false,
+      g_REG_INPUTS           => true,
       g_MULT_PIPELINE_STAGES => g_DOT_PROD_MUL_PIPELINE_STAGES,
       g_ACC_PIPELINE_STAGES  => g_DOT_PROD_ACC_PIPELINE_STAGES
       )
@@ -249,6 +245,11 @@ begin
         sp_filtered <= (others => '0');
         sp_filtered_samples <= 0;
       else
+
+        -- Cast gain_i to fixed point, assume the integer and fractionary parts to be
+        -- g_GAIN_INT_WIDTH and g_GAIN_FRAC_WIDTH respectively
+        gain <= sfixed(gain_i);
+
         -- Delay 1 clock cycle to wait for the RAM data
         dot_prod_valid <= bpm_pos_err_valid_i;
         bpm_pos_err_fp <= sfixed(bpm_pos_err_i);
