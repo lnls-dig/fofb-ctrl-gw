@@ -56,12 +56,16 @@ use work.rtm_lamp_pkg.all;
 
 entity afcv4_ref_fofb_ctrl is
 generic (
+  -- Configure Wishbone master UART baudrate
+  g_UART_MASTER_BAUD                  : integer := 115200;
+  -- Enable bench mode (disable PCIe reset)
+  g_BENCH_MODE                        : boolean := false;
   -- Number of P2P GTs
-  g_NUM_P2P_GTS                              : integer := 8;
+  g_NUM_P2P_GTS                       : integer := 8;
   -- Starting index of used P2P GTs
-  g_P2P_GT_START_ID                          : integer := 0;
+  g_P2P_GT_START_ID                   : integer := 0;
   -- Number of RTM LAMP ADC channels
-  g_RTMLAMP_CHANNELS                         : natural := 12
+  g_RTMLAMP_CHANNELS                  : natural := 12
 );
 port (
   ---------------------------------------------------------------------------
@@ -271,6 +275,10 @@ begin
 
   cmp_afc_ref_fofb_ctrl_gen : entity work.afc_ref_fofb_ctrl_gen
   generic map (
+    -- Enable bench mode (disable PCIe reset)
+    g_BENCH_MODE                               => g_BENCH_MODE,
+    -- Configure Wishbone master UART baudrate
+    g_UART_MASTER_BAUD                         => g_UART_MASTER_BAUD,
     g_BOARD                                    => "AFCv4",
     -- Select RTM LAMP or RTM SFP
     g_RTM                                      => "RTMLAMP",

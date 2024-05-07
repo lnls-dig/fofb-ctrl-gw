@@ -64,6 +64,10 @@ use work.genram_pkg.all;
 
 entity afc_ref_fofb_ctrl_gen is
 generic (
+  g_UART_MASTER_BAUD                  : integer := 115200;
+  -- Configure Wishbone master UART baudrate
+  g_BENCH_MODE                        : boolean := false;
+  -- Enable bench mode (disable PCIe reset)
   g_BOARD                             : string  := "AFCv4";
   -- Select RTM LAMP or RTM SFP
   g_RTM                               : string  := "RTMLAMP";
@@ -936,6 +940,7 @@ begin
   gen_afcv4_base : if g_BOARD = "AFCv4" generate
     cmp_afc_base_acq : afcv4_base_acq
       generic map (
+        g_BENCH_MODE                             => g_BENCH_MODE,
         g_DIVCLK_DIVIDE                          => 5,
         g_CLKBOUT_MULT_F                         => 48,
         g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
@@ -961,6 +966,7 @@ begin
         --  If true, instantiate a VIC/UART/SPI.
         g_WITH_VIC                               => true,
         g_WITH_UART_MASTER                       => true,
+        g_UART_MASTER_BAUD                       => g_UART_MASTER_BAUD,
         g_WITH_TRIGGER                           => true,
         g_WITH_SPI                               => false,
         g_WITH_AFC_SI57x                         => true,
@@ -1169,6 +1175,7 @@ begin
   gen_afcv3_base : if g_BOARD = "AFCv3" generate
     cmp_afc_base_acq : afcv3_base_acq
       generic map (
+        g_BENCH_MODE                             => g_BENCH_MODE,
         g_DIVCLK_DIVIDE                          => 5,
         g_CLKBOUT_MULT_F                         => 48,
         g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
@@ -1194,6 +1201,7 @@ begin
         --  If true, instantiate a VIC/UART/SPI.
         g_WITH_VIC                               => true,
         g_WITH_UART_MASTER                       => true,
+        g_UART_MASTER_BAUD                       => g_UART_MASTER_BAUD,
         g_WITH_TRIGGER                           => true,
         g_WITH_SPI                               => false,
         g_WITH_AFC_SI57x                         => true,
