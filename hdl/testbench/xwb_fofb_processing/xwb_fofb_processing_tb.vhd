@@ -205,6 +205,7 @@ begin
     variable expec_fofb_proc_sp_arr       :
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
     variable sp_err                       : real := 0.0;
+    variable sp_diff                      : real := 0.0;
 
     variable expec_fofb_proc_sp_decim_arr :
       real_vector(g_CHANNELS-1 downto 0) := (others => 0.0);
@@ -513,16 +514,17 @@ begin
 
       for i in 0 to g_CHANNELS-1
       loop
-        -- TODO: this may be problematic for smaller setpoint values
         sp_err := abs((real(to_integer(sp_arr(i))) /
           floor(expec_fofb_proc_sp_arr(i))) - 1.0);
+        sp_diff := abs(real(to_integer(sp_arr(i))) - expec_fofb_proc_sp_arr(i));
 
         report "channel " & to_string(i) & ": " &
           "setpoint: " & to_string(to_integer(sp_arr(i))) & " (expected: " &
-          to_string(integer(floor(expec_fofb_proc_sp_arr(i)))) & ")"
+          to_string(integer(floor(expec_fofb_proc_sp_arr(i)))) & ")" & " difference: " &
+          to_string(sp_diff)
         severity note;
 
-        if sp_err > 0.01 then
+        if sp_err > 0.01 and sp_diff > 2.0 then
           report "error: " & to_string(sp_err) & " is too large (> 1%)!"
           severity error;
         else

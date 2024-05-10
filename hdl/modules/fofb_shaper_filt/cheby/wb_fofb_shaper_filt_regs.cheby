@@ -1,0 +1,68 @@
+memory-map:
+  bus: wb-32-be
+  name: wb_fofb_shaper_filt_regs
+  description: Interface to FOFB IIR shaper filters regs
+  x-hdl:
+    busgroup: true
+  children:
+    - repeat:
+        name: ch
+        count: 12
+        children:
+          - memory:
+              name: coeffs
+              memsize: 320
+              interface: sram
+              description: |
+                Coefficients for the 'num_biquads' IIR internal biquads.
+
+                Each biquad takes 5 coefficients: b0, b1, b2, a1 and a2 (a0 = 1).
+                The 'coeffs' array should be populated in the following manner:
+
+                  coeffs[0 + 8*{biquad_idx}] = b0 of biquad {biquad_idx}
+                  coeffs[1 + 8*{biquad_idx}] = b1 of biquad {biquad_idx}
+                  coeffs[2 + 8*{biquad_idx}] = b2 of biquad {biquad_idx}
+                  coeffs[3 + 8*{biquad_idx}] = a1 of biquad {biquad_idx}
+                  coeffs[4 + 8*{biquad_idx}] = a2 of biquad {biquad_idx}
+                  coeffs[5 + 8*{biquad_idx}] = unused
+                  coeffs[6 + 8*{biquad_idx}] = unused
+                  coeffs[7 + 8*{biquad_idx}] = unused
+
+                NOTE: This ABI supports up to 20th order filters, but only the
+                coefficients corresponding to the first 'num_biquads' biquads are
+                meaningful for the gateware.
+              children:
+                - reg:
+                    name: val
+                    width: 32
+                    access: rw
+                    description: |
+                      Coefficient value using 'coeffs_fp_repr' fixed-point
+                      representation. It should be aligned to the left.
+    - reg:
+        name: num_biquads
+        width: 32
+        access: ro
+        description: |
+          The number of internal biquads each IIR filter has.
+    - reg:
+        name: coeffs_fp_repr
+        width: 32
+        access: ro
+        description: |
+          Fixed-point signed (2's complement) representation of coefficients.
+          The coefficients should be aligned to the left. The fixed-point
+          position is then given by 32 - 'int_width' (i.e. one should divide
+          this register's content by 2**{32 - 'int_width'} to get the
+          represented decimal number.
+        children:
+          - field:
+              name: int_width
+              range: 4-0
+              description: |
+                Integer width.
+          - field:
+              name: frac_width
+              range: 9-5
+              description: |
+                Fractionary width.

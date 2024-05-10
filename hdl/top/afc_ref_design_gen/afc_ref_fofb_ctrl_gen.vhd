@@ -64,6 +64,10 @@ use work.genram_pkg.all;
 
 entity afc_ref_fofb_ctrl_gen is
 generic (
+  g_UART_MASTER_BAUD                  : integer := 115200;
+  -- Configure Wishbone master UART baudrate
+  g_BENCH_MODE                        : boolean := false;
+  -- Enable bench mode (disable PCIe reset)
   g_BOARD                             : string  := "AFCv4";
   -- Select RTM LAMP or RTM SFP
   g_RTM                               : string  := "RTMLAMP";
@@ -92,7 +96,7 @@ generic (
   -- Dot product accumulator pipeline stages
   g_FOFB_DOT_PROD_ACC_PIPELINE_STAGES : natural := 2;
   -- Gain multiplication pipeline stages
-  g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 2
+  g_FOFB_ACC_GAIN_MUL_PIPELINE_STAGES : natural := 3
 );
 port (
   ---------------------------------------------------------------------------
@@ -500,6 +504,19 @@ architecture top of afc_ref_fofb_ctrl_gen is
   signal distort_bpm_pos_flat_y_rcvd         : std_logic_vector(c_MAX_NUM_BPM_POS_PER_FLAT-1 downto 0);
 
   -----------------------------------------------------------------------------
+  -- FOFB shaper filters signals
+  -----------------------------------------------------------------------------
+  constant c_FOFB_SHAPER_FILT_NUM_BIQUADS       : natural := 4;
+  constant c_FOFB_SHAPER_FILT_COEFF_INT_WIDTH   : natural := 2;
+  constant c_FOFB_SHAPER_FILT_COEFF_FRAC_WIDTH  : natural := 16;
+  constant c_FOFB_SHAPER_FILT_ARITH_EXTRA_BITS  : natural := 0;
+  constant c_FOFB_SHAPER_FILT_IFCS_EXTRA_BITS   : natural := 4;
+
+  signal filt_distort_fofb_proc_sp_arr          : t_sp_arr(c_FOFB_CHANNELS-1 DOWNTO 0);
+  signal filt_distort_fofb_proc_sp_valid_arr    : std_logic_vector(c_FOFB_CHANNELS-1 DOWNTO 0);
+  signal syncd_acq_sys_id_filtered              : std_logic := '0';
+
+  -----------------------------------------------------------------------------
   -- RTM signals
   -----------------------------------------------------------------------------
 
@@ -706,13 +723,11 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_ACQ_FIFO_SIZE                   : natural := 256;
 
   -- Number of acquisition cores
-  constant c_ACQ_NUM_CORES                   : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + c_NUM_SYS_ID_CORES;
+  constant c_ACQ_NUM_CORES                   : natural := c_RTM_LAMP_NUM_CORES + c_NUM_SYS_ID_CORES;
 
   -- Acquisition core IDs
   constant c_ACQ_CORE_RTM_LAMP_ID            : natural := 0;
-  constant c_ACQ_CORE_CC_FMC_OR_RTM_ID       : natural := 1;
-  constant c_ACQ_CORE_CC_P2P_ID              : natural := 2;
-  constant c_ACQ_CORE_SYS_ID_ID              : natural := 3;
+  constant c_ACQ_CORE_SYS_ID_ID              : natural := 1;
 
   -- Type of DDR3 core interface
   constant c_DDR_INTERFACE_TYPE              : string := "AXIS";
@@ -725,9 +740,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
 
   -- Acquisition channels IDs
   constant c_ACQ_RTM_LAMP_ID                 : natural := 0;
-  constant c_ACQ_DCC_ID                      : natural := 1;
-  constant c_ACQ_SYS_ID_ID                   : natural := 2;
-  constant c_ACQ_SYS_ID_DEBUG_ID             : natural := 3;
+  constant c_ACQ_SYS_ID_ID                   : natural := 1;
+  constant c_ACQ_SYS_ID_DEBUG_ID             : natural := 2;
+  constant c_ACQ_SYS_ID_FILT_ID              : natural := 3;
 
   -- Number of channels per acquisition core
   constant c_ACQ_NUM_CHANNELS                : natural := 4;
@@ -766,9 +781,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_FACQ_CHANNELS                   : t_facq_chan_param_array(c_ACQ_NUM_CHANNELS-1 downto 0) :=
   (
     c_ACQ_RTM_LAMP_ID       => c_FACQ_PARAMS_RTM_LAMP,
-    c_ACQ_DCC_ID            => c_FACQ_PARAMS_DCC,
     c_ACQ_SYS_ID_ID         => c_FACQ_PARAMS_SYS_ID,
-    c_ACQ_SYS_ID_DEBUG_ID   => c_FACQ_PARAMS_SYS_ID
+    c_ACQ_SYS_ID_DEBUG_ID   => c_FACQ_PARAMS_SYS_ID,
+    c_ACQ_SYS_ID_FILT_ID    => c_FACQ_PARAMS_SYS_ID
   );
 
   signal acq_chan_array                      : t_facq_chan_array2d(c_ACQ_NUM_CORES-1 downto 0, c_ACQ_NUM_CHANNELS-1 downto 0);
@@ -796,8 +811,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
   -- Trigger core IDs
   -- These IDs should be kept in sync with the ACQ core IDs
   constant c_TRIG_MUX_RTM_LAMP_ID            : natural  := c_ACQ_CORE_RTM_LAMP_ID;
-  constant c_TRIG_MUX_CC_FMC_ID              : natural  := c_ACQ_CORE_CC_FMC_OR_RTM_ID;
-  constant c_TRIG_MUX_CC_P2P_ID              : natural  := c_ACQ_CORE_CC_P2P_ID;
   constant c_TRIG_MUX_SYS_ID_ID              : natural  := c_ACQ_CORE_SYS_ID_ID;
 
   constant c_TRIG_MUX_NUM_CORES              : natural  := c_ACQ_NUM_CORES;
@@ -839,8 +852,9 @@ architecture top of afc_ref_fofb_ctrl_gen is
   constant c_RTM_LAMP_ID                     : natural := 2;
   constant c_FOFB_PROCESSING_ID              : natural := 3;
   constant c_FOFB_SYS_ID_ID                  : natural := 4;
-  -- +2 for accounting for FOFB processing and FOFB system identification cores
-  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 2;
+  constant c_FOFB_SHAPER_FILT_ID             : natural := 5;
+  -- +3 is accounting for FOFB {processing, system identification, shaper filter} cores
+  constant c_USER_NUM_CORES                  : natural := c_NUM_FOFC_CC_CORES + c_RTM_LAMP_NUM_CORES + 3;
   constant c_RTM_LAMP_SDB                    : boolean := (g_RTM = "RTMLAMP");
 
   constant c_USER_SDB_RECORD_ARRAY           : t_sdb_record_array(c_USER_NUM_CORES-1 downto 0) :=
@@ -849,7 +863,8 @@ architecture top of afc_ref_fofb_ctrl_gen is
     c_FOFB_CC_P2P_ID           => f_sdb_auto_device(c_xwb_fofb_cc_regs_sdb,            true),
     c_RTM_LAMP_ID              => f_sdb_auto_device(c_xwb_rtm_lamp_regs_sdb, c_RTM_LAMP_SDB),
     c_FOFB_PROCESSING_ID       => f_sdb_auto_device(c_xwb_fofb_processing_regs_sdb,    true),
-    c_FOFB_SYS_ID_ID           => f_sdb_auto_device(c_xwb_fofb_sys_id_regs_sdb,        true)
+    c_FOFB_SYS_ID_ID           => f_sdb_auto_device(c_xwb_fofb_sys_id_regs_sdb,        true),
+    c_FOFB_SHAPER_FILT_ID      => f_sdb_auto_device(c_xwb_fofb_shaper_filter_regs_sdb, true)
   );
 
   -----------------------------------------------------------------------------
@@ -925,6 +940,7 @@ begin
   gen_afcv4_base : if g_BOARD = "AFCv4" generate
     cmp_afc_base_acq : afcv4_base_acq
       generic map (
+        g_BENCH_MODE                             => g_BENCH_MODE,
         g_DIVCLK_DIVIDE                          => 5,
         g_CLKBOUT_MULT_F                         => 48,
         g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
@@ -950,6 +966,7 @@ begin
         --  If true, instantiate a VIC/UART/SPI.
         g_WITH_VIC                               => true,
         g_WITH_UART_MASTER                       => true,
+        g_UART_MASTER_BAUD                       => g_UART_MASTER_BAUD,
         g_WITH_TRIGGER                           => true,
         g_WITH_SPI                               => false,
         g_WITH_AFC_SI57x                         => true,
@@ -1158,6 +1175,7 @@ begin
   gen_afcv3_base : if g_BOARD = "AFCv3" generate
     cmp_afc_base_acq : afcv3_base_acq
       generic map (
+        g_BENCH_MODE                             => g_BENCH_MODE,
         g_DIVCLK_DIVIDE                          => 5,
         g_CLKBOUT_MULT_F                         => 48,
         g_CLK0_DIVIDE_F                          => 12,   -- 100 MHz
@@ -1183,6 +1201,7 @@ begin
         --  If true, instantiate a VIC/UART/SPI.
         g_WITH_VIC                               => true,
         g_WITH_UART_MASTER                       => true,
+        g_UART_MASTER_BAUD                       => g_UART_MASTER_BAUD,
         g_WITH_TRIGGER                           => true,
         g_WITH_SPI                               => false,
         g_WITH_AFC_SI57x                         => true,
@@ -1523,10 +1542,6 @@ begin
 
   end generate;
 
-  -- Trigger signal for DCC timeframe_start.
-  -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_FMC_OR_RTM_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
-
   cmp_fofb_ctrl_wrapper_0 : xwb_fofb_ctrl_wrapper
   generic map
   (
@@ -1685,10 +1700,6 @@ begin
   fofb_ref_clk_p(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_p;
   fofb_ref_clk_n(c_FOFB_CC_P2P_ID) <= clk_fp2_clk1_n;
 
-  -- Trigger signal for DCC timeframe_start.
-  -- Trigger pulses are synch'ed with the respective fs_clk
-  fai_sim_trigger(c_FOFB_CC_P2P_ID) <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_TRIG_MUX_FOFB_SYNC_ID).pulse;
-
   cmp_fofb_ctrl_wrapper_1 : xwb_fofb_ctrl_wrapper
   generic map
   (
@@ -1845,6 +1856,16 @@ begin
       sync_pulse_o  => syncd_acq_sys_id_debug
     );
 
+  cmp_acq_sys_id_filtered_pulse_syncr : pulse_syncr
+    port map (
+      clk_i         => clk_sys,
+      rst_n_i       => clk_sys_rstn,
+      clr_i         => '0',
+      pulse_i       => trig_pulse_rcv(c_TRIG_MUX_SYS_ID_ID, c_ACQ_SYS_ID_FILT_ID).pulse,
+      sync_i        => filt_distort_fofb_proc_sp_valid_arr(0),   -- all valids are synced
+      sync_pulse_o  => syncd_acq_sys_id_filtered
+    );
+
   cmp_trig_sys_id_eff_regs_pulse_syncr : pulse_syncr
     port map (
       clk_i         => clk_sys,
@@ -1870,10 +1891,10 @@ begin
       bpm_pos_i                     => fofb_proc_bpm_pos,
       bpm_pos_index_i               => fofb_proc_bpm_pos_index,
       bpm_pos_valid_i               => fofb_proc_bpm_pos_valid,
-      bpm_pos_flat_clear_i          => distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
+      bpm_pos_flat_clear_i          => filt_distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
       sp_arr_i                      => t_sp_arr(fofb_proc_sp_arr),
       sp_valid_arr_i                => fofb_proc_sp_valid_arr,
-      prbs_valid_i                  => distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
+      prbs_valid_i                  => filt_distort_fofb_proc_sp_valid_arr(0), -- all valids are synced
       trig_i                        => syncd_trig_sys_id_eff_regs,
       bpm_pos_flat_x_o              => bpm_pos_flat_x,
       bpm_pos_flat_x_rcvd_o         => bpm_pos_flat_x_rcvd,
@@ -1892,6 +1913,34 @@ begin
       distort_bpm_pos_flat_y_rcvd_o => distort_bpm_pos_flat_y_rcvd,
       wb_slv_i                      => user_wb_out(c_FOFB_SYS_ID_ID),
       wb_slv_o                      => user_wb_in(c_FOFB_SYS_ID_ID)
+    );
+
+  ----------------------------------------------------------------------
+  --                       FOFB SHAPER FILTERS                        --
+  ----------------------------------------------------------------------
+
+  cmp_xwb_fofb_shaper_filt : xwb_fofb_shaper_filt
+    generic map (
+      g_CHANNELS            => c_FOFB_CHANNELS,
+      g_NUM_BIQUADS         => c_FOFB_SHAPER_FILT_NUM_BIQUADS,
+      g_COEFF_INT_WIDTH     => c_FOFB_SHAPER_FILT_COEFF_INT_WIDTH,
+      g_COEFF_FRAC_WIDTH    => c_FOFB_SHAPER_FILT_COEFF_FRAC_WIDTH,
+      g_ARITH_EXTRA_BITS    => c_FOFB_SHAPER_FILT_ARITH_EXTRA_BITS,
+      g_IFCS_EXTRA_BITS     => c_FOFB_SHAPER_FILT_IFCS_EXTRA_BITS,
+      g_INTERFACE_MODE      => PIPELINED,
+      g_ADDRESS_GRANULARITY => BYTE,
+      g_WITH_EXTRA_WB_REG   => false
+    )
+    port map (
+      clk_i                 => clk_sys,
+      rst_n_i               => clk_sys_rstn,
+      sp_arr_i              => distort_fofb_proc_sp_arr,
+      sp_valid_arr_i        => distort_fofb_proc_sp_valid_arr,
+      busy_arr_o            => open,
+      filt_sp_arr_o         => filt_distort_fofb_proc_sp_arr,
+      filt_sp_valid_arr_o   => filt_distort_fofb_proc_sp_valid_arr,
+      wb_slv_i              => user_wb_out(c_FOFB_SHAPER_FILT_ID),
+      wb_slv_o              => user_wb_in(c_FOFB_SHAPER_FILT_ID)
     );
 
   ----------------------------------------------------------------------
@@ -2198,18 +2247,12 @@ begin
 
   -- Convert signed elements to std_logic_vector
   gen_conv_pi_sp: for i in 0 to c_FOFB_CHANNELS-1 generate
-    pi_sp_ext(i) <= std_logic_vector(distort_fofb_proc_sp_arr(i));
+    pi_sp_ext(i) <= std_logic_vector(filt_distort_fofb_proc_sp_arr(i));
   end generate;
 
   ----------------------------------------------------------------------
   --                          Acquisition                             --
   ----------------------------------------------------------------------
-
-  fs_clk_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID)   <= clk_sys;
-  fs_rst_n_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID) <= clk_sys_rstn;
-
-  fs_clk_array(c_ACQ_CORE_CC_P2P_ID)          <= fofb_userclk(c_FOFB_CC_P2P_ID);
-  fs_rst_n_array(c_ACQ_CORE_CC_P2P_ID)        <= fofb_userrst_n(c_FOFB_CC_P2P_ID);
 
   fs_clk_array(c_ACQ_CORE_RTM_LAMP_ID)        <= clk_sys;
   fs_rst_n_array(c_ACQ_CORE_RTM_LAMP_ID)      <= clk_sys_rstn;
@@ -2246,12 +2289,15 @@ begin
     end generate;
   end generate;
 
+  -- PI setpoint for the first 8 channels, which are the ones being used atm.
   gen_rtm_ac_num_cores : for i in 0 to c_ACQ_NUM_CORES-1 generate
-    acq_rtmlamp_data(i)(
-        (c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
+    gen_rtmlamp_dbg_pi_ctrl_sp : for j in 2*c_RTMLAMP_CHANNELS to 2*c_RTMLAMP_CHANNELS+7 generate
+      acq_rtmlamp_data(i)(
+        (j+1)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width)-1
         downto
-        (c_RTMLAMP_CHANNELS+c_RTMLAMP_CHANNELS)*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
-      <= rtmlamp_dbg_pi_ctrl_sp(0);
+        j*to_integer(c_FACQ_CHANNELS(c_ACQ_RTM_LAMP_ID).atom_width))
+      <= rtmlamp_dbg_pi_ctrl_sp(j-2*c_RTMLAMP_CHANNELS);
+    end generate;
   end generate;
 
   --------------------
@@ -2266,26 +2312,6 @@ begin
 
   --------------------
   -- ACQ Core 1
-  --------------------
-
-  -- DCC FMC
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(fofb_proc_sp_arr(6)) & std_logic_vector(fofb_proc_sp_arr(7)) & std_logic_vector(fofb_proc_sp_arr(4)) & std_logic_vector(fofb_proc_sp_arr(5)) &
-          std_logic_vector(fofb_proc_sp_arr(2)) & std_logic_vector(fofb_proc_sp_arr(3)) & std_logic_vector(fofb_proc_sp_arr(0)) & std_logic_vector(fofb_proc_sp_arr(1)) & f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet);
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).dvalid        <= acq_dcc_fmc_valid;
-  acq_chan_array(c_ACQ_CORE_CC_FMC_OR_RTM_ID, c_ACQ_DCC_ID).trig          <= trig_pulse_rcv(c_TRIG_MUX_CC_FMC_ID, c_ACQ_DCC_ID).pulse;  -- TODO: is this on the right clock domain?
-
-  --------------------
-  -- ACQ Core 2
-  --------------------
-  -- DCC P2P
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_DCC_ID).width)-1 downto 0) <=
-          std_logic_vector(to_unsigned(0, 128)) & fofb_fod_dat(c_FOFB_CC_P2P_ID);
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).dvalid               <= fofb_fod_dat_val(c_FOFB_CC_P2P_ID)(0);
-  acq_chan_array(c_ACQ_CORE_CC_P2P_ID, c_ACQ_DCC_ID).trig                 <= trig_pulse_rcv(c_TRIG_MUX_CC_P2P_ID, c_ACQ_DCC_ID).pulse;
-
-  --------------------
-  -- ACQ Core 3
   --------------------
 
   -- SYS ID channel
@@ -2322,6 +2348,23 @@ begin
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).dvalid  <= distort_fofb_proc_sp_valid_arr(0);   -- all valids are synced
   acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_DEBUG_ID).trig    <= syncd_acq_sys_id_debug;
 
+  -- SYS ID filtered channel
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_FILT_ID).val(to_integer(c_FACQ_CHANNELS(c_ACQ_SYS_ID_FILT_ID).width)-1 downto 0) <=
+    std_logic_vector(to_unsigned(0, 287)) &                                                                                                                                                                               -- Padding with 0s (1023 downto 737)
+    prbs &                                                                                                                                                                                                                -- PRBS (736)
+    distort_bpm_pos_flat_x_rcvd & distort_bpm_pos_flat_y_rcvd &                                                                                                                                                           -- Flatenizers' 'received' flag (735 downto 720, 2x8)
+    f_fofb_cc_packet_to_slv(acq_dcc_fmc_packet)(def_PacketTimeframeCntr16MSB downto def_PacketTimeframeCntr16LSB) &                                                                                                       -- Timeframe counter (719 downto 704, 1x16)
+    -- NOTE: These 16-bit values are being swapped at each 2 so they end up being allocated on RAM in descending order after ACQ endianness procedures.
+    std_logic_vector(filt_distort_fofb_proc_sp_arr(10)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(11)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(8)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(9)) & -- FOFB channels distorted and filtered setpoints 11-0 (703 downto 512, 12x16)
+    std_logic_vector(filt_distort_fofb_proc_sp_arr(6))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(7))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(4)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(5)) &
+    std_logic_vector(filt_distort_fofb_proc_sp_arr(2))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(3))  & std_logic_vector(filt_distort_fofb_proc_sp_arr(0)) & std_logic_vector(filt_distort_fofb_proc_sp_arr(1)) &
+    std_logic_vector(distort_bpm_pos_flat_y(7)) & std_logic_vector(distort_bpm_pos_flat_y(6)) & std_logic_vector(distort_bpm_pos_flat_y(5)) & std_logic_vector(distort_bpm_pos_flat_y(4)) &                               -- P2P BPM y distorted positions 7-0 (511 downto 256, 8x32)
+    std_logic_vector(distort_bpm_pos_flat_y(3)) & std_logic_vector(distort_bpm_pos_flat_y(2)) & std_logic_vector(distort_bpm_pos_flat_y(1)) & std_logic_vector(distort_bpm_pos_flat_y(0)) &
+    std_logic_vector(distort_bpm_pos_flat_x(7)) & std_logic_vector(distort_bpm_pos_flat_x(6)) & std_logic_vector(distort_bpm_pos_flat_x(5)) & std_logic_vector(distort_bpm_pos_flat_x(4)) &                               -- P2P BPM x distorted positions 7-0 (255 downto 0, 8x32)
+    std_logic_vector(distort_bpm_pos_flat_x(3)) & std_logic_vector(distort_bpm_pos_flat_x(2)) & std_logic_vector(distort_bpm_pos_flat_x(1)) & std_logic_vector(distort_bpm_pos_flat_x(0));
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_FILT_ID).dvalid  <= filt_distort_fofb_proc_sp_valid_arr(0);   -- all valids are synced
+  acq_chan_array(c_ACQ_CORE_SYS_ID_ID, c_ACQ_SYS_ID_FILT_ID).trig    <= syncd_acq_sys_id_filtered;
+
   ----------------------------------------------------------------------
   --                          Trigger                                 --
   ----------------------------------------------------------------------
@@ -2329,33 +2372,11 @@ begin
   trig_ref_clk <= clk_trig_ref;
   trig_ref_rst_n <= clk_trig_ref_rstn;
 
-  -- Assign trigger pulses to trigger channel interfaces
-  trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
-    timeframe_start(c_FOFB_CC_FMC_OR_RTM_ID);
-  trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
-    timeframe_end(c_FOFB_CC_FMC_OR_RTM_ID);
-
-  trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
-    timeframe_start(c_FOFB_CC_P2P_ID);
-  trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
-    timeframe_end(c_FOFB_CC_P2P_ID);
-
   -- FIXME: remove it
   -- trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID).pulse <=
   --   rtmlamp_adc_start;
   -- trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_1_ID).pulse <=
   --   rtmlamp_dac_start;
-
-  -- Assign intern triggers to trigger module
-  trig_rcv_intern(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
-  trig_rcv_intern(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_FMC_ID, c_TRIG_RCV_INTERN_CHAN_1_ID);
-
-  trig_rcv_intern(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
-  trig_rcv_intern(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID) <=
-    trig_acq_channel(c_TRIG_MUX_CC_P2P_ID, c_TRIG_RCV_INTERN_CHAN_1_ID);
 
   trig_rcv_intern(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID) <=
     trig_acq_channel(c_TRIG_MUX_RTM_LAMP_ID, c_TRIG_RCV_INTERN_CHAN_0_ID);
