@@ -57,6 +57,7 @@ END ENTITY xwb_fofb_shaper_filt_tb;
 
 ARCHITECTURE test OF xwb_fofb_shaper_filt_tb IS
   CONSTANT c_SYS_CLOCK_FREQ : NATURAL := 100_000_000;
+  CONSTANT c_MAX_ABI_BIQUADS : NATURAL := 10;
 
   SIGNAL clk : STD_LOGIC := '0';
   SIGNAL rst_n : STD_LOGIC := '1';
@@ -151,7 +152,7 @@ BEGIN
         ch_idx*c_WB_FOFB_SHAPER_FILT_REGS_CH_0_SIZE;
 
       readline(fin, lin);
-      FOR biquad_idx IN 0 TO g_NUM_BIQUADS-1
+      FOR biquad_idx IN 0 TO c_MAX_ABI_BIQUADS-1
       LOOP
         FOR coeff_idx IN 0 TO 4
         LOOP

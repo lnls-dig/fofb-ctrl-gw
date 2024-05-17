@@ -99,6 +99,7 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
   CONSTANT c_PERIPH_ADDR_SIZE : NATURAL := 2+2;
 
   CONSTANT c_MAX_CHANNELS : NATURAL := 12;
+  CONSTANT c_MAX_ABI_BIQUADS : NATURAL := 10;
 
   CONSTANT c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_I_IFC_0s :
     t_wb_fofb_shaper_filt_regs_coeffs_i_ifc := (data => (OTHERS => '0'));
@@ -138,17 +139,17 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
       (OTHERS => c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s);
 
   SIGNAL coeffs : t_fofb_shaper_filt_coeffs(g_CHANNELS-1 DOWNTO 0)(
-                    g_NUM_BIQUADS-1 DOWNTO 0)(
+                    c_MAX_ABI_BIQUADS-1 DOWNTO 0)(
                     b0(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
                     b1(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
                     b2(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
                     a1(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
                     a2(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH));
 
-  SIGNAL biquad_idx : NATURAL RANGE 0 to g_NUM_BIQUADS-1 := 0;
-  SIGNAL coeff_idx : NATURAL RANGE 0 to 4 := 0;
+  SIGNAL biquad_idx : NATURAL RANGE 0 TO c_MAX_ABI_BIQUADS-1 := 0;
+  SIGNAL coeff_idx : NATURAL RANGE 0 TO 7 := 0;
 BEGIN
-  ASSERT g_NUM_BIQUADS <= 10
+  ASSERT g_NUM_BIQUADS <= c_MAX_ABI_BIQUADS
     REPORT "ABI supports up to 20th order filters (i.e. 10 biquads)"
     SEVERITY FAILURE;
 
@@ -252,7 +253,7 @@ BEGIN
           rst_n_i             => rst_n_i,
           x_i                 => iir_filts_x(idx),
           x_valid_i           => sp_valid_arr_i(idx),
-          coeffs_i            => coeffs(idx),
+          coeffs_i            => coeffs(idx)(g_NUM_BIQUADS-1 DOWNTO 0),
           busy_o              => busy_arr_o(idx),
           y_o                 => iir_filts_y(idx),
           y_valid_o           => filt_sp_valid_arr_o(idx)
