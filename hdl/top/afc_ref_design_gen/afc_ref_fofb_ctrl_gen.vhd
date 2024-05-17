@@ -763,12 +763,6 @@ architecture top of afc_ref_fofb_ctrl_gen is
     atom_width                               => to_unsigned(16, c_ACQ_ATOM_WIDTH_LOG2)
   );
 
-  constant c_FACQ_PARAMS_DCC                 : t_facq_chan_param := (
-    width                                    => to_unsigned(256, c_ACQ_CHAN_CMPLT_WIDTH_LOG2),
-    num_atoms                                => to_unsigned(8, c_ACQ_NUM_ATOMS_WIDTH_LOG2),
-    atom_width                               => to_unsigned(32, c_ACQ_ATOM_WIDTH_LOG2)
-  );
-
   constant c_FACQ_PARAMS_SYS_ID              : t_facq_chan_param := (
     -- NOTE: Altough 768 bits would be enough, using this value as width somehow
     --       causes ACQ samples to be weirdly misaligned (see https://github.com/lnls-dig/infra-cores/issues/18).
