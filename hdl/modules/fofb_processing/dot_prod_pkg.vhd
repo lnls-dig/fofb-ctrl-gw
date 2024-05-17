@@ -35,8 +35,8 @@ package dot_prod_pkg is
   type t_fofb_processing_sp_decim_arr is array (natural range <>) of signed(31 downto 0);
   type t_fofb_processing_sp_decim_ratio_arr is array (natural range <>) of integer range 0 to c_FOFB_SP_DECIM_MAX_RATIO;
 
-  constant c_FOFB_GAIN_INT_WIDTH         : natural := 3;
-  constant c_FOFB_GAIN_FRAC_WIDTH        : natural := 12;
+  constant c_FOFB_GAIN_INT_WIDTH         : natural := 0;
+  constant c_FOFB_GAIN_FRAC_WIDTH        : natural := 15;
   constant c_FOFB_GAIN_WIDTH             : natural := c_FOFB_GAIN_INT_WIDTH + c_FOFB_GAIN_FRAC_WIDTH + 1;
   constant c_FOFB_WB_GAIN_WIDTH          : natural := 32;
   type t_fofb_processing_gain_arr is array (natural range <>) of signed(c_FOFB_GAIN_WIDTH-1 downto 0);

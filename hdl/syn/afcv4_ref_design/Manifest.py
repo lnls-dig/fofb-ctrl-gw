@@ -23,6 +23,7 @@ syn_properties = [
     ["steps.phys_opt_design.args.directive", "Explore"],
     ["steps.phys_opt_design.args.more options", "-verbose"],
     ["steps.phys_opt_design.is_enabled", "1"],
+    ["steps.place_design.args.directive", "ExtraTimingOpt"],
     ["steps.post_route_phys_opt_design.args.directive", "Explore"],
     ["steps.post_route_phys_opt_design.args.more options", "-verbose"],
     ["steps.post_route_phys_opt_design.is_enabled", "1"],
