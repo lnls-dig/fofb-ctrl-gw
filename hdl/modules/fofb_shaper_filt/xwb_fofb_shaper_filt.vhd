@@ -139,7 +139,7 @@ ARCHITECTURE behave OF xwb_fofb_shaper_filt IS
       (OTHERS => c_WB_FOFB_SHAPER_FILT_REGS_COEFFS_O_IFC_0s);
 
   SIGNAL coeffs : t_fofb_shaper_filt_coeffs(g_CHANNELS-1 DOWNTO 0)(
-                    c_MAX_ABI_BIQUADS-1 DOWNTO 0)(
+                    g_NUM_BIQUADS-1 DOWNTO 0)(
                     b0(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
                     b1(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
                     b2(g_COEFF_INT_WIDTH-1 DOWNTO -g_COEFF_FRAC_WIDTH),
@@ -187,47 +187,54 @@ BEGIN
     --     RAM address 7 + 8*{biquad_idx} = unused
     FOR ch IN 0 TO g_CHANNELS-1
     LOOP
-      CASE coeff_idx IS
-        WHEN 0 =>
-          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
-            (to_slv(coeffs(ch)(biquad_idx).b0), OTHERS => '0');
-        WHEN 1 =>
-          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
-            (to_slv(coeffs(ch)(biquad_idx).b1), OTHERS => '0');
-        WHEN 2 =>
-          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
-            (to_slv(coeffs(ch)(biquad_idx).b2), OTHERS => '0');
-        WHEN 3 =>
-          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
-            (to_slv(coeffs(ch)(biquad_idx).a1), OTHERS => '0');
-        WHEN 4 =>
-          wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
-            (to_slv(coeffs(ch)(biquad_idx).a2), OTHERS => '0');
-        WHEN OTHERS =>
-      END CASE;
+      IF biquad_idx < g_NUM_BIQUADS THEN
+        CASE coeff_idx IS
+          WHEN 0 =>
+            wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+              (to_slv(coeffs(ch)(biquad_idx).b0), OTHERS => '0');
+          WHEN 1 =>
+            wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+              (to_slv(coeffs(ch)(biquad_idx).b1), OTHERS => '0');
+          WHEN 2 =>
+            wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+              (to_slv(coeffs(ch)(biquad_idx).b2), OTHERS => '0');
+          WHEN 3 =>
+            wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+              (to_slv(coeffs(ch)(biquad_idx).a1), OTHERS => '0');
+          WHEN 4 =>
+            wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <=
+              (to_slv(coeffs(ch)(biquad_idx).a2), OTHERS => '0');
+          WHEN OTHERS =>
+        END CASE;
+      -- If trying to access biquads that aren't instatiated, return zeros
+      ELSE
+        wb_fofb_shaper_filt_regs_coeffs_i_ifc_arr(ch).data <= (OTHERS => '0');
+      END IF;
 
       IF rising_edge(clk_i) THEN
         IF rst_n_i = '0' THEN
         ELSE
           IF wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).wr = '1' THEN
-            CASE coeff_idx IS
-              WHEN 0 =>
-                coeffs(ch)(biquad_idx).b0 <= f_parse_wb_coeff(
-                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
-              WHEN 1 =>
-                coeffs(ch)(biquad_idx).b1 <= f_parse_wb_coeff(
-                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
-              WHEN 2 =>
-                coeffs(ch)(biquad_idx).b2 <= f_parse_wb_coeff(
-                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
-              WHEN 3 =>
-                coeffs(ch)(biquad_idx).a1 <= f_parse_wb_coeff(
-                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
-              WHEN 4 =>
-                coeffs(ch)(biquad_idx).a2 <= f_parse_wb_coeff(
-                  wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
-              WHEN OTHERS =>
-            END CASE;
+            IF biquad_idx < g_NUM_BIQUADS THEN
+              CASE coeff_idx IS
+                WHEN 0 =>
+                  coeffs(ch)(biquad_idx).b0 <= f_parse_wb_coeff(
+                    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+                WHEN 1 =>
+                  coeffs(ch)(biquad_idx).b1 <= f_parse_wb_coeff(
+                    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+                WHEN 2 =>
+                  coeffs(ch)(biquad_idx).b2 <= f_parse_wb_coeff(
+                    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+                WHEN 3 =>
+                  coeffs(ch)(biquad_idx).a1 <= f_parse_wb_coeff(
+                    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+                WHEN 4 =>
+                  coeffs(ch)(biquad_idx).a2 <= f_parse_wb_coeff(
+                    wb_fofb_shaper_filt_regs_coeffs_o_ifc_arr(ch).data);
+                WHEN OTHERS =>
+              END CASE;
+            END IF;
           END IF;
         END IF;
       END IF;
