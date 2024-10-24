@@ -176,6 +176,12 @@ BEGIN
           -- Read back filter coefficients
           read32_pl(clk, wb_slave_i, wb_slave_o, v_wb_addr, v_wb_dat);
 
+          -- If trying to access a non-instatiated biquad, the expected return
+          -- value for the coefficients is 0
+          IF biquad_idx >= g_NUM_BIQUADS THEN
+            v_wb_coeff := x"00000000";
+          END IF;
+
           ASSERT v_wb_dat = v_wb_coeff
             REPORT
               "UNEXPECTED FILTER COEFFICIENT "
